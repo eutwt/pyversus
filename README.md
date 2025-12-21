@@ -3,12 +3,11 @@
 
 # versus (Python)
 
-`versus` is a Python package that mirrors the ergonomics of the original
-R library while pushing all heavy work into DuckDB. Use it when you want
-to compare two relations (tables, views, or subqueries) without dragging
-the data back into Python. Call `compare()`, and you immediately get a
-`Comparison` object that tells you where the datasets disagree while
-keeping the inputs inside DuckDB for follow-up analysis.
+`versus` is a Python package that mirrors the the original R library while pushing
+all heavy work into DuckDB. Use it to compare two duckdb relations (tables, views,
+or queries) without materializing them. The `compare()` function gives a `Comparison`
+object that shows where the tables disagree, with methods for displaying the
+differences.
 
 ## Installation
 
