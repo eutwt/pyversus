@@ -32,60 +32,149 @@ con = duckdb.connect()
 rel_a = examples.example_cars_a(con)
 rel_b = examples.example_cars_b(con)
 
-comparison = compare(rel_a, rel_b, by=["car"], connection=con)
-print(comparison.tables)
-#   table    source  nrows  ncols
-# 0      a  relation      9      9
-# 1      b  relation     10      9
-
-print(comparison.intersection.select(["column", "n_diffs"]))
-#    column  n_diffs
-# 0     mpg        2
-# 1     cyl        0
-# 2    disp        2
-# ...
+comparison = compare(rel_a, rel_b, by="car", connection=con)
+comparison
+# Comparison(tables=
+# shape: (2, 4)
+# ┌───────┬─────────────────────────────────┬───────┬───────┐
+# │ table ┆ source                          ┆ nrows ┆ ncols │
+# │ ---   ┆ ---                             ┆ ---   ┆ ---   │
+# │ str   ┆ str                             ┆ i64   ┆ i64   │
+# ╞═══════╪═════════════════════════════════╪═══════╪═══════╡
+# │ a     ┆ unnamed_relation_c27ef6fa74185… ┆ 9     ┆ 9     │
+# │ b     ┆ unnamed_relation_ab7159cdf9ceb… ┆ 10    ┆ 9     │
+# └───────┴─────────────────────────────────┴───────┴───────┘
+# by=
+# shape: (1, 3)
+# ┌────────┬─────────┬─────────┐
+# │ column ┆ class_a ┆ class_b │
+# │ ---    ┆ ---     ┆ ---     │
+# │ str    ┆ str     ┆ str     │
+# ╞════════╪═════════╪═════════╡
+# │ car    ┆ VARCHAR ┆ VARCHAR │
+# └────────┴─────────┴─────────┘
+# intersection=
+# shape: (7, 5)
+# ┌────────┬─────────┬──────────────┬──────────────┬───────────┐
+# │ column ┆ n_diffs ┆ class_a      ┆ class_b      ┆ diff_rows │
+# │ ---    ┆ ---     ┆ ---          ┆ ---          ┆ ---       │
+# │ str    ┆ i64     ┆ str          ┆ str          ┆ object    │
+# ╞════════╪═════════╪══════════════╪══════════════╪═══════════╡
+# │ mpg    ┆ 2       ┆ DECIMAL(3,1) ┆ DECIMAL(3,1) ┆ <2 rows>  │
+# │ cyl    ┆ 0       ┆ INTEGER      ┆ INTEGER      ┆ <0 rows>  │
+# │ disp   ┆ 2       ┆ INTEGER      ┆ INTEGER      ┆ <2 rows>  │
+# │ hp     ┆ 0       ┆ INTEGER      ┆ INTEGER      ┆ <0 rows>  │
+# │ drat   ┆ 0       ┆ DECIMAL(3,2) ┆ DECIMAL(3,2) ┆ <0 rows>  │
+# │ wt     ┆ 0       ┆ DECIMAL(3,2) ┆ DECIMAL(3,2) ┆ <0 rows>  │
+# │ vs     ┆ 0       ┆ INTEGER      ┆ INTEGER      ┆ <0 rows>  │
+# └────────┴─────────┴──────────────┴──────────────┴───────────┘
+# unmatched_cols=
+# shape: (2, 3)
+# ┌───────┬────────┬─────────┐
+# │ table ┆ column ┆ class   │
+# │ ---   ┆ ---    ┆ ---     │
+# │ str   ┆ str    ┆ str     │
+# ╞═══════╪════════╪═════════╡
+# │ a     ┆ am     ┆ INTEGER │
+# │ b     ┆ carb   ┆ INTEGER │
+# └───────┴────────┴─────────┘
+# unmatched_rows=
+# shape: (3, 2)
+# ┌───────┬────────────┐
+# │ table ┆ car        │
+# │ ---   ┆ ---        │
+# │ str   ┆ str        │
+# ╞═══════╪════════════╡
+# │ a     ┆ Mazda RX4  │
+# │ b     ┆ Merc 280C  │
+# │ b     ┆ Merc 450SE │
+# └───────┴────────────┘
+# )
 
 comparison.value_diffs("disp")
-#    disp_a  disp_b           car
-# 0     109     108     Datsun 710
-# 1     259     258  Hornet 4 Drive
+# shape: (2, 3)
+# ┌────────┬────────┬────────────────┐
+# │ disp_a ┆ disp_b ┆ car            │
+# │ ---    ┆ ---    ┆ ---            │
+# │ i64    ┆ i64    ┆ str            │
+# ╞════════╪════════╪════════════════╡
+# │ 259    ┆ 258    ┆ Hornet 4 Drive │
+# │ 109    ┆ 108    ┆ Datsun 710     │
+# └────────┴────────┴────────────────┘
 
 comparison.value_diffs_stacked(["mpg", "disp"])
-#   column  val_a  val_b           car
-# 0    mpg   14.3   16.3     Duster 360
-# 1    mpg   24.4   26.4      Merc 240D
-# 2   disp  109.0  108.0     Datsun 710
-# 3   disp  259.0  258.0  Hornet 4 Drive
+# shape: (4, 4)
+# ┌────────┬───────┬───────┬────────────────┐
+# │ column ┆ val_a ┆ val_b ┆ car            │
+# │ ---    ┆ ---   ┆ ---   ┆ ---            │
+# │ str    ┆ str   ┆ str   ┆ str            │
+# ╞════════╪═══════╪═══════╪════════════════╡
+# │ mpg    ┆ 24.4  ┆ 26.4  ┆ Merc 240D      │
+# │ mpg    ┆ 14.3  ┆ 16.3  ┆ Duster 360     │
+# │ disp   ┆ 109   ┆ 108   ┆ Datsun 710     │
+# │ disp   ┆ 259   ┆ 258   ┆ Hornet 4 Drive │
+# └────────┴───────┴───────┴────────────────┘
 
 comparison.weave_diffs_wide(["mpg", "disp"])
-#              car  mpg_a  mpg_b  cyl  disp_a  disp_b   hp  drat    wt  vs
-# 0  Hornet 4 Drive   21.4   21.4  6.0     259     258  110  3.08  3.22   1
-# 1      Duster 360   14.3   16.3  8.0     360     360  245  3.21  3.57   0
-# 2      Datsun 710   22.8   22.8  NaN     109     108   93  3.85  2.32   1
-# 3      Merc 240D   24.4   26.4  4.0     147     147   62  3.69  3.19   1
+# shape: (4, 10)
+# ┌────────────┬──────────────┬──────────────┬──────┬───┬─────┬──────────────┬──────────────┬─────┐
+# │ car        ┆ mpg_a        ┆ mpg_b        ┆ cyl  ┆ … ┆ hp  ┆ drat         ┆ wt           ┆ vs  │
+# │ ---        ┆ ---          ┆ ---          ┆ ---  ┆   ┆ --- ┆ ---          ┆ ---          ┆ --- │
+# │ str        ┆ decimal[*,1] ┆ decimal[*,1] ┆ i64  ┆   ┆ i64 ┆ decimal[*,2] ┆ decimal[*,2] ┆ i64 │
+# ╞════════════╪══════════════╪══════════════╪══════╪═══╪═════╪══════════════╪══════════════╪═════╡
+# │ Merc 240D  ┆ 24.4         ┆ 26.4         ┆ 4    ┆ … ┆ 62  ┆ 3.69         ┆ 3.19         ┆ 1   │
+# │ Datsun 710 ┆ 22.8         ┆ 22.8         ┆ null ┆ … ┆ 93  ┆ 3.85         ┆ 2.32         ┆ 1   │
+# │ Duster 360 ┆ 14.3         ┆ 16.3         ┆ 8    ┆ … ┆ 245 ┆ 3.21         ┆ 3.57         ┆ 0   │
+# │ Hornet 4   ┆ 21.4         ┆ 21.4         ┆ 6    ┆ … ┆ 110 ┆ 3.08         ┆ 3.22         ┆ 1   │
+# │ Drive      ┆              ┆              ┆      ┆   ┆     ┆              ┆              ┆     │
+# └────────────┴──────────────┴──────────────┴──────┴───┴─────┴──────────────┴──────────────┴─────┘
 
-comparison.weave_diffs_long(["disp"])
-#   table             car   mpg  cyl  disp   hp  drat   wt  vs
-# 0     a  Hornet 4 Drive  21.4  6.0   259  110  3.08  3.22   1
-# 1     a      Datsun 710  22.8  NaN   109   93  3.85  2.32   1
-# 2     b      Datsun 710  22.8  NaN   108   93  3.85  2.32   1
-# 3     b  Hornet 4 Drive  21.4  6.0   258  110  3.08  3.22   1
+comparison.weave_diffs_long("disp")
+# shape: (4, 9)
+# ┌───────┬────────────────┬──────────────┬──────┬───┬─────┬──────────────┬──────────────┬─────┐
+# │ table ┆ car            ┆ mpg          ┆ cyl  ┆ … ┆ hp  ┆ drat         ┆ wt           ┆ vs  │
+# │ ---   ┆ ---            ┆ ---          ┆ ---  ┆   ┆ --- ┆ ---          ┆ ---          ┆ --- │
+# │ str   ┆ str            ┆ decimal[*,1] ┆ i64  ┆   ┆ i64 ┆ decimal[*,2] ┆ decimal[*,2] ┆ i64 │
+# ╞═══════╪════════════════╪══════════════╪══════╪═══╪═════╪══════════════╪══════════════╪═════╡
+# │ a     ┆ Hornet 4 Drive ┆ 21.4         ┆ 6    ┆ … ┆ 110 ┆ 3.08         ┆ 3.22         ┆ 1   │
+# │ a     ┆ Datsun 710     ┆ 22.8         ┆ null ┆ … ┆ 93  ┆ 3.85         ┆ 2.32         ┆ 1   │
+# │ b     ┆ Hornet 4 Drive ┆ 21.4         ┆ 6    ┆ … ┆ 110 ┆ 3.08         ┆ 3.22         ┆ 1   │
+# │ b     ┆ Datsun 710     ┆ 22.8         ┆ null ┆ … ┆ 93  ┆ 3.85         ┆ 2.32         ┆ 1   │
+# └───────┴────────────────┴──────────────┴──────┴───┴─────┴──────────────┴──────────────┴─────┘
 
-comparison.slice_diffs("a", ["mpg"])
-#          car   mpg
-# 0  Merc 240D  24.4
-# 1  Duster 360 14.3
+comparison.slice_diffs("a", "mpg")
+# shape: (2, 2)
+# ┌────────────┬──────────────┐
+# │ car        ┆ mpg          │
+# │ ---        ┆ ---          │
+# │ str        ┆ decimal[*,1] │
+# ╞════════════╪══════════════╡
+# │ Duster 360 ┆ 14.3         │
+# │ Merc 240D  ┆ 24.4         │
+# └────────────┴──────────────┘
 
 comparison.slice_unmatched("b")
-#          car    wt   mpg   hp  cyl  disp  carb  drat  vs
-# 0  Merc 450SE  4.07  16.4  180    8   276     3  3.07   0
-# 1   Merc 280C  3.44  17.8  123    6   168     4  3.92   1
+# shape: (2, 9)
+# ┌────────────┬──────────────┬──────────────┬─────┬───┬──────┬──────┬──────────────┬─────┐
+# │ car        ┆ wt           ┆ mpg          ┆ hp  ┆ … ┆ disp ┆ carb ┆ drat         ┆ vs  │
+# │ ---        ┆ ---          ┆ ---          ┆ --- ┆   ┆ ---  ┆ ---  ┆ ---          ┆ --- │
+# │ str        ┆ decimal[*,2] ┆ decimal[*,1] ┆ i64 ┆   ┆ i64  ┆ i64  ┆ decimal[*,2] ┆ i64 │
+# ╞════════════╪══════════════╪══════════════╪═════╪═══╪══════╪══════╪══════════════╪═════╡
+# │ Merc 450SE ┆ 4.07         ┆ 16.4         ┆ 180 ┆ … ┆ 276  ┆ 3    ┆ 3.07         ┆ 0   │
+# │ Merc 280C  ┆ 3.44         ┆ 17.8         ┆ 123 ┆ … ┆ 168  ┆ 4    ┆ 3.92         ┆ 1   │
+# └────────────┴──────────────┴──────────────┴─────┴───┴──────┴──────┴──────────────┴─────┘
 
 comparison.slice_unmatched_both()
-#   table        car   mpg  cyl  disp   hp  drat   wt  vs
-# 0     a  Mazda RX4  21.0  6.0   160  110  3.90  2.62   0
-# 1     b  Merc 280C  17.8  6.0   168  123  3.92  3.44   1
-# 2     b  Merc 450SE 16.4  8.0   276  180  3.07  4.07   0
+# shape: (3, 9)
+# ┌───────┬────────────┬──────────────┬─────┬───┬─────┬──────────────┬──────────────┬─────┐
+# │ table ┆ car        ┆ mpg          ┆ cyl ┆ … ┆ hp  ┆ drat         ┆ wt           ┆ vs  │
+# │ ---   ┆ ---        ┆ ---          ┆ --- ┆   ┆ --- ┆ ---          ┆ ---          ┆ --- │
+# │ str   ┆ str        ┆ decimal[*,1] ┆ i64 ┆   ┆ i64 ┆ decimal[*,2] ┆ decimal[*,2] ┆ i64 │
+# ╞═══════╪════════════╪══════════════╪═════╪═══╪═════╪══════════════╪══════════════╪═════╡
+# │ a     ┆ Mazda RX4  ┆ 21.0         ┆ 6   ┆ … ┆ 110 ┆ 3.90         ┆ 2.62         ┆ 0   │
+# │ b     ┆ Merc 280C  ┆ 17.8         ┆ 6   ┆ … ┆ 123 ┆ 3.92         ┆ 3.44         ┆ 1   │
+# │ b     ┆ Merc 450SE ┆ 16.4         ┆ 8   ┆ … ┆ 180 ┆ 3.07         ┆ 4.07         ┆ 0   │
+# └───────┴────────────┴──────────────┴─────┴───┴─────┴──────────────┴──────────────┴─────┘
 ```
 
 ## Notes
