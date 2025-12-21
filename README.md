@@ -4,25 +4,27 @@
 # versus (Python)
 
 `versus` is a Python package that mirrors the ergonomics of the original
-R library while pushing all heavy work into DuckDB. It compares two
-relations (tables, views, or subqueries) and exposes a `Comparison`
-object that summarises where the data diverges. The object is
-lightweight: it only stores metadata and key locations so that every
-follow-up call reuses the original DuckDB relations without copying the
-entire dataset into Python.
+R library while pushing all heavy work into DuckDB. Use it when you want
+to compare two relations (tables, views, or subqueries) without dragging
+the data back into Python. Call `compare()`, and you immediately get a
+`Comparison` object that tells you where the datasets disagree while
+keeping the inputs inside DuckDB for follow-up analysis.
 
 ## Installation
 
-This repository is already a Python project. Install it into your
-environment (preferably a virtual environment) with:
+Clone the repo (or add it as a submodule) and install it into your
+environment—ideally a virtual environment—using:
 
 ```bash
 pip install -e .
 ```
 
-This will pull in the only runtime dependencies, DuckDB and Polars (0.18+).
+That command installs the only runtime dependencies, DuckDB and Polars
+(0.18+).
 
 ## Quick start
+
+Here is a small interactive session you can paste into a Python REPL:
 
 ```python
 import duckdb
@@ -179,25 +181,23 @@ comparison.slice_unmatched_both()
 
 ## Notes
 
-- `compare()` accepts DuckDB relations or SQL strings/views. When you
-  pass relations created on a custom DuckDB connection you must supply
-  the `connection=` argument so that the comparison can run SQL against
-  the same database.
-- Columns used in `by` must uniquely identify rows in each table. If a
-  duplicate is found the function raises a `ComparisonError` explaining
-  which `by` values appear multiple times.
-- Only the metadata and row identifiers needed for later operations are
-  stored inside the `Comparison` object. Fetching the actual differing
-  rows always happens lazily inside DuckDB, so the workflow remains fast
-  even for large tables.
-- Inputs stay lazy too: `compare()` never pulls the source relations into
-  Python objects before producing the final comparison representation,
-  and the helper methods return Polars data frames.
-- For quick experimentation you can use the built-in example tables
-  `versus.examples.example_cars_a()` and `versus.examples.example_cars_b()`
-  as shown above.
+- Call `compare()` with DuckDB relations or SQL strings/views. If your
+  relations live on a custom DuckDB connection, pass it via
+  `connection=` so the comparison queries use the same database.
+- The `by` columns must uniquely identify rows in each table. When they
+  do not, `compare()` raises `ComparisonError` and tells you which key
+  values repeat.
+- The resulting `Comparison` object stores only metadata and row
+  identifiers. Whenever you ask for actual rows (`value_diffs`, slices,
+  weave helpers, etc.), the library runs SQL in DuckDB and returns the
+  results as Polars DataFrames, so you can inspect huge tables without
+  blowing up Python memory.
+- Inputs stay lazy as well: `compare()` never materialises the full
+  source tables in Python.
+- Want to kick the tyres quickly? The `versus.examples.example_cars_*`
+  helpers used in the quick start are available for ad-hoc testing.
 
-The package currently exposes the same high-level helpers as the R
-version (`value_diffs*`, `weave_diffs*`, `slice_*`) so it should feel
-familiar if you already used the original library.
+The package exposes the same high-level helpers as the R version
+(`value_diffs*`, `weave_diffs*`, `slice_*`), so if you already know the
+R API you can continue working the same way here.
 # pyversus

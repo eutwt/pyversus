@@ -39,8 +39,8 @@ class Comparison:
         unmatched_rows: pl.DataFrame,
         common_columns: List[str],
         table_columns: Mapping[str, List[str]],
-        diff_rows: Mapping[str, "LazyRows"],
-        unmatched_views: Mapping[str, str],
+        diff_key_tables: Mapping[str, "DiffKeyTable"],
+        unmatched_tables: Mapping[str, str],
         temp_tables: Sequence[str],
     ) -> None:
         self.connection = connection
@@ -55,8 +55,9 @@ class Comparison:
         self.unmatched_rows = unmatched_rows
         self.common_columns = common_columns
         self.table_columns = table_columns
-        self.diff_rows = diff_rows
-        self._unmatched_views = unmatched_views
+        self.diff_key_tables = diff_key_tables
+        self.diff_rows = diff_key_tables  # backwards-compatible alias
+        self._unmatched_tables = unmatched_tables
         self._temp_tables = list(temp_tables)
         if intersection.height > 0:
             col_names = intersection["column"].to_list()
@@ -101,14 +102,14 @@ class Comparison:
     def value_diffs(self, column: str) -> pl.DataFrame:
         target_col = _normalize_single_column(column)
         _ensure_column_allowed(self, target_col, "value_diffs")
-        lazy_rows = self.diff_rows.get(target_col)
-        view = lazy_rows.view if lazy_rows is not None else None
+        diff_keys = self.diff_key_tables.get(target_col)
+        key_table = diff_keys.table if diff_keys is not None else None
         col_names = [
             f"{target_col}_{self.table_id[0]}",
             f"{target_col}_{self.table_id[1]}",
             *self.by_columns,
         ]
-        if view is None:
+        if key_table is None:
             return _empty_df(col_names)
 
         table_a, table_b = self.table_id
@@ -121,7 +122,7 @@ class Comparison:
         join_b = _join_condition(self.by_columns, "keys", "b")
         sql = f"""
         SELECT DISTINCT {", ".join(select_cols)}
-        FROM {_ident(view)} AS keys
+        FROM {_ident(key_table)} AS keys
         JOIN {_ident(self._handles[table_a].name)} AS a
           ON {join_a}
         JOIN {_ident(self._handles[table_b].name)} AS b
@@ -176,10 +177,10 @@ class Comparison:
 
     def slice_unmatched(self, table: str) -> pl.DataFrame:
         table_name = _normalize_table_arg(self, table)
-        view = self._unmatched_views.get(table_name)
-        if view is None:
+        table_ref = self._unmatched_tables.get(table_name)
+        if table_ref is None:
             return _empty_df(self.table_columns[table_name])
-        key_sql = f"SELECT * FROM {_ident(view)}"
+        key_sql = f"SELECT * FROM {_ident(table_ref)}"
         return _fetch_rows_by_keys(self, table_name, key_sql, self.table_columns[table_name])
 
     def slice_unmatched_both(self) -> pl.DataFrame:
@@ -287,9 +288,13 @@ def compare(
     common_all = [col for col in handles[clean_ids[0]].columns if col in handles[clean_ids[1]].columns]
     value_columns = [col for col in common_all if col not in by_columns]
     unmatched_cols = _build_unmatched_cols(handles, clean_ids)
-    diff_tables = _compute_diff_rows(conn, handles, clean_ids, by_columns, value_columns, allow_both_na)
-    lazy_diff_rows = {col: LazyRows(conn, diff_tables.get(col)) for col in value_columns}
-    intersection = _build_intersection_frame(value_columns, handles, clean_ids, lazy_diff_rows, conn)
+    diff_tables = _compute_diff_key_tables(
+        conn, handles, clean_ids, by_columns, value_columns, allow_both_na
+    )
+    diff_key_handles = {col: DiffKeyTable(conn, diff_tables.get(col)) for col in value_columns}
+    intersection = _build_intersection_frame(
+        value_columns, handles, clean_ids, diff_key_handles, conn
+    )
     unmatched_rows_df, unmatched_tables = _compute_unmatched_rows(conn, handles, clean_ids, by_columns)
     temp_tables = list(diff_tables.values()) + list(unmatched_tables.values())
 
@@ -306,8 +311,8 @@ def compare(
         unmatched_rows=unmatched_rows_df,
         common_columns=value_columns,
         table_columns={identifier: handle.columns[:] for identifier, handle in handles.items()},
-        diff_rows=lazy_diff_rows,
-        unmatched_views=unmatched_tables,
+        diff_key_tables=diff_key_handles,
+        unmatched_tables=unmatched_tables,
         temp_tables=temp_tables,
     )
 
@@ -500,21 +505,21 @@ def _build_intersection_frame(
     value_columns: List[str],
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
-    diff_rows: Mapping[str, "LazyRows"],
+    diff_key_tables: Mapping[str, "DiffKeyTable"],
     conn: duckdb.DuckDBPyConnection,
 ) -> pl.DataFrame:
     rows = []
     first, second = table_id
     for column in value_columns:
-        lazy_rows = diff_rows.get(column)
-        view = lazy_rows.view if lazy_rows is not None else None
+        diff_keys = diff_key_tables.get(column)
+        table = diff_keys.table if diff_keys is not None else None
         rows.append(
             {
                 "column": column,
-                "n_diffs": _table_count(conn, view),
+                "n_diffs": _table_count(conn, table),
                 f"class_{first}": handles[first].types.get(column, ""),
                 f"class_{second}": handles[second].types.get(column, ""),
-                "diff_rows": lazy_rows,
+                "diff_rows": diff_keys,
             }
         )
     if rows:
@@ -522,7 +527,7 @@ def _build_intersection_frame(
     return _empty_df(["column", "n_diffs", f"class_{first}", f"class_{second}", "diff_rows"])
 
 
-def _compute_diff_rows(
+def _compute_diff_key_tables(
     conn: duckdb.DuckDBPyConnection,
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
@@ -530,15 +535,15 @@ def _compute_diff_rows(
     value_columns: List[str],
     allow_both_na: bool,
 ) -> Dict[str, str]:
-    diff_views: Dict[str, str] = {}
+    diff_tables: Dict[str, str] = {}
     join_clause = _join_clause(handles, table_id, by_columns)
     select_by = ", ".join(f"{_col('a', col)} AS {_ident(col)}" for col in by_columns)
     for column in value_columns:
         predicate = _diff_predicate(column, allow_both_na, "a", "b")
         sql = f"SELECT {select_by} {join_clause} WHERE {predicate}"
-        view = _materialize_temp_table(conn, sql)
-        diff_views[column] = view
-    return diff_views
+        table_name = _materialize_temp_table(conn, sql)
+        diff_tables[column] = table_name
+    return diff_tables
 
 
 def _compute_unmatched_rows(
@@ -547,7 +552,7 @@ def _compute_unmatched_rows(
     table_id: Tuple[str, str],
     by_columns: List[str],
 ) -> Tuple[pl.DataFrame, Dict[str, str]]:
-    views: Dict[str, str] = {}
+    tables: Dict[str, str] = {}
     summary_parts = []
     for identifier in table_id:
         other = table_id[1] if identifier == table_id[0] else table_id[0]
@@ -564,25 +569,25 @@ def _compute_unmatched_rows(
             WHERE {condition}
         )
         """
-        view = _materialize_temp_table(conn, sql)
-        views[identifier] = view
-        summary_parts.append(f"SELECT '{identifier}' AS table, * FROM {_ident(view)}")
+        table_name = _materialize_temp_table(conn, sql)
+        tables[identifier] = table_name
+        summary_parts.append(f"SELECT '{identifier}' AS table, * FROM {_ident(table_name)}")
     if summary_parts:
         summary_sql = " UNION ALL ".join(summary_parts)
         summary_df = _run_query(conn, summary_sql)
     else:
         summary_df = _empty_df(["table", *by_columns])
-    return summary_df, views
+    return summary_df, tables
 
 
 def _collect_diff_keys(comparison: Comparison, columns: Sequence[str]) -> Optional[str]:
     selects = []
     for column in columns:
-        lazy_rows = comparison.diff_rows.get(column)
-        view = lazy_rows.view if lazy_rows is not None else None
-        if view is None:
+        diff_keys = comparison.diff_key_tables.get(column)
+        table = diff_keys.table if diff_keys is not None else None
+        if table is None:
             continue
-        selects.append(f"SELECT * FROM {_ident(view)}")
+        selects.append(f"SELECT * FROM {_ident(table)}")
     if not selects:
         return None
     if len(selects) == 1:
@@ -726,17 +731,21 @@ def _materialize_temp_table(conn: duckdb.DuckDBPyConnection, sql: str) -> str:
 
 
 @dataclass
-class LazyRows:
+class DiffKeyTable:
     connection: duckdb.DuckDBPyConnection
-    view: Optional[str]
+    table: Optional[str]
 
     def df(self) -> pl.DataFrame:
-        if self.view is None:
+        if self.table is None:
             return pl.DataFrame()
-        return _run_query(self.connection, f"SELECT * FROM {_ident(self.view)}")
+        return _run_query(self.connection, f"SELECT * FROM {_ident(self.table)}")
 
     def __repr__(self) -> str:
-        if self.view is None:
+        if self.table is None:
             return "<0 rows>"
-        count = self.connection.sql(f"SELECT COUNT(*) FROM {_ident(self.view)}").fetchone()[0]
+        count = self.connection.sql(f"SELECT COUNT(*) FROM {_ident(self.table)}").fetchone()[0]
         return f"<{count} rows>"
+
+
+# Backwards-compatibility alias; prefer DiffKeyTable going forward.
+LazyRows = DiffKeyTable
