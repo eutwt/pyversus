@@ -20,8 +20,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
-        python-version: ["3.7", "3.11"]
+        include:
+          - os: ubuntu-latest
+            python-version: "3.7"
+            pyarrow-constraint: "<10"
+          - os: ubuntu-latest
+            python-version: "3.11"
+            pyarrow-constraint: ""
+          - os: windows-latest
+            python-version: "3.7"
+            pyarrow-constraint: "<10"
+          - os: windows-latest
+            python-version: "3.11"
+            pyarrow-constraint: ""
 
     steps:
       - name: Checkout
@@ -37,6 +48,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install pytest
+      - name: Install PyArrow (pinned)
+        if: matrix.pyarrow-constraint != ''
+        run: python -m pip install "pyarrow${{ matrix.pyarrow-constraint }}"
+      - name: Install PyArrow (latest)
+        if: matrix.pyarrow-constraint == ''
+        run: python -m pip install pyarrow
 
       - name: Run tests
         run: pytest
