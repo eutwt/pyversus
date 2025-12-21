@@ -58,19 +58,34 @@ comparison.value_diffs_stacked(["mpg", "disp"])
 # 3   disp  259.0  258.0  Hornet 4 Drive
 
 comparison.weave_diffs_wide(["mpg", "disp"])
-# merges the rows with differences and keeps both versions side-by-side
+#              car  mpg_a  mpg_b  cyl  disp_a  disp_b   hp  drat    wt  vs
+# 0  Hornet 4 Drive   21.4   21.4  6.0     259     258  110  3.08  3.22   1
+# 1      Duster 360   14.3   16.3  8.0     360     360  245  3.21  3.57   0
+# 2      Datsun 710   22.8   22.8  NaN     109     108   93  3.85  2.32   1
+# 3      Merc 240D   24.4   26.4  4.0     147     147   62  3.69  3.19   1
 
 comparison.weave_diffs_long(["disp"])
-# interleaves the rows from each table so you can review them sequentially
+#   table             car   mpg  cyl  disp   hp  drat   wt  vs
+# 0     a  Hornet 4 Drive  21.4  6.0   259  110  3.08  3.22   1
+# 1     a      Datsun 710  22.8  NaN   109   93  3.85  2.32   1
+# 2     b      Datsun 710  22.8  NaN   108   93  3.85  2.32   1
+# 3     b  Hornet 4 Drive  21.4  6.0   258  110  3.08  3.22   1
 
 comparison.slice_diffs("a", ["mpg"])
-# returns the subset of rows from table "a" that have mpg differences
+#          car   mpg
+# 0  Merc 240D  24.4
+# 1  Duster 360 14.3
 
 comparison.slice_unmatched("b")
-# the rows present in table "b" but not in table "a"
+#          car    wt   mpg   hp  cyl  disp  carb  drat  vs
+# 0  Merc 450SE  4.07  16.4  180    8   276     3  3.07   0
+# 1   Merc 280C  3.44  17.8  123    6   168     4  3.92   1
 
 comparison.slice_unmatched_both()
-# stacks the unmatched rows from both tables with a `table` column
+#   table        car   mpg  cyl  disp   hp  drat   wt  vs
+# 0     a  Mazda RX4  21.0  6.0   160  110  3.90  2.62   0
+# 1     b  Merc 280C  17.8  6.0   168  123  3.92  3.44   1
+# 2     b  Merc 450SE 16.4  8.0   276  180  3.07  4.07   0
 ```
 
 ## Notes
