@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "versus"
+version = "0.1.0"
+description = "Compare two relations quickly using DuckDB"
+readme = "README.md"
+authors = [{name = "versus authors"}]
+license = {text = "MIT"}
+requires-python = ">=3.7"
+dependencies = [
+  "duckdb>=1.0.0",
+  "polars>=0.18"
+]
+
+[project.urls]
+Homepage = "https://github.com/eutwt/versus"
+
+[tool.setuptools]
+package-dir = {"" = "python"}
+
+[tool.setuptools.packages.find]
+where = ["python"]
