@@ -12,7 +12,7 @@ differences.
 ## Installation
 
 Clone the repo (or add it as a submodule) and install it into your
-environment—ideally a virtual environment—using:
+environment using:
 
 ```bash
 pip install -e .
