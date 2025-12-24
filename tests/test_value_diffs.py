@@ -59,6 +59,20 @@ def test_value_diffs_stacked_empty_when_no_differences(comparison_with_diffs):
     assert rel_height(out) == 0
 
 
+def test_value_diffs_stacked_errors_when_no_value_columns():
+    con = duckdb.connect()
+    comp = compare(
+        con.sql("SELECT * FROM (VALUES (1, 'x')) AS t(id, tag)"),
+        con.sql("SELECT * FROM (VALUES (1, 'x')) AS t(id, tag)"),
+        by=["id", "tag"],
+        connection=con,
+    )
+    with pytest.raises(ComparisonError):
+        comp.value_diffs_stacked()
+    comp.close()
+    con.close()
+
+
 def test_value_diffs_errors_on_unknown_column(comparison_with_diffs):
     with pytest.raises(ComparisonError):
         comparison_with_diffs.value_diffs("missing")

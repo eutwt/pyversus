@@ -118,22 +118,12 @@ class Comparison:
         return _run_sql(self.connection, sql)
 
     def value_diffs_stacked(self, columns: Optional[Sequence[str]] = None) -> duckdb.DuckDBPyRelation:
-        selected = _resolve_column_list(self, columns)
-        selects: List[str] = []
-        schema_rel: Optional[duckdb.DuckDBPyRelation] = None
-        for column in selected:
-            select_sql = _stack_value_diffs_sql(self, column, self.diff_key_tables[column].table)
-            if schema_rel is None:
-                schema_rel = _run_sql(self.connection, f"SELECT * FROM ({select_sql}) AS base LIMIT 0")
-            if self._diff_lookup.get(column, 0) == 0:
-                continue
-            selects.append(select_sql)
-        if selects:
-            sql = " UNION ALL ".join(selects)
-            return _run_sql(self.connection, sql)
-        if schema_rel is not None:
-            return schema_rel
-        raise ComparisonError("No columns available to stack")
+        selected = _resolve_column_list(self, columns, allow_empty=False)
+        selects = [
+            _stack_value_diffs_sql(self, column, self.diff_key_tables[column].table) for column in selected
+        ]
+        sql = " UNION ALL ".join(selects)
+        return _run_sql(self.connection, sql)
 
     def slice_diffs(
         self,
@@ -339,16 +329,25 @@ def _normalize_single_column(column: str) -> str:
     raise ComparisonError("`column` must be a column name")
 
 
-def _resolve_column_list(comparison: Comparison, columns: Optional[Sequence[str]]) -> List[str]:
+def _resolve_column_list(
+    comparison: Comparison,
+    columns: Optional[Sequence[str]],
+    *,
+    allow_empty: bool = True,
+) -> List[str]:
     if columns is None:
-        return comparison.common_columns[:]
-    cols = _normalize_column_list(columns, "column", allow_empty=True)
-    if not cols:
+        parsed = comparison.common_columns[:]
+    else:
+        cols = _normalize_column_list(columns, "column", allow_empty=True)
+        if not cols:
+            raise ComparisonError("`columns` must select at least one column")
+        missing = [col for col in cols if col not in comparison.common_columns]
+        if missing:
+            raise ComparisonError(f"Columns not part of the comparison: {', '.join(missing)}")
+        parsed = cols
+    if not parsed and not allow_empty:
         raise ComparisonError("`columns` must select at least one column")
-    missing = [col for col in cols if col not in comparison.common_columns]
-    if missing:
-        raise ComparisonError(f"Columns not part of the comparison: {', '.join(missing)}")
-    return cols
+    return parsed
 
 
 def _ensure_column_allowed(comparison: Comparison, column: str, func: str) -> None:
