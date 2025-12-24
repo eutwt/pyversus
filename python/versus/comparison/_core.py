@@ -49,16 +49,24 @@ def _format_summary_table(
         segments = [("─" * (width + 2)) for width in widths]
         return left + sep.join(segments) + right
 
-    def row_line(values: Tuple[str, ...]) -> str:
+    def format_cell(text: str, width: int, align: str) -> str:
+        if align == "center":
+            padding = max(width - len(text), 0)
+            left = padding // 2
+            right = padding - left
+            return f"{' ' * left}{text}{' ' * right}"
+        return text.ljust(width)
+
+    def row_line(values: Tuple[str, ...], align: str = "left") -> str:
         padded = []
         for idx, value in enumerate(values):
-            padded.append(f" {value.ljust(widths[idx])} ")
+            padded.append(f" {format_cell(value, widths[idx], align)} ")
         return "│" + "│".join(padded) + "│"
 
     lines = [
         border("┌", "┬", "┐"),
-        row_line(columns),
-        row_line(types),
+        row_line(columns, align="center"),
+        row_line(types, align="center"),
         border("├", "┼", "┤"),
     ]
     for row in text_rows:
