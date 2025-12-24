@@ -196,7 +196,7 @@ comparison.summary()
   cost of recomputing them every time you print).
 - Inputs stay lazy as well: `compare()` never materialises the full
   source tables in Python.
-- Want to kick the tyres quickly? The `versus.examples.example_cars_*`
+- Want to kick the tires quickly? The `versus.examples.example_cars_*`
   helpers used in the quick start are available for ad-hoc testing.
 
 The package exposes the same high-level helpers as the R version
