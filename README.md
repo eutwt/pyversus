@@ -35,13 +35,13 @@ rel_b = examples.example_cars_b(con)
 comparison = compare(rel_a, rel_b, by="car", connection=con)
 comparison
 # Comparison(tables=
-# ┌─────────┬───────────────────────────────────┬───────┬───────┐
-# │  table  │              source               │ nrows │ ncols │
-# │ varchar │              varchar              │ int64 │ int64 │
-# ├─────────┼───────────────────────────────────┼───────┼───────┤
-# │ a       │ unnamed_relation_c6b2c207deb2a426 │     9 │     9 │
-# │ b       │ unnamed_relation_ae8e7624aca53328 │    10 │     9 │
-# └─────────┴───────────────────────────────────┴───────┴───────┘
+# ┌─────────┬───────┬───────┐
+# │  table  │ nrows │ ncols │
+# │ varchar │ int64 │ int64 │
+# ├─────────┼───────┼───────┤
+# │ a       │     9 │     9 │
+# │ b       │    10 │     9 │
+# └─────────┴───────┴───────┘
 # 
 # by=
 # ┌─────────┬─────────┬─────────┐
@@ -158,6 +158,17 @@ comparison.slice_unmatched_both()
 # │ b       │ Merc 280C  │         17.8 │     6 │   168 │   123 │         3.92 │         3.44 │     1 │
 # │ b       │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │
 # └─────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
+
+comparison.summary()
+# ┌────────────────┬─────────┐
+# │   difference   │  found  │
+# │    varchar     │ boolean │
+# ├────────────────┼─────────┤
+# │ value_diffs    │ true    │
+# │ unmatched_cols │ true    │
+# │ unmatched_rows │ true    │
+# │ class_diffs    │ false   │
+# └────────────────┴─────────┘
 ```
 
 ## Notes
@@ -173,13 +184,16 @@ comparison.slice_unmatched_both()
   weave helpers, etc.), the library runs SQL in DuckDB and returns the
   results as DuckDB relations, so you can inspect huge tables without
   blowing up Python memory.
+- Need insight into the inputs? `comparison.handles` exposes a
+  read-only mapping from table id (e.g., `"a"`, `"b"`) to the registered
+  DuckDB view, including the column/type metadata.
 - By default `compare()` materializes the summary relations used in the
   repr (`tables`, `by`, `intersection`, `unmatched_*`). Pass
   `materialize=False` if you prefer to keep those lazy as well (at the
   cost of recomputing them every time you print).
 - Inputs stay lazy as well: `compare()` never materialises the full
   source tables in Python.
-- Want to kick the tyres quickly? The `versus.examples.example_cars_*`
+- Want to kick the tires quickly? The `versus.examples.example_cars_*`
   helpers used in the quick start are available for ad-hoc testing.
 
 The package exposes the same high-level helpers as the R version

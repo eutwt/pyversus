@@ -45,6 +45,7 @@ def _collect_blocks() -> str:
             ('comparison.slice_unmatched("b")', comp.slice_unmatched("b")),
             ("comparison.slice_unmatched_both()", comp.slice_unmatched_both()),
         ]
+        sections.append(("comparison.summary()", comp.summary()))
         parts = []
         for label, rel in sections:
             parts.append(_format_block(label, rel))
@@ -69,7 +70,9 @@ def main() -> None:
         start = text.index(start_marker)
         end = text.index(end_marker)
     except ValueError as exc:
-        raise SystemExit("README markers were not found; manual update required.") from exc
+        raise SystemExit(
+            "README markers were not found; manual update required."
+        ) from exc
     block = _collect_blocks()
     readme.write_text(text[:start] + block + text[end:])
 

@@ -36,9 +36,7 @@ def slice_diffs(
     return _fetch_rows_by_keys(comparison, table_name, key_sql, table_columns)
 
 
-def slice_unmatched(
-    comparison: "Comparison", table: str
-) -> duckdb.DuckDBPyRelation:
+def slice_unmatched(comparison: "Comparison", table: str) -> duckdb.DuckDBPyRelation:
     table_name = _normalize_table_arg(comparison, table)
     table_ref = comparison._unmatched_tables[table_name]
     key_sql = f"SELECT * FROM {_ident(table_ref)}"

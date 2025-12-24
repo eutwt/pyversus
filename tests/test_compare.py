@@ -79,6 +79,17 @@ def test_compare_summary():
     assert value_row["n_diffs"] == 1
 
 
+def test_handles_property_exposes_table_metadata():
+    con, rel_a, rel_b = build_connection()
+    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    handles = comp.handles
+    assert "a" in handles and "b" in handles
+    assert "id" in handles["a"].columns
+    with pytest.raises(TypeError):
+        handles["extra"] = None  # type: ignore[index]
+    comp.close()
+
+
 def test_value_diffs_and_slice():
     con, rel_a, rel_b = build_connection()
     comp = compare(rel_a, rel_b, by=["id"], connection=con)
@@ -101,6 +112,52 @@ def test_slice_unmatched():
     unmatched = comp.slice_unmatched("a")
     assert rel_first(unmatched, "id") == 1
     comp.close()
+
+
+def test_summary_reports_difference_categories():
+    con = duckdb.connect()
+    rel_a = con.sql(
+        """
+        SELECT * FROM (
+            VALUES
+                (1, 10, CAST(1.5 AS DOUBLE), 'only_a'),
+                (2, 20, CAST(2.5 AS DOUBLE), 'only_a')
+        ) AS t(id, value, note, extra)
+        """
+    )
+    rel_b = con.sql(
+        """
+        SELECT * FROM (
+            VALUES
+                (1, 99, 1),
+                (3, 30, 2)
+        ) AS t(id, value, note)
+        """
+    )
+    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    summary = comp.summary()
+    assert summary.fetchall() == [
+        ("value_diffs", True),
+        ("unmatched_cols", True),
+        ("unmatched_rows", True),
+        ("class_diffs", True),
+    ]
+    comp.close()
+
+
+def test_summary_repr_shows_full_difference_labels():
+    con = duckdb.connect()
+    comp = compare(
+        examples.example_cars_a(con),
+        examples.example_cars_b(con),
+        by=["car"],
+        connection=con,
+    )
+    rendered = str(comp.summary())
+    assert "unmatched_cols" in rendered
+    assert "unmatched_rows" in rendered
+    comp.close()
+    con.close()
 
 
 def test_duplicate_by_raises():

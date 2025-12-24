@@ -64,6 +64,9 @@ future contributors can work without hunting through old context.
   Run `uvx ty check` (or `uv tool install ty` once and use `ty check`)
   from the repo root; ty will report any signature mismatches that could
   regress safety in the DuckDB helpers.
+- Before pushing, run `scripts/pre_push.sh` (or symlink it into
+  `.git/hooks/pre-push`) so Ruff formatting, `pytest`, and `ty check`
+  finish successfully. The script aborts pushes if any step fails.
 - The Quick Start tables in `README.md` are regenerated with
   `scripts/update_readme.py`. Whenever a change affects any helper
   output (or periodically to keep hashes current), run

@@ -150,7 +150,9 @@ def _register_input_view(
     else:
         raise ComparisonError("Inputs must be DuckDB relations or SQL queries/views.")
 
-    conn.execute(f"CREATE OR REPLACE TEMP VIEW {_ident(name)} AS SELECT * FROM {source_ref}")
+    conn.execute(
+        f"CREATE OR REPLACE TEMP VIEW {_ident(name)} AS SELECT * FROM {source_ref}"
+    )
     cleanup_statements.insert(0, f"DROP VIEW IF EXISTS {_ident(name)}")
 
     def _cleanup() -> None:
@@ -161,7 +163,9 @@ def _register_input_view(
                 pass
 
     columns, types = _describe_view(conn, name)
-    return _TableHandle(name=name, display=display, columns=columns, types=types, cleanup=_cleanup)
+    return _TableHandle(
+        name=name, display=display, columns=columns, types=types, cleanup=_cleanup
+    )
 
 
 def _describe_view(
@@ -187,10 +191,9 @@ def _build_tables_frame(
         if result is None:
             raise ComparisonError("Failed to count rows for comparison table metadata")
         count = result[0]
-        rows.append((identifier, handle.display, count, len(handle.columns)))
+        rows.append((identifier, count, len(handle.columns)))
     schema = [
         ("table", "VARCHAR"),
-        ("source", "VARCHAR"),
         ("nrows", "BIGINT"),
         ("ncols", "BIGINT"),
     ]
@@ -322,7 +325,9 @@ def _compute_unmatched_rows(
         """
         table_name = _materialize_temp_table(conn, sql)
         tables[identifier] = table_name
-        summary_parts.append(f"SELECT '{identifier}' AS table, * FROM {_ident(table_name)}")
+        summary_parts.append(
+            f"SELECT '{identifier}' AS table, * FROM {_ident(table_name)}"
+        )
     summary_sql = " UNION ALL ".join(summary_parts)
     summary_rel, summary_table = _finalize_relation(conn, summary_sql, materialize)
     return summary_rel, tables, summary_table
@@ -361,6 +366,10 @@ def _run_sql(conn: duckdb.DuckDBPyConnection, sql: str) -> duckdb.DuckDBPyRelati
     return conn.sql(sql)
 
 
+def _relation_is_empty(relation: duckdb.DuckDBPyRelation) -> bool:
+    return relation.limit(1).fetchone() is None
+
+
 def _validate_columns_exist(
     by_columns: Iterable[str],
     handles: Mapping[str, _TableHandle],
@@ -369,9 +378,13 @@ def _validate_columns_exist(
     missing_a = [col for col in by_columns if col not in handles[table_id[0]].columns]
     missing_b = [col for col in by_columns if col not in handles[table_id[1]].columns]
     if missing_a:
-        raise ComparisonError(f"`by` columns not found in `{table_id[0]}`: {', '.join(missing_a)}")
+        raise ComparisonError(
+            f"`by` columns not found in `{table_id[0]}`: {', '.join(missing_a)}"
+        )
     if missing_b:
-        raise ComparisonError(f"`by` columns not found in `{table_id[1]}`: {', '.join(missing_b)}")
+        raise ComparisonError(
+            f"`by` columns not found in `{table_id[1]}`: {', '.join(missing_b)}"
+        )
 
 
 def _validate_class_compatibility(
@@ -407,10 +420,14 @@ def _ensure_unique_by(
     if rows:
         first = rows[0]
         values = ", ".join(f"{col}={first[i]!r}" for i, col in enumerate(by_columns))
-        raise ComparisonError(f"`{identifier}` has more than one row for by values ({values})")
+        raise ComparisonError(
+            f"`{identifier}` has more than one row for by values ({values})"
+        )
 
 
-def _diff_predicate(column: str, allow_both_na: bool, left_alias: str, right_alias: str) -> str:
+def _diff_predicate(
+    column: str, allow_both_na: bool, left_alias: str, right_alias: str
+) -> str:
     left = _col(left_alias, column)
     right = _col(right_alias, column)
     if allow_both_na:
