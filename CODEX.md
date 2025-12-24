@@ -42,11 +42,15 @@ future contributors can work without hunting through old context.
 
 ## Testing & tooling
 
-- Run `pytest` from the repo root to exercise the full suite.
-- There are no extra runtime dependencies beyond DuckDB/Polars. For
-  local benchmarks you can author separate scripts (outside the package)
-  that import `versus.compare`; the repo no longer includes R assets or
-  benchmark harnesses.
+- Use the checked-in `.venv` managed by `uv` to ensure `pyarrow` stays
+  available for DuckDB’s `relation.pl()` path:
+  1. `uv venv .venv`
+  2. `uv pip install -e . pytest pyarrow`
+  3. `uv run pytest`
+- There are no extra runtime dependencies beyond DuckDB/Polars/PyArrow.
+  For local benchmarks you can author separate scripts (outside the
+  package) that import `versus.compare`; the repo no longer includes R
+  assets or benchmark harnesses.
 - Keep the code base Python 3.7-compatible (no pattern matching,
   `str.removeprefix`, `typing.Annotated`, etc.).
 
