@@ -116,7 +116,7 @@ class Comparison:
         select_cols = [
             f"{_col('a', target_col)} AS {_ident(f'{target_col}_{table_a}')}",
             f"{_col('b', target_col)} AS {_ident(f'{target_col}_{table_b}')}",
-            *[f"{_col('keys', by)} AS {_ident(by)}" for by in self.by_columns],
+            *[_col('keys', by) for by in self.by_columns],
         ]
         join_a = _join_condition(self.by_columns, "keys", "a")
         join_b = _join_condition(self.by_columns, "keys", "b")
@@ -577,7 +577,7 @@ def _compute_diff_key_tables(
 ) -> Dict[str, str]:
     diff_tables: Dict[str, str] = {}
     join_clause = _join_clause(handles, table_id, by_columns)
-    select_by = ", ".join(f"{_col('a', col)} AS {_ident(col)}" for col in by_columns)
+    select_by = ", ".join(_col('a', col) for col in by_columns)
     for column in value_columns:
         predicate = _diff_predicate(column, allow_both_na, "a", "b")
         sql = f"SELECT {select_by} {join_clause} WHERE {predicate}"
@@ -598,7 +598,7 @@ def _compute_unmatched_rows(
         other = table_id[1] if identifier == table_id[0] else table_id[0]
         handle_left = handles[identifier]
         handle_right = handles[other]
-        select_by = ", ".join(f"{_col('left_tbl', col)} AS {_ident(col)}" for col in by_columns)
+        select_by = ", ".join(_col('left_tbl', col) for col in by_columns)
         condition = _join_condition(by_columns, "left_tbl", "right_tbl")
         sql = f"""
         SELECT {select_by}
@@ -617,7 +617,7 @@ def _compute_unmatched_rows(
         summary_df = _run_query(conn, summary_sql)
     else:
         sample_handle = handles[table_id[0]]
-        select_cols = ", ".join(f"{_col('base', col)} AS {_ident(col)}" for col in by_columns)
+        select_cols = ", ".join(_col('base', col) for col in by_columns)
         select_clause = f", {select_cols}" if select_cols else ""
         sql = f"""
         SELECT '{table_id[0]}' AS table{select_clause}
@@ -651,7 +651,7 @@ def _fetch_rows_by_keys(
 ) -> pl.DataFrame:
     if key_sql is None:
         return _select_zero_from_table(comparison, table, columns)
-    select_cols = ", ".join(f"{_col('base', col)} AS {_ident(col)}" for col in columns)
+    select_cols = ", ".join(_col('base', col) for col in columns)
     join_condition = " AND ".join(
         f"{_col('keys', col)} IS NOT DISTINCT FROM {_col('base', col)}" for col in comparison.by_columns
     )
@@ -763,7 +763,7 @@ def _empty_df(columns: Sequence[str]) -> pl.DataFrame:
 def _select_zero_from_table(comparison: Comparison, table: str, columns: Sequence[str]) -> pl.DataFrame:
     if not columns:
         return pl.DataFrame()
-    select_cols = ", ".join(f"{_col('base', col)} AS {_ident(col)}" for col in columns)
+    select_cols = ", ".join(_col('base', col) for col in columns)
     sql = f"""
     SELECT {select_cols}
     FROM {_ident(comparison._handles[table].name)} AS base
@@ -777,7 +777,7 @@ def _empty_value_diffs(comparison: Comparison, column: str) -> pl.DataFrame:
     select_cols = [
         f"{_col('a', column)} AS {_ident(f'{column}_{table_a}')}",
         f"{_col('b', column)} AS {_ident(f'{column}_{table_b}')}",
-        *[f"{_col('a', by)} AS {_ident(by)}" for by in comparison.by_columns],
+        *[_col('a', by) for by in comparison.by_columns],
     ]
     join_condition = _join_condition(comparison.by_columns, "a", "b")
     sql = f"""
