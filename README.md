@@ -35,13 +35,13 @@ rel_b = examples.example_cars_b(con)
 comparison = compare(rel_a, rel_b, by="car", connection=con)
 comparison
 # Comparison(tables=
-# ┌─────────┬───────────────────────────────────┬───────┬───────┐
-# │  table  │              source               │ nrows │ ncols │
-# │ varchar │              varchar              │ int64 │ int64 │
-# ├─────────┼───────────────────────────────────┼───────┼───────┤
-# │ a       │ unnamed_relation_9c9c5448381394db │     9 │     9 │
-# │ b       │ unnamed_relation_16be0d8e462d805c │    10 │     9 │
-# └─────────┴───────────────────────────────────┴───────┴───────┘
+# ┌─────────┬───────┬───────┐
+# │  table  │ nrows │ ncols │
+# │ varchar │ int64 │ int64 │
+# ├─────────┼───────┼───────┤
+# │ a       │     9 │     9 │
+# │ b       │    10 │     9 │
+# └─────────┴───────┴───────┘
 # 
 # by=
 # ┌─────────┬─────────┬─────────┐
@@ -184,6 +184,9 @@ comparison.summary()
   weave helpers, etc.), the library runs SQL in DuckDB and returns the
   results as DuckDB relations, so you can inspect huge tables without
   blowing up Python memory.
+- Need insight into the original inputs? `comparison.handles` exposes a
+  read-only mapping from table id (e.g., `"a"`, `"b"`) to the registered
+  DuckDB view, including the cleaned column/type metadata.
 - `comparison.summary()` prints a fixed-width summary table while still
   returning the DuckDB relation so you can continue piping it through
   DuckDB APIs.

@@ -79,6 +79,17 @@ def test_compare_summary():
     assert value_row["n_diffs"] == 1
 
 
+def test_handles_property_exposes_table_metadata():
+    con, rel_a, rel_b = build_connection()
+    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    handles = comp.handles
+    assert "a" in handles and "b" in handles
+    assert "id" in handles["a"].columns
+    with pytest.raises(TypeError):
+        handles["extra"] = None  # type: ignore[index]
+    comp.close()
+
+
 def test_value_diffs_and_slice():
     con, rel_a, rel_b = build_connection()
     comp = compare(rel_a, rel_b, by=["id"], connection=con)

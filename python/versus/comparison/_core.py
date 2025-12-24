@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import MappingProxyType
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import duckdb
@@ -56,7 +57,8 @@ class Comparison:
         diff_lookup: Dict[str, int],
     ) -> None:
         self.connection = connection
-        self._handles = handles
+        self._handles = dict(handles)
+        self._handles_view = MappingProxyType(self._handles)
         self.table_id = table_id
         self.by_columns = by_columns
         self.allow_both_na = allow_both_na
@@ -105,6 +107,10 @@ class Comparison:
             f"unmatched_rows=\n{self.unmatched_rows}\n"
             ")"
         )
+
+    @property
+    def handles(self) -> Mapping[str, _TableHandle]:
+        return self._handles_view
 
     def value_diffs(self, column: str) -> duckdb.DuckDBPyRelation:
         return _value_diffs(self, column)

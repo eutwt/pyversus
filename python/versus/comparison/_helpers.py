@@ -191,10 +191,9 @@ def _build_tables_frame(
         if result is None:
             raise ComparisonError("Failed to count rows for comparison table metadata")
         count = result[0]
-        rows.append((identifier, handle.display, count, len(handle.columns)))
+        rows.append((identifier, count, len(handle.columns)))
     schema = [
         ("table", "VARCHAR"),
-        ("source", "VARCHAR"),
         ("nrows", "BIGINT"),
         ("ncols", "BIGINT"),
     ]
