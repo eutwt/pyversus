@@ -103,15 +103,9 @@ class Comparison:
         target_col = _normalize_single_column(column)
         _ensure_column_allowed(self, target_col, "value_diffs")
         diff_keys = self.diff_key_tables.get(target_col)
-        key_table = diff_keys.table if diff_keys is not None else None
-        col_names = [
-            f"{target_col}_{self.table_id[0]}",
-            f"{target_col}_{self.table_id[1]}",
-            *self.by_columns,
-        ]
-        if key_table is None:
-            return _empty_value_diffs(self, target_col)
-
+        if diff_keys is None or diff_keys.table is None:
+            raise ComparisonError(f"No diff table available for column: {target_col}")
+        key_table = diff_keys.table
         table_a, table_b = self.table_id
         select_cols = [
             f"{_col('a', target_col)} AS {_ident(f'{target_col}_{table_a}')}",
@@ -172,7 +166,7 @@ class Comparison:
     ) -> pl.DataFrame:
         table_name = _normalize_table_arg(self, table)
         selected = _resolve_column_list(self, columns)
-        diff_cols = [col for col in selected if self._diff_lookup.get(col, 0) > 0]
+        diff_cols = [col for col in selected if self._diff_lookup[col] > 0]
         ordered_cols: List[str] = []
         for col in [*self.by_columns, *selected]:
             if col not in ordered_cols:
@@ -180,15 +174,11 @@ class Comparison:
         if not diff_cols:
             return _select_zero_from_table(self, table_name, ordered_cols)
         key_sql = _collect_diff_keys(self, diff_cols)
-        if key_sql is None:
-            return _select_zero_from_table(self, table_name, ordered_cols)
         return _fetch_rows_by_keys(self, table_name, key_sql, ordered_cols)
 
     def slice_unmatched(self, table: str) -> pl.DataFrame:
         table_name = _normalize_table_arg(self, table)
-        table_ref = self._unmatched_tables.get(table_name)
-        if table_ref is None:
-            return _select_zero_from_table(self, table_name, self.table_columns[table_name])
+        table_ref = self._unmatched_tables[table_name]
         key_sql = f"SELECT * FROM {_ident(table_ref)}"
         return _fetch_rows_by_keys(self, table_name, key_sql, self.table_columns[table_name])
 
@@ -212,15 +202,13 @@ class Comparison:
         suffix: Optional[Tuple[str, str]] = None,
     ) -> pl.DataFrame:
         selected = _resolve_column_list(self, columns)
-        diff_cols = [col for col in selected if self._diff_lookup.get(col, 0) > 0]
+        diff_cols = [col for col in selected if self._diff_lookup[col] > 0]
         table_a, table_b = self.table_id
         out_cols = self.by_columns + self.common_columns
         if not diff_cols:
             return _select_zero_from_table(self, table_a, out_cols)
         suffix = _resolve_suffix(suffix, self.table_id)
         keys = _collect_diff_keys(self, diff_cols)
-        if keys is None:
-            return _select_zero_from_table(self, table_a, out_cols)
 
         rows_a = _fetch_rows_by_keys(self, table_a, keys, out_cols)
         rows_b = _fetch_rows_by_keys(self, table_b, keys, [*self.by_columns, *diff_cols])
@@ -246,16 +234,13 @@ class Comparison:
         columns: Optional[Sequence[str]] = None,
     ) -> pl.DataFrame:
         selected = _resolve_column_list(self, columns)
-        diff_cols = [col for col in selected if self._diff_lookup.get(col, 0) > 0]
+        diff_cols = [col for col in selected if self._diff_lookup[col] > 0]
         table_a, table_b = self.table_id
         out_cols = self.by_columns + self.common_columns
         if not diff_cols:
             base = _select_zero_from_table(self, table_a, out_cols)
             return base.with_columns(pl.lit(table_a).alias("table")).select(["table", *out_cols])
         keys = _collect_diff_keys(self, diff_cols)
-        if keys is None:
-            base = _select_zero_from_table(self, table_a, out_cols)
-            return base.with_columns(pl.lit(table_a).alias("table")).select(["table", *out_cols])
 
         rows_a = _fetch_rows_by_keys(self, table_a, keys, out_cols).with_columns(
             pl.lit(table_a).alias("table")
@@ -612,32 +597,19 @@ def _compute_unmatched_rows(
         table_name = _materialize_temp_table(conn, sql)
         tables[identifier] = table_name
         summary_parts.append(f"SELECT '{identifier}' AS table, * FROM {_ident(table_name)}")
-    if summary_parts:
-        summary_sql = " UNION ALL ".join(summary_parts)
-        summary_df = _run_query(conn, summary_sql)
-    else:
-        sample_handle = handles[table_id[0]]
-        select_cols = ", ".join(_col('base', col) for col in by_columns)
-        select_clause = f", {select_cols}" if select_cols else ""
-        sql = f"""
-        SELECT '{table_id[0]}' AS table{select_clause}
-        FROM {_ident(sample_handle.name)} AS base
-        LIMIT 0
-        """
-        summary_df = _run_query(conn, sql)
+    # `table_id` always provides two identifiers, so `summary_parts` cannot be empty.
+    summary_sql = " UNION ALL ".join(summary_parts)
+    summary_df = _run_query(conn, summary_sql)
     return summary_df, tables
 
 
-def _collect_diff_keys(comparison: Comparison, columns: Sequence[str]) -> Optional[str]:
+def _collect_diff_keys(comparison: Comparison, columns: Sequence[str]) -> str:
     selects = []
     for column in columns:
         diff_keys = comparison.diff_key_tables.get(column)
-        table = diff_keys.table if diff_keys is not None else None
-        if table is None:
-            continue
-        selects.append(f"SELECT * FROM {_ident(table)}")
-    if not selects:
-        return None
+        if diff_keys is None or diff_keys.table is None:
+            raise ComparisonError(f"No diff key table available for column: {column}")
+        selects.append(f"SELECT * FROM {_ident(diff_keys.table)}")
     if len(selects) == 1:
         return selects[0]
     return " UNION DISTINCT ".join(selects)
@@ -646,11 +618,9 @@ def _collect_diff_keys(comparison: Comparison, columns: Sequence[str]) -> Option
 def _fetch_rows_by_keys(
     comparison: Comparison,
     table: str,
-    key_sql: Optional[str],
+    key_sql: str,
     columns: Sequence[str],
 ) -> pl.DataFrame:
-    if key_sql is None:
-        return _select_zero_from_table(comparison, table, columns)
     select_cols = ", ".join(_col('base', col) for col in columns)
     join_condition = " AND ".join(
         f"{_col('keys', col)} IS NOT DISTINCT FROM {_col('base', col)}" for col in comparison.by_columns
@@ -767,24 +737,6 @@ def _select_zero_from_table(comparison: Comparison, table: str, columns: Sequenc
     sql = f"""
     SELECT {select_cols}
     FROM {_ident(comparison._handles[table].name)} AS base
-    LIMIT 0
-    """
-    return _run_query(comparison.connection, sql)
-
-
-def _empty_value_diffs(comparison: Comparison, column: str) -> pl.DataFrame:
-    table_a, table_b = comparison.table_id
-    select_cols = [
-        f"{_col('a', column)} AS {_ident(f'{column}_{table_a}')}",
-        f"{_col('b', column)} AS {_ident(f'{column}_{table_b}')}",
-        *[_col('a', by) for by in comparison.by_columns],
-    ]
-    join_condition = _join_condition(comparison.by_columns, "a", "b")
-    sql = f"""
-    SELECT {", ".join(select_cols)}
-    FROM {_ident(comparison._handles[table_a].name)} AS a
-    JOIN {_ident(comparison._handles[table_b].name)} AS b
-      ON {join_condition}
     LIMIT 0
     """
     return _run_query(comparison.connection, sql)
