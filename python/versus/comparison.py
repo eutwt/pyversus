@@ -2,7 +2,17 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+)
 
 import duckdb
 
@@ -103,7 +113,7 @@ class Comparison:
         select_cols = [
             f"{_col('a', target_col)} AS {_ident(f'{target_col}_{table_a}')}",
             f"{_col('b', target_col)} AS {_ident(f'{target_col}_{table_b}')}",
-            _select_cols(self.by_columns, alias='keys'),
+            _select_cols(self.by_columns, alias="keys"),
         ]
         join_a = _join_condition(self.by_columns, "keys", "a")
         join_b = _join_condition(self.by_columns, "keys", "b")
@@ -117,10 +127,13 @@ class Comparison:
         """
         return _run_sql(self.connection, sql)
 
-    def value_diffs_stacked(self, columns: Optional[Sequence[str]] = None) -> duckdb.DuckDBPyRelation:
+    def value_diffs_stacked(
+        self, columns: Optional[Sequence[str]] = None
+    ) -> duckdb.DuckDBPyRelation:
         selected = _resolve_column_list(self, columns, allow_empty=False)
         selects = [
-            _stack_value_diffs_sql(self, column, self.diff_key_tables[column].table) for column in selected
+            _stack_value_diffs_sql(self, column, self.diff_key_tables[column].table)
+            for column in selected
         ]
         sql = " UNION ALL ".join(selects)
         return _run_sql(self.connection, sql)
@@ -143,11 +156,13 @@ class Comparison:
         table_name = _normalize_table_arg(self, table)
         table_ref = self._unmatched_tables[table_name]
         key_sql = f"SELECT * FROM {_ident(table_ref)}"
-        return _fetch_rows_by_keys(self, table_name, key_sql, self.table_columns[table_name])
+        return _fetch_rows_by_keys(
+            self, table_name, key_sql, self.table_columns[table_name]
+        )
 
     def slice_unmatched_both(self) -> duckdb.DuckDBPyRelation:
         out_cols = self.by_columns + self.common_columns
-        select_cols = _select_cols(out_cols, alias='base')
+        select_cols = _select_cols(out_cols, alias="base")
         join_condition = _join_condition(self.by_columns, "keys", "base")
         selects = []
         for table_name in self.table_id:
@@ -182,8 +197,12 @@ class Comparison:
             select_parts.append(_col("a", column))
         for column in self.common_columns:
             if column in diff_cols:
-                select_parts.append(f"{_col('a', column)} AS {_ident(f'{column}{suffix[0]}')}")
-                select_parts.append(f"{_col('b', column)} AS {_ident(f'{column}{suffix[1]}')}")
+                select_parts.append(
+                    f"{_col('a', column)} AS {_ident(f'{column}{suffix[0]}')}"
+                )
+                select_parts.append(
+                    f"{_col('b', column)} AS {_ident(f'{column}{suffix[1]}')}"
+                )
             else:
                 select_parts.append(_col("a", column))
         join_a = _join_condition(self.by_columns, "keys", "a")
@@ -262,20 +281,32 @@ def compare(
     for identifier in clean_ids:
         _ensure_unique_by(conn, handles[identifier], by_columns, identifier)
 
-    tables_frame, tables_table = _build_tables_frame(conn, handles, clean_ids, materialize)
-    by_frame, by_table = _build_by_frame(conn, by_columns, handles, clean_ids, materialize)
-    common_all = [col for col in handles[clean_ids[0]].columns if col in handles[clean_ids[1]].columns]
+    tables_frame, tables_table = _build_tables_frame(
+        conn, handles, clean_ids, materialize
+    )
+    by_frame, by_table = _build_by_frame(
+        conn, by_columns, handles, clean_ids, materialize
+    )
+    common_all = [
+        col
+        for col in handles[clean_ids[0]].columns
+        if col in handles[clean_ids[1]].columns
+    ]
     value_columns = [col for col in common_all if col not in by_columns]
-    unmatched_cols, unmatched_cols_table = _build_unmatched_cols(conn, handles, clean_ids, materialize)
+    unmatched_cols, unmatched_cols_table = _build_unmatched_cols(
+        conn, handles, clean_ids, materialize
+    )
     diff_tables = _compute_diff_key_tables(
         conn, handles, clean_ids, by_columns, value_columns, allow_both_na
     )
-    diff_key_handles = {col: DiffKeyTable(conn, diff_tables[col]) for col in value_columns}
+    diff_key_handles = {
+        col: DiffKeyTable(conn, diff_tables[col]) for col in value_columns
+    }
     intersection, diff_lookup, intersection_table = _build_intersection_frame(
         value_columns, handles, clean_ids, diff_key_handles, conn, materialize
     )
-    unmatched_rows_rel, unmatched_tables, unmatched_summary_table = _compute_unmatched_rows(
-        conn, handles, clean_ids, by_columns, materialize
+    unmatched_rows_rel, unmatched_tables, unmatched_summary_table = (
+        _compute_unmatched_rows(conn, handles, clean_ids, by_columns, materialize)
     )
     temp_tables = (
         list(diff_tables.values())
@@ -305,7 +336,9 @@ def compare(
         unmatched_cols=unmatched_cols,
         unmatched_rows=unmatched_rows_rel,
         common_columns=value_columns,
-        table_columns={identifier: handle.columns[:] for identifier, handle in handles.items()},
+        table_columns={
+            identifier: handle.columns[:] for identifier, handle in handles.items()
+        },
         diff_key_tables=diff_key_handles,
         unmatched_tables=unmatched_tables,
         temp_tables=temp_tables,
@@ -343,7 +376,9 @@ def _resolve_column_list(
             raise ComparisonError("`columns` must select at least one column")
         missing = [col for col in cols if col not in comparison.common_columns]
         if missing:
-            raise ComparisonError(f"Columns not part of the comparison: {', '.join(missing)}")
+            raise ComparisonError(
+                f"Columns not part of the comparison: {', '.join(missing)}"
+            )
         parsed = cols
     if not parsed and not allow_empty:
         raise ComparisonError("`columns` must select at least one column")
@@ -352,10 +387,14 @@ def _resolve_column_list(
 
 def _ensure_column_allowed(comparison: Comparison, column: str, func: str) -> None:
     if column not in comparison.common_columns:
-        raise ComparisonError(f"`{func}` can only reference columns in both tables: {column}")
+        raise ComparisonError(
+            f"`{func}` can only reference columns in both tables: {column}"
+        )
 
 
-def _resolve_suffix(suffix: Optional[Tuple[str, str]], table_id: Tuple[str, str]) -> Tuple[str, str]:
+def _resolve_suffix(
+    suffix: Optional[Tuple[str, str]], table_id: Tuple[str, str]
+) -> Tuple[str, str]:
     if suffix is None:
         return (f"_{table_id[0]}", f"_{table_id[1]}")
     if (
@@ -398,7 +437,9 @@ def _normalize_column_list(
         try:
             parsed = list(columns)
         except TypeError as exc:
-            raise ComparisonError(f"`{arg_name}` must be a sequence of column names") from exc
+            raise ComparisonError(
+                f"`{arg_name}` must be a sequence of column names"
+            ) from exc
     if not parsed and not allow_empty:
         raise ComparisonError(f"`{arg_name}` must contain at least one column")
     if not all(isinstance(item, str) for item in parsed):
@@ -427,7 +468,9 @@ def _register_input_view(
     else:
         raise ComparisonError("Inputs must be DuckDB relations or SQL queries/views.")
 
-    conn.execute(f"CREATE OR REPLACE TEMP VIEW {_ident(name)} AS SELECT * FROM {source_ref}")
+    conn.execute(
+        f"CREATE OR REPLACE TEMP VIEW {_ident(name)} AS SELECT * FROM {source_ref}"
+    )
     cleanup_statements.insert(0, f"DROP VIEW IF EXISTS {_ident(name)}")
 
     def _cleanup() -> None:
@@ -438,10 +481,14 @@ def _register_input_view(
                 pass
 
     columns, types = _describe_view(conn, name)
-    return _TableHandle(name=name, display=display, columns=columns, types=types, cleanup=_cleanup)
+    return _TableHandle(
+        name=name, display=display, columns=columns, types=types, cleanup=_cleanup
+    )
 
 
-def _describe_view(conn: duckdb.DuckDBPyConnection, name: str) -> Tuple[List[str], Dict[str, str]]:
+def _describe_view(
+    conn: duckdb.DuckDBPyConnection, name: str
+) -> Tuple[List[str], Dict[str, str]]:
     rel = _run_sql(conn, f"DESCRIBE SELECT * FROM {_ident(name)}")
     rows = rel.fetchall()
     columns = [row[0] for row in rows]
@@ -458,7 +505,9 @@ def _build_tables_frame(
     rows = []
     for identifier in table_id:
         handle = handles[identifier]
-        count = conn.sql(f"SELECT COUNT(*) AS n FROM {_ident(handle.name)}").fetchone()[0]
+        count = conn.sql(f"SELECT COUNT(*) AS n FROM {_ident(handle.name)}").fetchone()[
+            0
+        ]
         rows.append((identifier, handle.display, count, len(handle.columns)))
     schema = [
         ("table", "VARCHAR"),
@@ -559,7 +608,7 @@ def _compute_diff_key_tables(
 ) -> Dict[str, str]:
     diff_tables: Dict[str, str] = {}
     join_clause = _join_clause(handles, table_id, by_columns)
-    select_by = _select_cols(by_columns, alias='a')
+    select_by = _select_cols(by_columns, alias="a")
     for column in value_columns:
         predicate = _diff_predicate(column, allow_both_na, "a", "b")
         sql = f"SELECT {select_by} {join_clause} WHERE {predicate}"
@@ -581,7 +630,7 @@ def _compute_unmatched_rows(
         other = table_id[1] if identifier == table_id[0] else table_id[0]
         handle_left = handles[identifier]
         handle_right = handles[other]
-        select_by = _select_cols(by_columns, alias='left_tbl')
+        select_by = _select_cols(by_columns, alias="left_tbl")
         condition = _join_condition(by_columns, "left_tbl", "right_tbl")
         sql = f"""
         SELECT {select_by}
@@ -594,7 +643,9 @@ def _compute_unmatched_rows(
         """
         table_name = _materialize_temp_table(conn, sql)
         tables[identifier] = table_name
-        summary_parts.append(f"SELECT '{identifier}' AS table, * FROM {_ident(table_name)}")
+        summary_parts.append(
+            f"SELECT '{identifier}' AS table, * FROM {_ident(table_name)}"
+        )
     # `table_id` always provides two identifiers, so `summary_parts` cannot be empty.
     summary_sql = " UNION ALL ".join(summary_parts)
     summary_rel, summary_table = _finalize_relation(conn, summary_sql, materialize)
@@ -604,7 +655,9 @@ def _compute_unmatched_rows(
 def _collect_diff_keys(comparison: Comparison, columns: Sequence[str]) -> str:
     selects = []
     for column in columns:
-        selects.append(f"SELECT * FROM {_ident(comparison.diff_key_tables[column].table)}")
+        selects.append(
+            f"SELECT * FROM {_ident(comparison.diff_key_tables[column].table)}"
+        )
     if len(selects) == 1:
         return selects[0]
     return " UNION DISTINCT ".join(selects)
@@ -616,9 +669,10 @@ def _fetch_rows_by_keys(
     key_sql: str,
     columns: Sequence[str],
 ) -> duckdb.DuckDBPyRelation:
-    select_cols = _select_cols(columns, alias='base')
+    select_cols = _select_cols(columns, alias="base")
     join_condition = " AND ".join(
-        f"{_col('keys', col)} IS NOT DISTINCT FROM {_col('base', col)}" for col in comparison.by_columns
+        f"{_col('keys', col)} IS NOT DISTINCT FROM {_col('base', col)}"
+        for col in comparison.by_columns
     )
     sql = f"""
     SELECT {select_cols}
@@ -641,9 +695,13 @@ def _validate_columns_exist(
     missing_a = [col for col in by_columns if col not in handles[table_id[0]].columns]
     missing_b = [col for col in by_columns if col not in handles[table_id[1]].columns]
     if missing_a:
-        raise ComparisonError(f"`by` columns not found in `{table_id[0]}`: {', '.join(missing_a)}")
+        raise ComparisonError(
+            f"`by` columns not found in `{table_id[0]}`: {', '.join(missing_a)}"
+        )
     if missing_b:
-        raise ComparisonError(f"`by` columns not found in `{table_id[1]}`: {', '.join(missing_b)}")
+        raise ComparisonError(
+            f"`by` columns not found in `{table_id[1]}`: {', '.join(missing_b)}"
+        )
 
 
 def _validate_class_compatibility(
@@ -679,10 +737,14 @@ def _ensure_unique_by(
     if rows:
         first = rows[0]
         values = ", ".join(f"{col}={first[i]!r}" for i, col in enumerate(by_columns))
-        raise ComparisonError(f"`{identifier}` has more than one row for by values ({values})")
+        raise ComparisonError(
+            f"`{identifier}` has more than one row for by values ({values})"
+        )
 
 
-def _diff_predicate(column: str, allow_both_na: bool, left_alias: str, right_alias: str) -> str:
+def _diff_predicate(
+    column: str, allow_both_na: bool, left_alias: str, right_alias: str
+) -> str:
     left = _col(left_alias, column)
     right = _col(right_alias, column)
     if allow_both_na:
@@ -704,7 +766,8 @@ def _join_clause(
 
 def _join_condition(by_columns: List[str], left_alias: str, right_alias: str) -> str:
     comparisons = [
-        f"{_col(left_alias, column)} IS NOT DISTINCT FROM {_col(right_alias, column)}" for column in by_columns
+        f"{_col(left_alias, column)} IS NOT DISTINCT FROM {_col(right_alias, column)}"
+        for column in by_columns
     ]
     return " AND ".join(comparisons) if comparisons else "TRUE"
 
@@ -732,17 +795,24 @@ def _sql_literal(value: Any) -> str:
     return str(value)
 
 
-def _rows_relation_sql(rows: Sequence[Sequence[Any]], schema: Sequence[Tuple[str, str]]) -> str:
+def _rows_relation_sql(
+    rows: Sequence[Sequence[Any]], schema: Sequence[Tuple[str, str]]
+) -> str:
     if rows:
         value_rows = []
         for row in rows:
-            value_rows.append("(" + ", ".join(_sql_literal(value) for value in row) + ")")
+            value_rows.append(
+                "(" + ", ".join(_sql_literal(value) for value in row) + ")"
+            )
         alias_cols = ", ".join(f"col{i}" for i in range(len(schema)))
         select_list = ", ".join(
-            f"CAST(col{i} AS {dtype}) AS {_ident(name)}" for i, (name, dtype) in enumerate(schema)
+            f"CAST(col{i} AS {dtype}) AS {_ident(name)}"
+            for i, (name, dtype) in enumerate(schema)
         )
         return f"SELECT {select_list} FROM (VALUES {', '.join(value_rows)}) AS v({alias_cols})"
-    select_list = ", ".join(f"CAST(NULL AS {dtype}) AS {_ident(name)}" for name, dtype in schema)
+    select_list = ", ".join(
+        f"CAST(NULL AS {dtype}) AS {_ident(name)}" for name, dtype in schema
+    )
     return f"SELECT {select_list} WHERE 1=0"
 
 
@@ -778,7 +848,7 @@ def _stack_value_diffs_sql(
         f"{_sql_literal(column)} AS {_ident('column')}",
         f"{_col('a', column)} AS {_ident(f'val_{table_a}')}",
         f"{_col('b', column)} AS {_ident(f'val_{table_b}')}",
-        _select_cols(by_columns, alias='keys'),
+        _select_cols(by_columns, alias="keys"),
     ]
     join_a = _join_condition(by_columns, "keys", "a")
     join_b = _join_condition(by_columns, "keys", "b")
@@ -805,7 +875,7 @@ def _select_zero_from_table(
 ) -> duckdb.DuckDBPyRelation:
     if not columns:
         raise ComparisonError("Column list must be non-empty")
-    select_cols = _select_cols(columns, alias='base')
+    select_cols = _select_cols(columns, alias="base")
     sql = f"""
     SELECT {select_cols}
     FROM {_ident(comparison._handles[table].name)} AS base
@@ -834,5 +904,7 @@ class DiffKeyTable:
         return _run_sql(self.connection, f"SELECT * FROM {_ident(self.table)}")
 
     def __repr__(self) -> str:
-        count = self.connection.sql(f"SELECT COUNT(*) FROM {_ident(self.table)}").fetchone()[0]
+        count = self.connection.sql(
+            f"SELECT COUNT(*) FROM {_ident(self.table)}"
+        ).fetchone()[0]
         return f"<{count} rows>"

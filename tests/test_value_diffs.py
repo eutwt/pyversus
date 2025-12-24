@@ -87,7 +87,9 @@ def test_value_diffs_stacked_combines_columns(comparison_with_diffs):
 def test_value_diffs_stacked_handles_incompatible_types():
     con = duckdb.connect()
     comp = compare(
-        con.sql("SELECT * FROM (VALUES (1, 'a', 10), (2, 'b', 11)) AS t(id, alpha, beta)"),
+        con.sql(
+            "SELECT * FROM (VALUES (1, 'a', 10), (2, 'b', 11)) AS t(id, alpha, beta)"
+        ),
         con.sql(
             "SELECT * FROM (VALUES (1, 'z', CAST('99' AS VARCHAR)), (2, 'c', CAST('77' AS VARCHAR))) "
             "AS t(id, alpha, beta)"
