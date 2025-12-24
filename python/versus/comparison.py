@@ -48,7 +48,7 @@ class Comparison:
         unmatched_rows: duckdb.DuckDBPyRelation,
         common_columns: List[str],
         table_columns: Mapping[str, List[str]],
-        diff_key_tables: Mapping[str, "DiffKeyTable"],
+        diff_key_tables: Mapping[str, str],
         unmatched_tables: Mapping[str, str],
         temp_tables: Sequence[str],
         diff_lookup: Dict[str, int],
@@ -107,8 +107,7 @@ class Comparison:
     def value_diffs(self, column: str) -> duckdb.DuckDBPyRelation:
         target_col = _normalize_single_column(column)
         _ensure_column_allowed(self, target_col, "value_diffs")
-        diff_keys = self.diff_key_tables[target_col]
-        key_table = diff_keys.table
+        key_table = self.diff_key_tables[target_col]
         table_a, table_b = self.table_id
         select_cols = [
             f"{_col('a', target_col)} AS {_ident(f'{target_col}_{table_a}')}",
@@ -132,7 +131,7 @@ class Comparison:
     ) -> duckdb.DuckDBPyRelation:
         selected = _resolve_column_list(self, columns, allow_empty=False)
         selects = [
-            _stack_value_diffs_sql(self, column, self.diff_key_tables[column].table)
+            _stack_value_diffs_sql(self, column, self.diff_key_tables[column])
             for column in selected
         ]
         sql = " UNION ALL ".join(selects)
@@ -307,9 +306,7 @@ def compare(
     diff_tables = _compute_diff_key_tables(
         conn, handles, clean_ids, by_columns, value_columns, allow_both_na
     )
-    diff_key_handles = {
-        col: DiffKeyTable(conn, diff_tables[col]) for col in value_columns
-    }
+    diff_key_handles = {col: diff_tables[col] for col in value_columns}
     intersection, diff_lookup, intersection_table = _build_intersection_frame(
         value_columns, handles, clean_ids, diff_key_handles, conn, materialize
     )
@@ -578,7 +575,7 @@ def _build_intersection_frame(
     value_columns: List[str],
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
-    diff_key_tables: Mapping[str, "DiffKeyTable"],
+    diff_key_tables: Mapping[str, str],
     conn: duckdb.DuckDBPyConnection,
     materialize: bool,
 ) -> Tuple[duckdb.DuckDBPyRelation, Dict[str, int], Optional[str]]:
@@ -586,7 +583,7 @@ def _build_intersection_frame(
     diff_lookup: Dict[str, int] = {}
     first, second = table_id
     for column in value_columns:
-        table = diff_key_tables[column].table
+        table = diff_key_tables[column]
         count = _table_count(conn, table)
         rows.append(
             (
@@ -664,9 +661,7 @@ def _compute_unmatched_rows(
 def _collect_diff_keys(comparison: Comparison, columns: Sequence[str]) -> str:
     selects = []
     for column in columns:
-        selects.append(
-            f"SELECT * FROM {_ident(comparison.diff_key_tables[column].table)}"
-        )
+        selects.append(f"SELECT * FROM {_ident(comparison.diff_key_tables[column])}")
     if len(selects) == 1:
         return selects[0]
     return " UNION DISTINCT ".join(selects)
@@ -905,21 +900,3 @@ def _materialize_temp_table(conn: duckdb.DuckDBPyConnection, sql: str) -> str:
     name = f"__versus_table_{uuid.uuid4().hex}"
     conn.execute(f"CREATE OR REPLACE TEMP TABLE {_ident(name)} AS {sql}")
     return name
-
-
-@dataclass
-class DiffKeyTable:
-    connection: duckdb.DuckDBPyConnection
-    table: str
-
-    def df(self) -> duckdb.DuckDBPyRelation:
-        return _run_sql(self.connection, f"SELECT * FROM {_ident(self.table)}")
-
-    def __repr__(self) -> str:
-        row = self.connection.sql(
-            f"SELECT COUNT(*) FROM {_ident(self.table)}"
-        ).fetchone()
-        if row is None:
-            return "<0 rows>"
-        count = row[0]
-        return f"<{count} rows>"

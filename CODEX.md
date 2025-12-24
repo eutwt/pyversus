@@ -28,10 +28,10 @@ future contributors can work without hunting through old context.
   correct database.
 - The `Comparison` object stores:
   - table metadata (`tables`, `by`, `unmatched_cols`, `intersection`)
-  - handles to the temp views plus a `DiffKeyTable` mapping (available
-    via `Comparison.diff_rows` even though the intersection table only
-    shows counts) so helper methods can fetch diff keys without
-    recomputing predicates
+  - handles to the temp views plus a mapping of column name to
+    diff-key temp table (available via `Comparison.diff_rows` even though
+    the intersection table only shows counts) so helper methods can
+    fetch diff keys without recomputing predicates
   - lookup tables for unmatched rows/diff counts
 - Helper methods (`value_diffs`, `slice_diffs`, `weave_diffs_*`,
   `slice_unmatched*`) push their work back into DuckDB and return
