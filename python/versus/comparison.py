@@ -271,7 +271,7 @@ def compare(
     connection: Optional[duckdb.DuckDBPyConnection] = None,
 ) -> Comparison:
     conn = connection or duckdb.default_connection
-    clean_ids = _clean_table_id(table_id)
+    clean_ids = _validate_table_id(table_id)
     by_columns = _normalize_column_list(by, "by", allow_empty=False)
     handles = {
         clean_ids[0]: _register_input_view(conn, table_a, clean_ids[0]),
@@ -366,24 +366,19 @@ def _resolve_suffix(suffix: Optional[Tuple[str, str]], table_id: Tuple[str, str]
     return (suffix[0], suffix[1])
 
 
-def _clean_table_id(table_id: Tuple[str, str]) -> Tuple[str, str]:
+def _validate_table_id(table_id: Tuple[str, str]) -> Tuple[str, str]:
     if (
         not isinstance(table_id, (tuple, list))
         or len(table_id) != 2
         or not all(isinstance(val, str) for val in table_id)
     ):
         raise ComparisonError("`table_id` must be a tuple of two strings")
-    seen = set()
-    cleaned: List[str] = []
-    for idx, value in enumerate(table_id):
-        candidate = value.strip().replace(" ", ".")
-        if not candidate:
-            candidate = f"table_{idx + 1}"
-        while candidate in seen:
-            candidate = f"{candidate}_{idx}"
-        seen.add(candidate)
-        cleaned.append(candidate)
-    return (cleaned[0], cleaned[1])
+    first, second = table_id[0], table_id[1]
+    if not first.strip() or not second.strip():
+        raise ComparisonError("Entries of `table_id` must be non-empty strings")
+    if first == second:
+        raise ComparisonError("Entries of `table_id` must be distinct")
+    return (first, second)
 
 
 def _normalize_column_list(
@@ -738,4 +733,3 @@ class DiffKeyTable:
             return "<0 rows>"
         count = self.connection.sql(f"SELECT COUNT(*) FROM {_ident(self.table)}").fetchone()[0]
         return f"<{count} rows>"
-

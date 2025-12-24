@@ -116,6 +116,18 @@ def test_compare_errors_when_table_id_invalid_length():
         compare(rel_a, rel_b, by=["id"], table_id=["x"], connection=con)
 
 
+def test_compare_errors_when_table_id_duplicates():
+    con, rel_a, rel_b = build_connection()
+    with pytest.raises(ComparisonError):
+        compare(rel_a, rel_b, by=["id"], table_id=("dup", "dup"), connection=con)
+
+
+def test_compare_errors_when_table_id_blank():
+    con, rel_a, rel_b = build_connection()
+    with pytest.raises(ComparisonError):
+        compare(rel_a, rel_b, by=["id"], table_id=(" ", "b"), connection=con)
+
+
 def test_compare_coerce_false_detects_type_mismatch():
     with pytest.raises(ComparisonError):
         comparison_from_sql(
