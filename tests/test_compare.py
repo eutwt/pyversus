@@ -1,3 +1,5 @@
+from typing import Any, Tuple, cast
+
 import duckdb
 import pytest
 
@@ -73,7 +75,7 @@ def test_compare_summary():
     con, rel_a, rel_b = build_connection()
     comp = compare(rel_a, rel_b, by=["id"], connection=con)
     assert rel_values(comp.tables, "nrows") == [3, 3]
-    value_row = rel_dicts(comp.intersection.filter('"column" = \'value\''))[0]
+    value_row = rel_dicts(comp.intersection.filter("\"column\" = 'value'"))[0]
     assert value_row["n_diffs"] == 1
 
 
@@ -130,7 +132,7 @@ def test_examples_available():
         by=["car"],
         connection=con,
     )
-    assert rel_dicts(comp.intersection.filter('"column" = \'mpg\''))[0]["n_diffs"] == 2
+    assert rel_dicts(comp.intersection.filter("\"column\" = 'mpg'"))[0]["n_diffs"] == 2
     comp.close()
     con.close()
 
@@ -146,7 +148,8 @@ def test_compare_errors_when_by_column_missing():
 def test_compare_errors_when_table_id_invalid_length():
     con, rel_a, rel_b = build_connection()
     with pytest.raises(ComparisonError):
-        compare(rel_a, rel_b, by=["id"], table_id=["x"], connection=con)
+        bad_table_id = cast(Any, ["x"])
+        compare(rel_a, rel_b, by=["id"], table_id=bad_table_id, connection=con)
 
 
 def test_compare_errors_when_table_id_duplicates():
@@ -229,7 +232,12 @@ def test_value_diffs_stacked_empty_structure():
     comp = identical_comparison()
     rel = comp.value_diffs_stacked()
     assert rel_height(rel) == 0
-    assert rel.columns == ["column", f"val_{comp.table_id[0]}", f"val_{comp.table_id[1]}", *comp.by_columns]
+    assert rel.columns == [
+        "column",
+        f"val_{comp.table_id[0]}",
+        f"val_{comp.table_id[1]}",
+        *comp.by_columns,
+    ]
     assert rel_dtypes(rel) == ["VARCHAR", "INTEGER", "INTEGER", "INTEGER"]
     comp.close()
 

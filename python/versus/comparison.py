@@ -268,7 +268,15 @@ def compare(
     connection: Optional[duckdb.DuckDBPyConnection] = None,
     materialize: bool = True,
 ) -> Comparison:
-    conn = connection or duckdb.default_connection
+    conn_input = connection
+    if conn_input is None:
+        default_conn = duckdb.default_connection
+        conn_candidate = default_conn() if callable(default_conn) else default_conn
+    else:
+        conn_candidate = conn_input
+    if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
+        raise ComparisonError("`connection` must be a DuckDB connection.")
+    conn = conn_candidate
     clean_ids = _validate_table_id(table_id)
     by_columns = _normalize_column_list(by, "by", allow_empty=False)
     handles = {
@@ -505,9 +513,10 @@ def _build_tables_frame(
     rows = []
     for identifier in table_id:
         handle = handles[identifier]
-        count = conn.sql(f"SELECT COUNT(*) AS n FROM {_ident(handle.name)}").fetchone()[
-            0
-        ]
+        result = conn.sql(f"SELECT COUNT(*) AS n FROM {_ident(handle.name)}").fetchone()
+        if result is None:
+            raise ComparisonError("Failed to count rows for comparison table metadata")
+        count = result[0]
         rows.append((identifier, handle.display, count, len(handle.columns)))
     schema = [
         ("table", "VARCHAR"),
@@ -865,7 +874,10 @@ def _stack_value_diffs_sql(
 def _table_count(conn: duckdb.DuckDBPyConnection, table_name: Optional[str]) -> int:
     if table_name is None:
         return 0
-    return conn.sql(f"SELECT COUNT(*) FROM {_ident(table_name)}").fetchone()[0]
+    row = conn.sql(f"SELECT COUNT(*) FROM {_ident(table_name)}").fetchone()
+    if row is None:
+        raise ComparisonError("Failed to count rows for diff key table")
+    return row[0]
 
 
 def _select_zero_from_table(
@@ -904,7 +916,10 @@ class DiffKeyTable:
         return _run_sql(self.connection, f"SELECT * FROM {_ident(self.table)}")
 
     def __repr__(self) -> str:
-        count = self.connection.sql(
+        row = self.connection.sql(
             f"SELECT COUNT(*) FROM {_ident(self.table)}"
-        ).fetchone()[0]
+        ).fetchone()
+        if row is None:
+            return "<0 rows>"
+        count = row[0]
         return f"<{count} rows>"
