@@ -243,14 +243,14 @@ class Comparison:
             return base.with_columns(pl.lit(table_a).alias("table")).select(["table", *out_cols])
         keys = _collect_diff_keys(self, diff_cols)
         table_column = _ident("table")
-        select_cols_a = ", ".join(_col("a", column) for column in out_cols)
-        select_cols_b = ", ".join(_col("b", column) for column in out_cols)
+        select_cols_a = _select_cols(out_cols, alias="a")
+        select_cols_b = _select_cols(out_cols, alias="b")
         join_a = _join_condition(self.by_columns, "keys", "a")
         join_b = _join_condition(self.by_columns, "keys", "b")
-        order_cols = ", ".join(_ident(column) for column in self.by_columns)
+        order_cols = _select_cols(self.by_columns)
         sql = f"""
         WITH diff_keys AS ({keys})
-        SELECT {table_column}, {", ".join(_ident(column) for column in out_cols)}
+        SELECT {table_column}, {_select_cols(out_cols)}
         FROM (
             SELECT 0 AS __table_order, '{table_a}' AS {table_column}, {select_cols_a}
             FROM diff_keys AS keys
@@ -572,7 +572,7 @@ def _compute_diff_key_tables(
 ) -> Dict[str, str]:
     diff_tables: Dict[str, str] = {}
     join_clause = _join_clause(handles, table_id, by_columns)
-    select_by = ", ".join(_col('a', col) for col in by_columns)
+    select_by = _select_cols(by_columns, alias='a')
     for column in value_columns:
         predicate = _diff_predicate(column, allow_both_na, "a", "b")
         sql = f"SELECT {select_by} {join_clause} WHERE {predicate}"
@@ -593,7 +593,7 @@ def _compute_unmatched_rows(
         other = table_id[1] if identifier == table_id[0] else table_id[0]
         handle_left = handles[identifier]
         handle_right = handles[other]
-        select_by = ", ".join(_col('left_tbl', col) for col in by_columns)
+        select_by = _select_cols(by_columns, alias='left_tbl')
         condition = _join_condition(by_columns, "left_tbl", "right_tbl")
         sql = f"""
         SELECT {select_by}
@@ -631,7 +631,7 @@ def _fetch_rows_by_keys(
     key_sql: str,
     columns: Sequence[str],
 ) -> pl.DataFrame:
-    select_cols = ", ".join(_col('base', col) for col in columns)
+    select_cols = _select_cols(columns, alias='base')
     join_condition = " AND ".join(
         f"{_col('keys', col)} IS NOT DISTINCT FROM {_col('base', col)}" for col in comparison.by_columns
     )
@@ -685,7 +685,7 @@ def _ensure_unique_by(
     by_columns: List[str],
     identifier: str,
 ) -> None:
-    cols = ", ".join(_col("t", column) for column in by_columns)
+    cols = _select_cols(by_columns, alias="t")
     sql = f"""
     SELECT {cols}, COUNT(*) AS n
     FROM {_ident(handle.name)} AS t
@@ -730,6 +730,14 @@ def _col(alias: str, column: str) -> str:
     return f"{alias}.{_ident(column)}"
 
 
+def _select_cols(columns: Sequence[str], alias: Optional[str] = None) -> str:
+    if not columns:
+        return ""
+    if alias is None:
+        return ", ".join(_ident(column) for column in columns)
+    return ", ".join(_col(alias, column) for column in columns)
+
+
 def _table_count(conn: duckdb.DuckDBPyConnection, table_name: Optional[str]) -> int:
     if table_name is None:
         return 0
@@ -743,7 +751,7 @@ def _empty_df(columns: Sequence[str]) -> pl.DataFrame:
 def _select_zero_from_table(comparison: Comparison, table: str, columns: Sequence[str]) -> pl.DataFrame:
     if not columns:
         return pl.DataFrame()
-    select_cols = ", ".join(_col('base', col) for col in columns)
+    select_cols = _select_cols(columns, alias='base')
     sql = f"""
     SELECT {select_cols}
     FROM {_ident(comparison._handles[table].name)} AS base
