@@ -187,9 +187,6 @@ comparison.summary()
 - Need insight into the inputs? `comparison.handles` exposes a
   read-only mapping from table id (e.g., `"a"`, `"b"`) to the registered
   DuckDB view, including the column/type metadata.
-- `comparison.summary()` prints a fixed-width summary table while still
-  returning the DuckDB relation so you can continue piping it through
-  DuckDB APIs.
 - By default `compare()` materializes the summary relations used in the
   repr (`tables`, `by`, `intersection`, `unmatched_*`). Pass
   `materialize=False` if you prefer to keep those lazy as well (at the
