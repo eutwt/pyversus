@@ -134,6 +134,21 @@ def test_summary_reports_difference_categories():
     comp.close()
 
 
+def test_summary_repr_shows_full_difference_labels():
+    con = duckdb.connect()
+    comp = compare(
+        examples.example_cars_a(con),
+        examples.example_cars_b(con),
+        by=["car"],
+        connection=con,
+    )
+    rendered = str(comp.summary())
+    assert "unmatched_cols" in rendered
+    assert "unmatched_rows" in rendered
+    comp.close()
+    con.close()
+
+
 def test_duplicate_by_raises():
     con = duckdb.connect()
     rel_dup = con.sql(

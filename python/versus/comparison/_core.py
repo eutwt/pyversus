@@ -32,6 +32,69 @@ from ._weave import weave_diffs_long as _weave_diffs_long
 from ._weave import weave_diffs_wide as _weave_diffs_wide
 
 
+def _format_summary_table(
+    rows: Sequence[Tuple[str, bool]],
+) -> str:
+    columns = ("difference", "found")
+    types = ("VARCHAR", "BOOLEAN")
+    text_rows = [(row[0], "true" if row[1] else "false") for row in rows]
+    widths: List[int] = []
+    for idx in range(len(columns)):
+        base_width = max(len(columns[idx]), len(types[idx]))
+        if text_rows:
+            base_width = max(base_width, max(len(row[idx]) for row in text_rows))
+        widths.append(base_width)
+
+    def border(left: str, sep: str, right: str) -> str:
+        segments = [("─" * (width + 2)) for width in widths]
+        return left + sep.join(segments) + right
+
+    def row_line(values: Tuple[str, ...]) -> str:
+        padded = []
+        for idx, value in enumerate(values):
+            padded.append(f" {value.ljust(widths[idx])} ")
+        return "│" + "│".join(padded) + "│"
+
+    lines = [
+        border("┌", "┬", "┐"),
+        row_line(columns),
+        row_line(types),
+        border("├", "┼", "┤"),
+    ]
+    for row in text_rows:
+        lines.append(row_line(row))
+    lines.append(border("└", "┴", "┘"))
+    return "\n".join(lines)
+
+
+class _SummaryRelation:
+    """Wrapper that only tweaks `__repr__` so summary labels aren't truncated.
+
+    DuckDB relations come from a C-extension type, so we cannot subclass or
+    swap their class at runtime. Instead, we proxy every attribute (see
+    ``__getattr__``) to the original relation, which remains accessible via
+    ``.relation`` if callers need the bare ``DuckDBPyRelation`` object.
+    """
+
+    def __init__(self, relation: duckdb.DuckDBPyRelation) -> None:
+        self._relation = relation
+
+    @property
+    def relation(self) -> duckdb.DuckDBPyRelation:
+        return self._relation
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._relation, name)
+
+    def __dir__(self) -> List[str]:
+        return sorted(set(dir(self._relation)) | set(super().__dir__()))
+
+    def __repr__(self) -> str:
+        return _format_summary_table(self._relation.fetchall())
+
+    __str__ = __repr__
+
+
 class Comparison:
     """In-memory description of how two relations differ."""
 
@@ -140,7 +203,7 @@ class Comparison:
     ) -> duckdb.DuckDBPyRelation:
         return _weave_diffs_long(self, columns)
 
-    def summary(self) -> duckdb.DuckDBPyRelation:
+    def summary(self) -> _SummaryRelation:
         """Summarize which difference categories are present."""
         value_diffs = not _relation_is_empty(
             self.intersection.filter(f"{_ident('n_diffs')} > 0")
@@ -164,7 +227,7 @@ class Comparison:
         summary_rel, _ = _build_rows_relation(
             self.connection, rows, schema, materialize=False
         )
-        return summary_rel
+        return _SummaryRelation(summary_rel)
 
 
 def compare(

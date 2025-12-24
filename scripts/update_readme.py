@@ -45,6 +45,7 @@ def _collect_blocks() -> str:
             ('comparison.slice_unmatched("b")', comp.slice_unmatched("b")),
             ("comparison.slice_unmatched_both()", comp.slice_unmatched_both()),
         ]
+        sections.append(("comparison.summary()", comp.summary()))
         parts = []
         for label, rel in sections:
             parts.append(_format_block(label, rel))

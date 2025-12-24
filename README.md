@@ -39,8 +39,8 @@ comparison
 # │  table  │              source               │ nrows │ ncols │
 # │ varchar │              varchar              │ int64 │ int64 │
 # ├─────────┼───────────────────────────────────┼───────┼───────┤
-# │ a       │ unnamed_relation_e9b454127dba13b6 │     9 │     9 │
-# │ b       │ unnamed_relation_64e4ed070de71ea9 │    10 │     9 │
+# │ a       │ unnamed_relation_d7526d6bd7e439ee │     9 │     9 │
+# │ b       │ unnamed_relation_2c5503b6e3079430 │    10 │     9 │
 # └─────────┴───────────────────────────────────┴───────┴───────┘
 # 
 # by=
@@ -160,16 +160,15 @@ comparison.slice_unmatched_both()
 # └─────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
 
 comparison.summary()
-# ┌──────────────┬────────┐
-# │ difference   │ found  │
-# │ ---          │ ---    │
-# │ str          │ bool   │
-# ╞══════════════╪════════╡
-# │ value_diffs  │ true   │
-# │ unmatched... │ true   │
-# │ unmatched... │ true   │
-# │ class_diffs  │ false  │
-# └──────────────┴────────┘
+# ┌────────────────┬─────────┐
+# │ difference     │ found   │
+# │ VARCHAR        │ BOOLEAN │
+# ├────────────────┼─────────┤
+# │ value_diffs    │ true    │
+# │ unmatched_cols │ true    │
+# │ unmatched_rows │ true    │
+# │ class_diffs    │ false   │
+# └────────────────┴─────────┘
 ```
 
 ## Notes
@@ -185,6 +184,10 @@ comparison.summary()
   weave helpers, etc.), the library runs SQL in DuckDB and returns the
   results as DuckDB relations, so you can inspect huge tables without
   blowing up Python memory.
+- `comparison.summary()` prints a fixed-width summary table while still
+  returning the DuckDB relation so you can continue piping it through
+  DuckDB APIs. If you ever need the bare relation object, use
+  `comparison.summary().relation`.
 - By default `compare()` materializes the summary relations used in the
   repr (`tables`, `by`, `intersection`, `unmatched_*`). Pass
   `materialize=False` if you prefer to keep those lazy as well (at the
