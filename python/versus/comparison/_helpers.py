@@ -194,8 +194,8 @@ def _build_tables_frame(
         rows.append((identifier, count, len(handle.columns)))
     schema = [
         ("table", "VARCHAR"),
-        ("nrows", "BIGINT"),
-        ("ncols", "BIGINT"),
+        ("nrow", "BIGINT"),
+        ("ncol", "BIGINT"),
     ]
     return _build_rows_relation(conn, rows, schema, materialize)
 

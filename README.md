@@ -36,7 +36,7 @@ comparison = compare(rel_a, rel_b, by="car", connection=con)
 comparison
 # Comparison(tables=
 # ┌─────────┬───────┬───────┐
-# │  table  │ nrows │ ncols │
+# │  table  │ nrow  │ ncol  │
 # │ varchar │ int64 │ int64 │
 # ├─────────┼───────┼───────┤
 # │ a       │     9 │     9 │
