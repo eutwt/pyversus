@@ -97,9 +97,7 @@ class Comparison:
     def value_diffs(self, column: str) -> duckdb.DuckDBPyRelation:
         target_col = _normalize_single_column(column)
         _ensure_column_allowed(self, target_col, "value_diffs")
-        diff_keys = self.diff_key_tables.get(target_col)
-        if diff_keys is None or diff_keys.table is None:
-            raise ComparisonError(f"No diff table available for column: {target_col}")
+        diff_keys = self.diff_key_tables[target_col]
         key_table = diff_keys.table
         table_a, table_b = self.table_id
         select_cols = [
@@ -124,10 +122,7 @@ class Comparison:
         selects: List[str] = []
         schema_rel: Optional[duckdb.DuckDBPyRelation] = None
         for column in selected:
-            diff_keys = self.diff_key_tables.get(column)
-            if diff_keys is None or diff_keys.table is None:
-                continue
-            select_sql = _stack_value_diffs_sql(self, column, diff_keys.table)
+            select_sql = _stack_value_diffs_sql(self, column, self.diff_key_tables[column].table)
             if schema_rel is None:
                 schema_rel = _run_sql(self.connection, f"SELECT * FROM ({select_sql}) AS base LIMIT 0")
             if self._diff_lookup.get(column, 0) == 0:
@@ -285,7 +280,7 @@ def compare(
     diff_tables = _compute_diff_key_tables(
         conn, handles, clean_ids, by_columns, value_columns, allow_both_na
     )
-    diff_key_handles = {col: DiffKeyTable(conn, diff_tables.get(col)) for col in value_columns}
+    diff_key_handles = {col: DiffKeyTable(conn, diff_tables[col]) for col in value_columns}
     intersection, diff_lookup, intersection_table = _build_intersection_frame(
         value_columns, handles, clean_ids, diff_key_handles, conn, materialize
     )
@@ -534,8 +529,7 @@ def _build_intersection_frame(
     diff_lookup: Dict[str, int] = {}
     first, second = table_id
     for column in value_columns:
-        diff_keys = diff_key_tables.get(column)
-        table = diff_keys.table if diff_keys is not None else None
+        table = diff_key_tables[column].table
         count = _table_count(conn, table)
         rows.append(
             (
@@ -611,10 +605,7 @@ def _compute_unmatched_rows(
 def _collect_diff_keys(comparison: Comparison, columns: Sequence[str]) -> str:
     selects = []
     for column in columns:
-        diff_keys = comparison.diff_key_tables.get(column)
-        if diff_keys is None or diff_keys.table is None:
-            raise ComparisonError(f"No diff key table available for column: {column}")
-        selects.append(f"SELECT * FROM {_ident(diff_keys.table)}")
+        selects.append(f"SELECT * FROM {_ident(comparison.diff_key_tables[column].table)}")
     if len(selects) == 1:
         return selects[0]
     return " UNION DISTINCT ".join(selects)
@@ -838,15 +829,11 @@ def _materialize_temp_table(conn: duckdb.DuckDBPyConnection, sql: str) -> str:
 @dataclass
 class DiffKeyTable:
     connection: duckdb.DuckDBPyConnection
-    table: Optional[str]
+    table: str
 
     def df(self) -> duckdb.DuckDBPyRelation:
-        if self.table is None:
-            return self.connection.sql("SELECT 1 WHERE 1=0")
         return _run_sql(self.connection, f"SELECT * FROM {_ident(self.table)}")
 
     def __repr__(self) -> str:
-        if self.table is None:
-            return "<0 rows>"
         count = self.connection.sql(f"SELECT COUNT(*) FROM {_ident(self.table)}").fetchone()[0]
         return f"<{count} rows>"

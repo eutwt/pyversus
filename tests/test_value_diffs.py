@@ -54,6 +54,11 @@ def test_value_diffs_empty_when_no_differences(comparison_with_diffs):
     assert rel_height(out) == 0
 
 
+def test_value_diffs_stacked_empty_when_no_differences(comparison_with_diffs):
+    out = comparison_with_diffs.value_diffs_stacked(["note"])
+    assert rel_height(out) == 0
+
+
 def test_value_diffs_errors_on_unknown_column(comparison_with_diffs):
     with pytest.raises(ComparisonError):
         comparison_with_diffs.value_diffs("missing")
