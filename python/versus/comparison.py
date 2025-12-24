@@ -209,25 +209,26 @@ class Comparison:
             return _select_zero_from_table(self, table_a, out_cols)
         suffix = _resolve_suffix(suffix, self.table_id)
         keys = _collect_diff_keys(self, diff_cols)
-
-        rows_a = _fetch_rows_by_keys(self, table_a, keys, out_cols)
-        rows_b = _fetch_rows_by_keys(self, table_b, keys, [*self.by_columns, *diff_cols])
-
-        for column in diff_cols:
-            rows_a = rows_a.rename({column: f"{column}{suffix[0]}"})
-            rows_b = rows_b.rename({column: f"{column}{suffix[1]}"})
-
-        rows_b = rows_b.select([*self.by_columns, *[f"{col}{suffix[1]}" for col in diff_cols]])
-        merged = rows_a.join(rows_b, on=self.by_columns, how="left")
-
-        ordered = self.by_columns.copy()
+        select_parts = []
+        for column in self.by_columns:
+            select_parts.append(_col("a", column))
         for column in self.common_columns:
             if column in diff_cols:
-                ordered.append(f"{column}{suffix[0]}")
-                ordered.append(f"{column}{suffix[1]}")
+                select_parts.append(f"{_col('a', column)} AS {_ident(f'{column}{suffix[0]}')}")
+                select_parts.append(f"{_col('b', column)} AS {_ident(f'{column}{suffix[1]}')}")
             else:
-                ordered.append(column)
-        return merged.select(ordered)
+                select_parts.append(_col("a", column))
+        join_a = _join_condition(self.by_columns, "keys", "a")
+        join_b = _join_condition(self.by_columns, "keys", "b")
+        sql = f"""
+        SELECT {", ".join(select_parts)}
+        FROM ({keys}) AS keys
+        JOIN {_ident(self._handles[table_a].name)} AS a
+          ON {join_a}
+        JOIN {_ident(self._handles[table_b].name)} AS b
+          ON {join_b}
+        """
+        return _run_query(self.connection, sql)
 
     def weave_diffs_long(
         self,
@@ -241,20 +242,29 @@ class Comparison:
             base = _select_zero_from_table(self, table_a, out_cols)
             return base.with_columns(pl.lit(table_a).alias("table")).select(["table", *out_cols])
         keys = _collect_diff_keys(self, diff_cols)
-
-        rows_a = _fetch_rows_by_keys(self, table_a, keys, out_cols).with_columns(
-            pl.lit(table_a).alias("table")
-        )
-        rows_b = _fetch_rows_by_keys(self, table_b, keys, out_cols).with_columns(
-            pl.lit(table_b).alias("table")
-        )
-        return pl.concat(
-            [
-                rows_a.select(["table", *out_cols]),
-                rows_b.select(["table", *out_cols]),
-            ],
-            how="vertical",
-        )
+        table_column = _ident("table")
+        select_cols_a = ", ".join(f"{_col('a', column)} AS {_ident(column)}" for column in out_cols)
+        select_cols_b = ", ".join(f"{_col('b', column)} AS {_ident(column)}" for column in out_cols)
+        join_a = _join_condition(self.by_columns, "keys", "a")
+        join_b = _join_condition(self.by_columns, "keys", "b")
+        order_cols = ", ".join(_ident(column) for column in self.by_columns)
+        sql = f"""
+        WITH diff_keys AS ({keys})
+        SELECT {table_column}, {", ".join(_ident(column) for column in out_cols)}
+        FROM (
+            SELECT 0 AS __table_order, '{table_a}' AS {table_column}, {select_cols_a}
+            FROM diff_keys AS keys
+            JOIN {_ident(self._handles[table_a].name)} AS a
+              ON {join_a}
+            UNION ALL
+            SELECT 1 AS __table_order, '{table_b}' AS {table_column}, {select_cols_b}
+            FROM diff_keys AS keys
+            JOIN {_ident(self._handles[table_b].name)} AS b
+              ON {join_b}
+        ) AS stacked
+        ORDER BY {order_cols}, __table_order
+        """
+        return _run_query(self.connection, sql)
 
 
 def compare(

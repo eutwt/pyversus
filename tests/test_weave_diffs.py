@@ -55,6 +55,19 @@ def test_weave_diffs_long_empty_when_no_differences():
     comp.close()
     con.close()
 
+def test_weave_diffs_long_interleaves_rows():
+    con = duckdb.connect()
+    comp = compare(
+        con.sql("SELECT * FROM (VALUES (1, 10), (2, 20)) AS t(id, value)"),
+        con.sql("SELECT * FROM (VALUES (1, 11), (2, 25)) AS t(id, value)"),
+        by=["id"],
+        connection=con,
+    )
+    out = comp.weave_diffs_long(["value"])
+    assert out["table"].to_list() == ["a", "b", "a", "b"]
+    assert out["id"].to_list() == [1, 1, 2, 2]
+    comp.close()
+    con.close()
 
 def test_weave_diffs_respects_custom_table_ids():
     con = duckdb.connect()
