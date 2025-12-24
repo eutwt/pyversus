@@ -57,6 +57,10 @@ jobs:
           python -m pip install pytest
         env:
           DUCKDB_PIN: ${{ matrix.duckdb-version }}
+      - name: Install ty
+        run: python -m pip install ty
+      - name: Type check
+        run: ty check
       - name: Install PyArrow (pinned)
         if: matrix.pyarrow-constraint != ''
         run: python -m pip install "pyarrow${{ matrix.pyarrow-constraint }}"
