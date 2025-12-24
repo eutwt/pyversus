@@ -618,14 +618,7 @@ def _fetch_rows_by_keys(
 
 def _run_query(conn: duckdb.DuckDBPyConnection, sql: str) -> pl.DataFrame:
     relation = conn.sql(sql)
-    try:
-        df = relation.pl()
-    except ModuleNotFoundError:
-        rows = relation.fetchall()
-        columns = relation.columns
-        if not rows:
-            return _empty_df(columns)
-        return pl.DataFrame(rows, schema=columns, orient="row")
+    df = relation.pl()
     if df is None:
         return _empty_df(relation.columns)
     return df
