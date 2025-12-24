@@ -6,6 +6,15 @@ import pytest
 from versus import ComparisonError, compare
 
 
+def rel_values(rel, column):
+    idx = rel.columns.index(column)
+    return [row[idx] for row in rel.fetchall()]
+
+
+def rel_height(rel):
+    return rel.aggregate("COUNT(*) AS n").fetchone()[0]
+
+
 @pytest.fixture
 def comparison_for_slice():
     con = duckdb.connect()
@@ -28,24 +37,25 @@ def comparison_for_slice():
 
 def test_slice_diffs_returns_rows(comparison_for_slice):
     out = comparison_for_slice.slice_diffs("a", ["value"])
-    assert sorted(out["id"].to_list()) == [2, 3]
+    assert sorted(rel_values(out, "id")) == [2, 3]
 
 
 def test_slice_diffs_does_not_duplicate_rows(comparison_for_slice):
     out = comparison_for_slice.slice_diffs("a", ["value", "other"])
-    assert sorted(out["id"].to_list()) == [2, 3]
-    counts = Counter(out["id"].to_list())
+    assert sorted(rel_values(out, "id")) == [2, 3]
+    counts = Counter(rel_values(out, "id"))
     assert counts[2] == 1 and counts[3] == 1
 
 
-def test_slice_diffs_only_includes_requested_columns(comparison_for_slice):
+def test_slice_diffs_returns_all_table_columns(comparison_for_slice):
     out = comparison_for_slice.slice_diffs("a", ["value", "note"])
-    assert out.columns == ["id", "value", "note"]
+    assert out.columns == ["id", "value", "other", "note"]
 
 
 def test_slice_diffs_empty_when_no_column_diff(comparison_for_slice):
     out = comparison_for_slice.slice_diffs("a", ["note"])
-    assert out.height == 0
+    assert rel_height(out) == 0
+    assert out.columns == ["id", "value", "other", "note"]
 
 
 def test_slice_diffs_errors_on_invalid_table(comparison_for_slice):

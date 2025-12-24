@@ -148,14 +148,11 @@ class Comparison:
         table_name = _normalize_table_arg(self, table)
         selected = _resolve_column_list(self, columns)
         diff_cols = [col for col in selected if self._diff_lookup[col] > 0]
-        ordered_cols: List[str] = []
-        for col in [*self.by_columns, *selected]:
-            if col not in ordered_cols:
-                ordered_cols.append(col)
+        table_columns = self.table_columns[table_name]
         if not diff_cols:
-            return _select_zero_from_table(self, table_name, ordered_cols)
+            return _select_zero_from_table(self, table_name, table_columns)
         key_sql = _collect_diff_keys(self, diff_cols)
-        return _fetch_rows_by_keys(self, table_name, key_sql, ordered_cols)
+        return _fetch_rows_by_keys(self, table_name, key_sql, table_columns)
 
     def slice_unmatched(self, table: str) -> duckdb.DuckDBPyRelation:
         table_name = _normalize_table_arg(self, table)

@@ -4,6 +4,15 @@ import pytest
 from versus import ComparisonError, compare
 
 
+def rel_values(rel, column):
+    idx = rel.columns.index(column)
+    return [row[idx] for row in rel.fetchall()]
+
+
+def rel_height(rel):
+    return rel.aggregate("COUNT(*) AS n").fetchone()[0]
+
+
 @pytest.fixture
 def comparison_with_diffs():
     con = duckdb.connect()
@@ -35,14 +44,14 @@ def comparison_with_diffs():
 
 def test_value_diffs_reports_rows(comparison_with_diffs):
     out = comparison_with_diffs.value_diffs("value")
-    assert out["id"].to_list() == [2]
-    assert out["value_a"].to_list() == [20]
-    assert out["value_b"].to_list() == [25]
+    assert rel_values(out, "id") == [2]
+    assert rel_values(out, "value_a") == [20]
+    assert rel_values(out, "value_b") == [25]
 
 
 def test_value_diffs_empty_when_no_differences(comparison_with_diffs):
     out = comparison_with_diffs.value_diffs("note")
-    assert out.height == 0
+    assert rel_height(out) == 0
 
 
 def test_value_diffs_errors_on_unknown_column(comparison_with_diffs):
@@ -52,8 +61,8 @@ def test_value_diffs_errors_on_unknown_column(comparison_with_diffs):
 
 def test_value_diffs_stacked_combines_columns(comparison_with_diffs):
     out = comparison_with_diffs.value_diffs_stacked(["value", "wind"])
-    assert set(out["column"].to_list()) == {"value", "wind"}
-    assert out.height == 2
+    assert set(rel_values(out, "column")) == {"value", "wind"}
+    assert rel_height(out) == 2
 
 
 def test_value_diffs_stacked_handles_incompatible_types():
@@ -68,7 +77,7 @@ def test_value_diffs_stacked_handles_incompatible_types():
         connection=con,
     )
     out = comp.value_diffs_stacked(["alpha", "beta"])
-    assert set(out["column"].to_list()) == {"alpha", "beta"}
+    assert set(rel_values(out, "column")) == {"alpha", "beta"}
     comp.close()
     con.close()
 
