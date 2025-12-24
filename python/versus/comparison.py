@@ -121,7 +121,7 @@ class Comparison:
         join_a = _join_condition(self.by_columns, "keys", "a")
         join_b = _join_condition(self.by_columns, "keys", "b")
         sql = f"""
-        SELECT DISTINCT {", ".join(select_cols)}
+        SELECT {", ".join(select_cols)}
         FROM {_ident(key_table)} AS keys
         JOIN {_ident(self._handles[table_a].name)} AS a
           ON {join_a}
@@ -656,7 +656,7 @@ def _fetch_rows_by_keys(
         f"{_col('keys', col)} IS NOT DISTINCT FROM {_col('base', col)}" for col in comparison.by_columns
     )
     sql = f"""
-    SELECT DISTINCT {select_cols}
+    SELECT {select_cols}
     FROM ({key_sql}) AS keys
     JOIN {_ident(comparison._handles[table].name)} AS base
       ON {join_condition}
@@ -781,7 +781,7 @@ def _empty_value_diffs(comparison: Comparison, column: str) -> pl.DataFrame:
     ]
     join_condition = _join_condition(comparison.by_columns, "a", "b")
     sql = f"""
-    SELECT DISTINCT {", ".join(select_cols)}
+    SELECT {", ".join(select_cols)}
     FROM {_ident(comparison._handles[table_a].name)} AS a
     JOIN {_ident(comparison._handles[table_b].name)} AS b
       ON {join_condition}

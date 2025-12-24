@@ -29,6 +29,13 @@ def test_slice_diffs_returns_rows(comparison_for_slice):
     assert sorted(out["id"].to_list()) == [2, 3]
 
 
+def test_slice_diffs_does_not_duplicate_rows(comparison_for_slice):
+    out = comparison_for_slice.slice_diffs("a", ["value", "other"])
+    assert sorted(out["id"].to_list()) == [2, 3]
+    counts = out.group_by("id").len()
+    assert counts["len"][0] == 1 and counts["len"][1] == 1
+
+
 def test_slice_diffs_only_includes_requested_columns(comparison_for_slice):
     out = comparison_for_slice.slice_diffs("a", ["value", "note"])
     assert out.columns == ["id", "value", "note"]
