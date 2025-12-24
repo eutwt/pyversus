@@ -70,7 +70,9 @@ def main() -> None:
         start = text.index(start_marker)
         end = text.index(end_marker)
     except ValueError as exc:
-        raise SystemExit("README markers were not found; manual update required.") from exc
+        raise SystemExit(
+            "README markers were not found; manual update required."
+        ) from exc
     block = _collect_blocks()
     readme.write_text(text[:start] + block + text[end:])
 

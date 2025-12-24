@@ -64,6 +64,7 @@ def test_weave_diffs_long_empty_when_no_differences():
     comp.close()
     con.close()
 
+
 def test_weave_diffs_long_interleaves_rows():
     con = duckdb.connect()
     comp = compare(
@@ -77,6 +78,7 @@ def test_weave_diffs_long_interleaves_rows():
     assert rel_values(out, "id") == [1, 1, 2, 2]
     comp.close()
     con.close()
+
 
 def test_weave_diffs_respects_custom_table_ids():
     con = duckdb.connect()
