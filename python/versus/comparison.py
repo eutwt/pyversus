@@ -110,7 +110,7 @@ class Comparison:
             *self.by_columns,
         ]
         if key_table is None:
-            return _empty_df(col_names)
+            return _empty_value_diffs(self, target_col)
 
         table_a, table_b = self.table_id
         select_cols = [
@@ -148,7 +148,16 @@ class Comparison:
             ordered = ["column", f"val_{table_a}", f"val_{table_b}", *self.by_columns]
             frames.append(df.select(ordered))
         if not frames:
-            return _empty_df(["column", f"val_{table_a}", f"val_{table_b}", *self.by_columns])
+            sample = self.value_diffs(selected[0])
+            sample = sample.rename(
+                {
+                    f"{selected[0]}_{table_a}": f"val_{table_a}",
+                    f"{selected[0]}_{table_b}": f"val_{table_b}",
+                }
+            )
+            sample = sample.with_columns(pl.lit(selected[0]).alias("column"))
+            ordered = ["column", f"val_{table_a}", f"val_{table_b}", *self.by_columns]
+            return sample.select(ordered).head(0)
         val_columns = [f"val_{table_a}", f"val_{table_b}"]
         for column in val_columns:
             dtypes = {frame[column].dtype for frame in frames if column in frame.columns}
@@ -169,17 +178,17 @@ class Comparison:
             if col not in ordered_cols:
                 ordered_cols.append(col)
         if not diff_cols:
-            return _empty_df(ordered_cols)
+            return _select_zero_from_table(self, table_name, ordered_cols)
         key_sql = _collect_diff_keys(self, diff_cols)
         if key_sql is None:
-            return _empty_df(ordered_cols)
+            return _select_zero_from_table(self, table_name, ordered_cols)
         return _fetch_rows_by_keys(self, table_name, key_sql, ordered_cols)
 
     def slice_unmatched(self, table: str) -> pl.DataFrame:
         table_name = _normalize_table_arg(self, table)
         table_ref = self._unmatched_tables.get(table_name)
         if table_ref is None:
-            return _empty_df(self.table_columns[table_name])
+            return _select_zero_from_table(self, table_name, self.table_columns[table_name])
         key_sql = f"SELECT * FROM {_ident(table_ref)}"
         return _fetch_rows_by_keys(self, table_name, key_sql, self.table_columns[table_name])
 
@@ -193,7 +202,8 @@ class Comparison:
             subset = df.select(out_cols).with_columns(pl.lit(table_name).alias("table"))
             frames.append(subset.select(["table", *out_cols]))
         if not frames:
-            return _empty_df(["table", *out_cols])
+            base = _select_zero_from_table(self, self.table_id[0], out_cols)
+            return base.with_columns(pl.lit(self.table_id[0]).alias("table")).select(["table", *out_cols])
         return pl.concat(frames)
 
     def weave_diffs_wide(
@@ -203,15 +213,15 @@ class Comparison:
     ) -> pl.DataFrame:
         selected = _resolve_column_list(self, columns)
         diff_cols = [col for col in selected if self._diff_lookup.get(col, 0) > 0]
+        table_a, table_b = self.table_id
         out_cols = self.by_columns + self.common_columns
         if not diff_cols:
-            return _empty_df(out_cols)
+            return _select_zero_from_table(self, table_a, out_cols)
         suffix = _resolve_suffix(suffix, self.table_id)
         keys = _collect_diff_keys(self, diff_cols)
         if keys is None:
-            return _empty_df(out_cols)
+            return _select_zero_from_table(self, table_a, out_cols)
 
-        table_a, table_b = self.table_id
         rows_a = _fetch_rows_by_keys(self, table_a, keys, out_cols)
         rows_b = _fetch_rows_by_keys(self, table_b, keys, [*self.by_columns, *diff_cols])
 
@@ -237,14 +247,16 @@ class Comparison:
     ) -> pl.DataFrame:
         selected = _resolve_column_list(self, columns)
         diff_cols = [col for col in selected if self._diff_lookup.get(col, 0) > 0]
+        table_a, table_b = self.table_id
         out_cols = self.by_columns + self.common_columns
         if not diff_cols:
-            return _empty_df(["table", *out_cols])
+            base = _select_zero_from_table(self, table_a, out_cols)
+            return base.with_columns(pl.lit(table_a).alias("table")).select(["table", *out_cols])
         keys = _collect_diff_keys(self, diff_cols)
         if keys is None:
-            return _empty_df(["table", *out_cols])
+            base = _select_zero_from_table(self, table_a, out_cols)
+            return base.with_columns(pl.lit(table_a).alias("table")).select(["table", *out_cols])
 
-        table_a, table_b = self.table_id
         rows_a = _fetch_rows_by_keys(self, table_a, keys, out_cols).with_columns(
             pl.lit(table_a).alias("table")
         )
@@ -460,7 +472,16 @@ def _build_tables_frame(
                 "ncols": len(handle.columns),
             }
         )
-    return pl.DataFrame(rows) if rows else _empty_df(["table", "source", "nrows", "ncols"])
+    if rows:
+        return pl.DataFrame(rows)
+    return pl.DataFrame(
+        {
+            "table": pl.Series(name="table", values=[], dtype=pl.String),
+            "source": pl.Series(name="source", values=[], dtype=pl.String),
+            "nrows": pl.Series(name="nrows", values=[], dtype=pl.Int64),
+            "ncols": pl.Series(name="ncols", values=[], dtype=pl.Int64),
+        }
+    )
 
 
 def _build_by_frame(
@@ -478,7 +499,15 @@ def _build_by_frame(
                 f"class_{second}": handles[second].types.get(column, ""),
             }
         )
-    return pl.DataFrame(rows) if rows else _empty_df(["column", f"class_{first}", f"class_{second}"])
+    if rows:
+        return pl.DataFrame(rows)
+    return pl.DataFrame(
+        {
+            "column": pl.Series(name="column", values=[], dtype=pl.String),
+            f"class_{first}": pl.Series(name=f"class_{first}", values=[], dtype=pl.String),
+            f"class_{second}": pl.Series(name=f"class_{second}", values=[], dtype=pl.String),
+        }
+    )
 
 
 def _build_unmatched_cols(
@@ -493,7 +522,15 @@ def _build_unmatched_cols(
         rows.append({"table": first, "column": column, "class": handles[first].types[column]})
     for column in sorted(cols_second - cols_first):
         rows.append({"table": second, "column": column, "class": handles[second].types[column]})
-    return pl.DataFrame(rows) if rows else _empty_df(["table", "column", "class"])
+    if rows:
+        return pl.DataFrame(rows)
+    return pl.DataFrame(
+        {
+            "table": pl.Series("table", [], dtype=pl.String),
+            "column": pl.Series("column", [], dtype=pl.String),
+            "class": pl.Series("class", [], dtype=pl.String),
+        }
+    )
 
 
 def _build_intersection_frame(
@@ -519,7 +556,15 @@ def _build_intersection_frame(
         )
     if rows:
         return pl.DataFrame(rows)
-    return _empty_df(["column", "n_diffs", f"class_{first}", f"class_{second}", "diff_rows"])
+    return pl.DataFrame(
+        {
+            "column": pl.Series(name="column", values=[], dtype=pl.String),
+            "n_diffs": pl.Series(name="n_diffs", values=[], dtype=pl.Int64),
+            f"class_{first}": pl.Series(name=f"class_{first}", values=[], dtype=pl.String),
+            f"class_{second}": pl.Series(name=f"class_{second}", values=[], dtype=pl.String),
+            "diff_rows": pl.Series(name="diff_rows", values=[], dtype=pl.Object),
+        }
+    )
 
 
 def _compute_diff_key_tables(
@@ -571,7 +616,15 @@ def _compute_unmatched_rows(
         summary_sql = " UNION ALL ".join(summary_parts)
         summary_df = _run_query(conn, summary_sql)
     else:
-        summary_df = _empty_df(["table", *by_columns])
+        sample_handle = handles[table_id[0]]
+        select_cols = ", ".join(f"{_col('base', col)} AS {_ident(col)}" for col in by_columns)
+        select_clause = f", {select_cols}" if select_cols else ""
+        sql = f"""
+        SELECT '{table_id[0]}' AS table{select_clause}
+        FROM {_ident(sample_handle.name)} AS base
+        LIMIT 0
+        """
+        summary_df = _run_query(conn, sql)
     return summary_df, tables
 
 
@@ -597,7 +650,7 @@ def _fetch_rows_by_keys(
     columns: Sequence[str],
 ) -> pl.DataFrame:
     if key_sql is None:
-        return _empty_df(columns)
+        return _select_zero_from_table(comparison, table, columns)
     select_cols = ", ".join(f"{_col('base', col)} AS {_ident(col)}" for col in columns)
     join_condition = " AND ".join(
         f"{_col('keys', col)} IS NOT DISTINCT FROM {_col('base', col)}" for col in comparison.by_columns
@@ -705,6 +758,36 @@ def _table_count(conn: duckdb.DuckDBPyConnection, table_name: Optional[str]) -> 
 
 def _empty_df(columns: Sequence[str]) -> pl.DataFrame:
     return pl.DataFrame({col: [] for col in columns})
+
+
+def _select_zero_from_table(comparison: Comparison, table: str, columns: Sequence[str]) -> pl.DataFrame:
+    if not columns:
+        return pl.DataFrame()
+    select_cols = ", ".join(f"{_col('base', col)} AS {_ident(col)}" for col in columns)
+    sql = f"""
+    SELECT {select_cols}
+    FROM {_ident(comparison._handles[table].name)} AS base
+    LIMIT 0
+    """
+    return _run_query(comparison.connection, sql)
+
+
+def _empty_value_diffs(comparison: Comparison, column: str) -> pl.DataFrame:
+    table_a, table_b = comparison.table_id
+    select_cols = [
+        f"{_col('a', column)} AS {_ident(f'{column}_{table_a}')}",
+        f"{_col('b', column)} AS {_ident(f'{column}_{table_b}')}",
+        *[f"{_col('a', by)} AS {_ident(by)}" for by in comparison.by_columns],
+    ]
+    join_condition = _join_condition(comparison.by_columns, "a", "b")
+    sql = f"""
+    SELECT DISTINCT {", ".join(select_cols)}
+    FROM {_ident(comparison._handles[table_a].name)} AS a
+    JOIN {_ident(comparison._handles[table_b].name)} AS b
+      ON {join_condition}
+    LIMIT 0
+    """
+    return _run_query(comparison.connection, sql)
 
 
 def _ident(name: str) -> str:
