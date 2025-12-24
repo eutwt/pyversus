@@ -74,7 +74,7 @@ def identical_comparison():
 def test_compare_summary():
     con, rel_a, rel_b = build_connection()
     comp = compare(rel_a, rel_b, by=["id"], connection=con)
-    assert rel_values(comp.tables, "nrows") == [3, 3]
+    assert rel_values(comp.tables, "nrow") == [3, 3]
     value_row = rel_dicts(comp.intersection.filter("\"column\" = 'value'"))[0]
     assert value_row["n_diffs"] == 1
 
