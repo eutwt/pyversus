@@ -39,8 +39,8 @@ comparison
 # │  table  │              source               │ nrows │ ncols │
 # │ varchar │              varchar              │ int64 │ int64 │
 # ├─────────┼───────────────────────────────────┼───────┼───────┤
-# │ a       │ unnamed_relation_c6b2c207deb2a426 │     9 │     9 │
-# │ b       │ unnamed_relation_ae8e7624aca53328 │    10 │     9 │
+# │ a       │ unnamed_relation_e9b454127dba13b6 │     9 │     9 │
+# │ b       │ unnamed_relation_64e4ed070de71ea9 │    10 │     9 │
 # └─────────┴───────────────────────────────────┴───────┴───────┘
 # 
 # by=
@@ -158,6 +158,18 @@ comparison.slice_unmatched_both()
 # │ b       │ Merc 280C  │         17.8 │     6 │   168 │   123 │         3.92 │         3.44 │     1 │
 # │ b       │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │
 # └─────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
+
+comparison.summary()
+# ┌──────────────┬────────┐
+# │ difference   │ found  │
+# │ ---          │ ---    │
+# │ str          │ bool   │
+# ╞══════════════╪════════╡
+# │ value_diffs  │ true   │
+# │ unmatched... │ true   │
+# │ unmatched... │ true   │
+# │ class_diffs  │ false  │
+# └──────────────┴────────┘
 ```
 
 ## Notes

@@ -103,6 +103,37 @@ def test_slice_unmatched():
     comp.close()
 
 
+def test_summary_reports_difference_categories():
+    con = duckdb.connect()
+    rel_a = con.sql(
+        """
+        SELECT * FROM (
+            VALUES
+                (1, 10, CAST(1.5 AS DOUBLE), 'only_a'),
+                (2, 20, CAST(2.5 AS DOUBLE), 'only_a')
+        ) AS t(id, value, note, extra)
+        """
+    )
+    rel_b = con.sql(
+        """
+        SELECT * FROM (
+            VALUES
+                (1, 99, 1),
+                (3, 30, 2)
+        ) AS t(id, value, note)
+        """
+    )
+    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    summary = comp.summary()
+    assert summary.fetchall() == [
+        ("value_diffs", True),
+        ("unmatched_cols", True),
+        ("unmatched_rows", True),
+        ("class_diffs", True),
+    ]
+    comp.close()
+
+
 def test_duplicate_by_raises():
     con = duckdb.connect()
     rel_dup = con.sql(

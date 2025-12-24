@@ -9,12 +9,14 @@ from ._helpers import (
     _TableHandle,
     _build_by_frame,
     _build_intersection_frame,
+    _build_rows_relation,
     _build_tables_frame,
     _build_unmatched_cols,
     _compute_diff_key_tables,
     _compute_unmatched_rows,
     _ident,
     _normalize_column_list,
+    _relation_is_empty,
     _register_input_view,
     _validate_class_compatibility,
     _validate_columns_exist,
@@ -138,6 +140,32 @@ class Comparison:
     ) -> duckdb.DuckDBPyRelation:
         return _weave_diffs_long(self, columns)
 
+    def summary(self) -> duckdb.DuckDBPyRelation:
+        """Summarize which difference categories are present."""
+        value_diffs = not _relation_is_empty(
+            self.intersection.filter(f"{_ident('n_diffs')} > 0")
+        )
+        unmatched_cols = not _relation_is_empty(self.unmatched_cols)
+        unmatched_rows = not _relation_is_empty(self.unmatched_rows)
+        class_a_col = f"class_{self.table_id[0]}"
+        class_b_col = f"class_{self.table_id[1]}"
+        class_diffs = not _relation_is_empty(
+            self.intersection.filter(
+                f"{_ident(class_a_col)} IS DISTINCT FROM {_ident(class_b_col)}"
+            )
+        )
+        rows = [
+            ("value_diffs", value_diffs),
+            ("unmatched_cols", unmatched_cols),
+            ("unmatched_rows", unmatched_rows),
+            ("class_diffs", class_diffs),
+        ]
+        schema = [("difference", "VARCHAR"), ("found", "BOOLEAN")]
+        summary_rel, _ = _build_rows_relation(
+            self.connection, rows, schema, materialize=False
+        )
+        return summary_rel
+
 
 def compare(
     table_a: Any,
@@ -178,7 +206,9 @@ def compare(
         conn, by_columns, handles, clean_ids, materialize
     )
     common_all = [
-        col for col in handles[clean_ids[0]].columns if col in handles[clean_ids[1]].columns
+        col
+        for col in handles[clean_ids[0]].columns
+        if col in handles[clean_ids[1]].columns
     ]
     value_columns = [col for col in common_all if col not in by_columns]
     unmatched_cols, unmatched_cols_table = _build_unmatched_cols(
