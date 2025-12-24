@@ -56,7 +56,7 @@ class Comparison:
         self.common_columns = common_columns
         self.table_columns = table_columns
         self.diff_key_tables = diff_key_tables
-        self.diff_rows = diff_key_tables  # backwards-compatible alias
+        self.diff_rows = diff_key_tables
         self._unmatched_tables = unmatched_tables
         self._temp_tables = list(temp_tables)
         if intersection.height > 0:
@@ -739,6 +739,3 @@ class DiffKeyTable:
         count = self.connection.sql(f"SELECT COUNT(*) FROM {_ident(self.table)}").fetchone()[0]
         return f"<{count} rows>"
 
-
-# Backwards-compatibility alias; prefer DiffKeyTable going forward.
-LazyRows = DiffKeyTable
