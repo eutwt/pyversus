@@ -4,6 +4,11 @@ import pytest
 from versus import ComparisonError, compare
 
 
+def rel_values(rel, column):
+    idx = rel.columns.index(column)
+    return [row[idx] for row in rel.fetchall()]
+
+
 @pytest.fixture
 def comparison_with_unmatched():
     con = duckdb.connect()
@@ -20,12 +25,12 @@ def comparison_with_unmatched():
 
 def test_slice_unmatched_returns_rows(comparison_with_unmatched):
     out = comparison_with_unmatched.slice_unmatched("a")
-    assert out["id"].to_list() == [1]
+    assert rel_values(out, "id") == [1]
 
 
 def test_slice_unmatched_both_includes_table_label(comparison_with_unmatched):
     out = comparison_with_unmatched.slice_unmatched_both()
-    assert set(out["table"].to_list()) == {"a", "b"}
+    assert set(rel_values(out, "table")) == {"a", "b"}
     assert "id" in out.columns
 
 
@@ -44,8 +49,8 @@ def test_slice_unmatched_respects_custom_table_id():
         connection=con,
     )
     left = comp.slice_unmatched("left")
-    assert left["id"].to_list() == [1]
+    assert rel_values(left, "id") == [1]
     both = comp.slice_unmatched_both()
-    assert set(both["table"].to_list()) == {"left", "right"}
+    assert set(rel_values(both, "table")) == {"left", "right"}
     comp.close()
     con.close()

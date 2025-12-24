@@ -4,6 +4,15 @@ import pytest
 from versus import ComparisonError, compare
 
 
+def rel_values(rel, column):
+    idx = rel.columns.index(column)
+    return [row[idx] for row in rel.fetchall()]
+
+
+def rel_height(rel):
+    return rel.aggregate("COUNT(*) AS n").fetchone()[0]
+
+
 @pytest.fixture
 def comparison_for_weave():
     con = duckdb.connect()
@@ -25,7 +34,7 @@ def test_weave_diffs_wide_has_expected_columns(comparison_for_weave):
 
 def test_weave_diffs_long_contains_both_tables(comparison_for_weave):
     out = comparison_for_weave.weave_diffs_long(["value"])
-    assert set(out["table"].to_list()) == {"a", "b"}
+    assert set(rel_values(out, "table")) == {"a", "b"}
 
 
 def test_weave_diffs_wide_accepts_custom_suffix(comparison_for_weave):
@@ -51,7 +60,7 @@ def test_weave_diffs_long_empty_when_no_differences():
         connection=con,
     )
     out = comp.weave_diffs_long(["value"])
-    assert out.height == 0
+    assert rel_height(out) == 0
     comp.close()
     con.close()
 
@@ -64,8 +73,8 @@ def test_weave_diffs_long_interleaves_rows():
         connection=con,
     )
     out = comp.weave_diffs_long(["value"])
-    assert out["table"].to_list() == ["a", "b", "a", "b"]
-    assert out["id"].to_list() == [1, 1, 2, 2]
+    assert rel_values(out, "table") == ["a", "b", "a", "b"]
+    assert rel_values(out, "id") == [1, 1, 2, 2]
     comp.close()
     con.close()
 
@@ -81,6 +90,6 @@ def test_weave_diffs_respects_custom_table_ids():
     wide = comp.weave_diffs_wide(["value"])
     assert {"value_original", "value_updated"}.issubset(set(wide.columns))
     long = comp.weave_diffs_long(["value"])
-    assert set(long["table"].to_list()) == {"original", "updated"}
+    assert set(rel_values(long, "table")) == {"original", "updated"}
     comp.close()
     con.close()
