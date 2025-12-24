@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import contextlib
+import io
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import duckdb
@@ -32,49 +34,6 @@ from ._weave import weave_diffs_long as _weave_diffs_long
 from ._weave import weave_diffs_wide as _weave_diffs_wide
 
 
-def _format_summary_table(
-    rows: Sequence[Tuple[str, bool]],
-) -> str:
-    columns = ("difference", "found")
-    types = ("VARCHAR", "BOOLEAN")
-    text_rows = [(row[0], "true" if row[1] else "false") for row in rows]
-    widths: List[int] = []
-    for idx in range(len(columns)):
-        base_width = max(len(columns[idx]), len(types[idx]))
-        if text_rows:
-            base_width = max(base_width, max(len(row[idx]) for row in text_rows))
-        widths.append(base_width)
-
-    def border(left: str, sep: str, right: str) -> str:
-        segments = [("─" * (width + 2)) for width in widths]
-        return left + sep.join(segments) + right
-
-    def format_cell(text: str, width: int, align: str) -> str:
-        if align == "center":
-            padding = max(width - len(text), 0)
-            left = padding // 2
-            right = padding - left
-            return f"{' ' * left}{text}{' ' * right}"
-        return text.ljust(width)
-
-    def row_line(values: Tuple[str, ...], align: str = "left") -> str:
-        padded = []
-        for idx, value in enumerate(values):
-            padded.append(f" {format_cell(value, widths[idx], align)} ")
-        return "│" + "│".join(padded) + "│"
-
-    lines = [
-        border("┌", "┬", "┐"),
-        row_line(columns, align="center"),
-        row_line(types, align="center"),
-        border("├", "┼", "┤"),
-    ]
-    for row in text_rows:
-        lines.append(row_line(row))
-    lines.append(border("└", "┴", "┘"))
-    return "\n".join(lines)
-
-
 class _SummaryRelation:
     """Wrapper that only tweaks `__repr__` so summary labels aren't truncated.
 
@@ -98,7 +57,10 @@ class _SummaryRelation:
         return sorted(set(dir(self._relation)) | set(super().__dir__()))
 
     def __repr__(self) -> str:
-        return _format_summary_table(self._relation.fetchall())
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            self._relation.show(max_col_width=80)
+        return buffer.getvalue().rstrip()
 
     __str__ = __repr__
 

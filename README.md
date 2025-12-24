@@ -39,8 +39,8 @@ comparison
 # │  table  │              source               │ nrows │ ncols │
 # │ varchar │              varchar              │ int64 │ int64 │
 # ├─────────┼───────────────────────────────────┼───────┼───────┤
-# │ a       │ unnamed_relation_885b3792e9a423e6 │     9 │     9 │
-# │ b       │ unnamed_relation_3567129b52657533 │    10 │     9 │
+# │ a       │ unnamed_relation_9c9c5448381394db │     9 │     9 │
+# │ b       │ unnamed_relation_16be0d8e462d805c │    10 │     9 │
 # └─────────┴───────────────────────────────────┴───────┴───────┘
 # 
 # by=
@@ -162,7 +162,7 @@ comparison.slice_unmatched_both()
 comparison.summary()
 # ┌────────────────┬─────────┐
 # │   difference   │  found  │
-# │    VARCHAR     │ BOOLEAN │
+# │    varchar     │ boolean │
 # ├────────────────┼─────────┤
 # │ value_diffs    │ true    │
 # │ unmatched_cols │ true    │
