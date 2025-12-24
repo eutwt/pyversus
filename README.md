@@ -186,8 +186,7 @@ comparison.summary()
   blowing up Python memory.
 - `comparison.summary()` prints a fixed-width summary table while still
   returning the DuckDB relation so you can continue piping it through
-  DuckDB APIs. If you ever need the bare relation object, use
-  `comparison.summary().relation`.
+  DuckDB APIs.
 - By default `compare()` materializes the summary relations used in the
   repr (`tables`, `by`, `intersection`, `unmatched_*`). Pass
   `materialize=False` if you prefer to keep those lazy as well (at the

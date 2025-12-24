@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import contextlib
-import io
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import duckdb
@@ -32,37 +30,6 @@ from ._value_diffs import value_diffs as _value_diffs
 from ._value_diffs import value_diffs_stacked as _value_diffs_stacked
 from ._weave import weave_diffs_long as _weave_diffs_long
 from ._weave import weave_diffs_wide as _weave_diffs_wide
-
-
-class _SummaryRelation:
-    """Wrapper that only tweaks `__repr__` so summary labels aren't truncated.
-
-    DuckDB relations come from a C-extension type, so we cannot subclass or
-    swap their class at runtime. Instead, we proxy every attribute (see
-    ``__getattr__``) to the original relation, which remains accessible via
-    ``.relation`` if callers need the bare ``DuckDBPyRelation`` object.
-    """
-
-    def __init__(self, relation: duckdb.DuckDBPyRelation) -> None:
-        self._relation = relation
-
-    @property
-    def relation(self) -> duckdb.DuckDBPyRelation:
-        return self._relation
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(self._relation, name)
-
-    def __dir__(self) -> List[str]:
-        return sorted(set(dir(self._relation)) | set(super().__dir__()))
-
-    def __repr__(self) -> str:
-        buffer = io.StringIO()
-        with contextlib.redirect_stdout(buffer):
-            self._relation.show(max_col_width=80)
-        return buffer.getvalue().rstrip()
-
-    __str__ = __repr__
 
 
 class Comparison:
@@ -173,7 +140,7 @@ class Comparison:
     ) -> duckdb.DuckDBPyRelation:
         return _weave_diffs_long(self, columns)
 
-    def summary(self) -> _SummaryRelation:
+    def summary(self) -> duckdb.DuckDBPyRelation:
         """Summarize which difference categories are present."""
         value_diffs = not _relation_is_empty(
             self.intersection.filter(f"{_ident('n_diffs')} > 0")
@@ -195,9 +162,9 @@ class Comparison:
         ]
         schema = [("difference", "VARCHAR"), ("found", "BOOLEAN")]
         summary_rel, _ = _build_rows_relation(
-            self.connection, rows, schema, materialize=False
+            self.connection, rows, schema, materialize=True
         )
-        return _SummaryRelation(summary_rel)
+        return summary_rel
 
 
 def compare(
