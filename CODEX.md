@@ -53,6 +53,10 @@ future contributors can work without hunting through old context.
   assets or benchmark harnesses.
 - Keep the code base Python 3.7-compatible (no pattern matching,
   `str.removeprefix`, `typing.Annotated`, etc.).
+- GitHub Actions runs the test suite on Python 3.7 with Polars 0.18.
+  Keep that workflow green: run `uv run pytest` locally before pushing,
+  avoid APIs missing from that stack (e.g., prefer `pl.Utf8` to
+  `pl.String`), and don’t merge unless the Actions build is green.
 
 ## Style notes
 

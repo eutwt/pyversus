@@ -208,7 +208,7 @@ def test_value_diffs_stacked_empty_structure():
     df = comp.value_diffs_stacked()
     assert df.height == 0
     assert df.columns == ["column", "val_a", "val_b", "id"]
-    assert df.dtypes == [pl.String, pl.Int32, pl.Int32, pl.Int32]
+    assert df.dtypes == [pl.Utf8, pl.Int32, pl.Int32, pl.Int32]
     comp.close()
 
 
@@ -235,7 +235,7 @@ def test_weave_long_empty_structure():
     df = comp.weave_diffs_long(["value"])
     assert df.height == 0
     assert df.columns == ["table", "id", "value"]
-    assert df.dtypes == [pl.String, pl.Int32, pl.Int32]
+    assert df.dtypes == [pl.Utf8, pl.Int32, pl.Int32]
     comp.close()
 
 
@@ -253,20 +253,20 @@ def test_slice_unmatched_both_empty_structure():
     df = comp.slice_unmatched_both()
     assert df.height == 0
     assert df.columns == ["table", "id", "value"]
-    assert df.dtypes == [pl.String, pl.Int32, pl.Int32]
+    assert df.dtypes == [pl.Utf8, pl.Int32, pl.Int32]
     comp.close()
 
 
 def test_unmatched_cols_empty_preserves_types():
     comp = identical_comparison()
-    assert comp.unmatched_cols.dtypes == [pl.String, pl.String, pl.String]
+    assert comp.unmatched_cols.dtypes == [pl.Utf8, pl.Utf8, pl.Utf8]
     comp.close()
 
 
 def test_unmatched_rows_empty_structure():
     comp = identical_comparison()
     assert comp.unmatched_rows.height == 0
-    assert comp.unmatched_rows.dtypes == [pl.String, pl.Int32]
+    assert comp.unmatched_rows.dtypes == [pl.Utf8, pl.Int32]
     comp.close()
 
 

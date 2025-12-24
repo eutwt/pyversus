@@ -461,8 +461,8 @@ def _build_tables_frame(
         return pl.DataFrame(rows)
     return pl.DataFrame(
         {
-            "table": pl.Series(name="table", values=[], dtype=pl.String),
-            "source": pl.Series(name="source", values=[], dtype=pl.String),
+            "table": pl.Series(name="table", values=[], dtype=pl.Utf8),
+            "source": pl.Series(name="source", values=[], dtype=pl.Utf8),
             "nrows": pl.Series(name="nrows", values=[], dtype=pl.Int64),
             "ncols": pl.Series(name="ncols", values=[], dtype=pl.Int64),
         }
@@ -488,9 +488,9 @@ def _build_by_frame(
         return pl.DataFrame(rows)
     return pl.DataFrame(
         {
-            "column": pl.Series(name="column", values=[], dtype=pl.String),
-            f"class_{first}": pl.Series(name=f"class_{first}", values=[], dtype=pl.String),
-            f"class_{second}": pl.Series(name=f"class_{second}", values=[], dtype=pl.String),
+            "column": pl.Series(name="column", values=[], dtype=pl.Utf8),
+            f"class_{first}": pl.Series(name=f"class_{first}", values=[], dtype=pl.Utf8),
+            f"class_{second}": pl.Series(name=f"class_{second}", values=[], dtype=pl.Utf8),
         }
     )
 
@@ -511,9 +511,9 @@ def _build_unmatched_cols(
         return pl.DataFrame(rows)
     return pl.DataFrame(
         {
-            "table": pl.Series("table", [], dtype=pl.String),
-            "column": pl.Series("column", [], dtype=pl.String),
-            "class": pl.Series("class", [], dtype=pl.String),
+            "table": pl.Series("table", [], dtype=pl.Utf8),
+            "column": pl.Series("column", [], dtype=pl.Utf8),
+            "class": pl.Series("class", [], dtype=pl.Utf8),
         }
     )
 
@@ -543,10 +543,10 @@ def _build_intersection_frame(
         return pl.DataFrame(rows)
     return pl.DataFrame(
         {
-            "column": pl.Series(name="column", values=[], dtype=pl.String),
+            "column": pl.Series(name="column", values=[], dtype=pl.Utf8),
             "n_diffs": pl.Series(name="n_diffs", values=[], dtype=pl.Int64),
-            f"class_{first}": pl.Series(name=f"class_{first}", values=[], dtype=pl.String),
-            f"class_{second}": pl.Series(name=f"class_{second}", values=[], dtype=pl.String),
+            f"class_{first}": pl.Series(name=f"class_{first}", values=[], dtype=pl.Utf8),
+            f"class_{second}": pl.Series(name=f"class_{second}", values=[], dtype=pl.Utf8),
             "diff_rows": pl.Series(name="diff_rows", values=[], dtype=pl.Object),
         }
     )
