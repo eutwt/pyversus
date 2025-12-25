@@ -333,8 +333,6 @@ def _collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
     selects = []
     for column in columns:
         selects.append(f"SELECT * FROM {_ident(comparison.diff_key_tables[column])}")
-    if len(selects) == 1:
-        return selects[0]
     return " UNION DISTINCT ".join(selects)
 
 
@@ -345,10 +343,7 @@ def _fetch_rows_by_keys(
     columns: Sequence[str],
 ) -> duckdb.DuckDBPyRelation:
     select_cols = _select_cols(columns, alias="base")
-    join_condition = " AND ".join(
-        f"{_col('keys', col)} IS NOT DISTINCT FROM {_col('base', col)}"
-        for col in comparison.by_columns
-    )
+    join_condition = _join_condition(comparison.by_columns, "keys", "base")
     sql = f"""
     SELECT {select_cols}
     FROM ({key_sql}) AS keys
