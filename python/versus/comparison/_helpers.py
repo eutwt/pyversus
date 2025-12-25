@@ -305,8 +305,7 @@ def _compute_unmatched_rows(
     table_id: Tuple[str, str],
     by_columns: List[str],
     materialize: bool,
-) -> Tuple[duckdb.DuckDBPyRelation, Dict[str, str], Optional[str]]:
-    tables: Dict[str, str] = {}
+) -> Tuple[duckdb.DuckDBPyRelation, Optional[str]]:
     summary_parts = []
     for identifier in table_id:
         other = table_id[1] if identifier == table_id[0] else table_id[0]
@@ -314,23 +313,20 @@ def _compute_unmatched_rows(
         handle_right = handles[other]
         select_by = _select_cols(by_columns, alias="left_tbl")
         condition = _join_condition(by_columns, "left_tbl", "right_tbl")
-        sql = f"""
-        SELECT {select_by}
-        FROM {_ident(handle_left.name)} AS left_tbl
-        WHERE NOT EXISTS (
-            SELECT 1
-            FROM {_ident(handle_right.name)} AS right_tbl
-            WHERE {condition}
-        )
-        """
-        table_name = _materialize_temp_table(conn, sql)
-        tables[identifier] = table_name
         summary_parts.append(
-            f"SELECT '{identifier}' AS table, * FROM {_ident(table_name)}"
+            f"""
+            SELECT {_sql_literal(identifier)} AS table, {select_by}
+            FROM {_ident(handle_left.name)} AS left_tbl
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM {_ident(handle_right.name)} AS right_tbl
+                WHERE {condition}
+            )
+            """
         )
     summary_sql = " UNION ALL ".join(summary_parts)
     summary_rel, summary_table = _finalize_relation(conn, summary_sql, materialize)
-    return summary_rel, tables, summary_table
+    return summary_rel, summary_table
 
 
 def _collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:

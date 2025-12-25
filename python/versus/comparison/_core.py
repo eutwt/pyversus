@@ -52,7 +52,6 @@ class Comparison:
         common_columns: List[str],
         table_columns: Mapping[str, List[str]],
         diff_key_tables: Mapping[str, str],
-        unmatched_tables: Mapping[str, str],
         temp_tables: Sequence[str],
         diff_lookup: Dict[str, int],
     ) -> None:
@@ -71,7 +70,6 @@ class Comparison:
         self.table_columns = table_columns
         self.diff_key_tables = diff_key_tables
         self.diff_rows = diff_key_tables
-        self._unmatched_tables = unmatched_tables
         self._temp_tables = list(temp_tables)
         self._diff_lookup = diff_lookup
         self._closed = False
@@ -227,24 +225,20 @@ def compare(
     intersection, diff_lookup, intersection_table = _build_intersection_frame(
         value_columns, handles, clean_ids, diff_key_handles, conn, materialize
     )
-    unmatched_rows_rel, unmatched_tables, unmatched_summary_table = (
-        _compute_unmatched_rows(conn, handles, clean_ids, by_columns, materialize)
+    unmatched_rows_rel, unmatched_summary_table = _compute_unmatched_rows(
+        conn, handles, clean_ids, by_columns, materialize
     )
-    temp_tables = (
-        list(diff_tables.values())
-        + list(unmatched_tables.values())
-        + [
-            name
-            for name in [
-                tables_table,
-                by_table,
-                unmatched_cols_table,
-                intersection_table,
-                unmatched_summary_table,
-            ]
-            if name is not None
+    temp_tables = list(diff_tables.values()) + [
+        name
+        for name in [
+            tables_table,
+            by_table,
+            unmatched_cols_table,
+            intersection_table,
+            unmatched_summary_table,
         ]
-    )
+        if name is not None
+    ]
 
     return Comparison(
         connection=conn,
@@ -262,7 +256,6 @@ def compare(
             identifier: handle.columns[:] for identifier, handle in handles.items()
         },
         diff_key_tables=diff_key_handles,
-        unmatched_tables=unmatched_tables,
         temp_tables=temp_tables,
         diff_lookup=diff_lookup,
     )

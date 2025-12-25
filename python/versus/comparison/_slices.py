@@ -36,10 +36,16 @@ def slice_diffs(
     return _fetch_rows_by_keys(comparison, table_name, key_sql, table_columns)
 
 
+def _unmatched_keys_sql(comparison: "Comparison", table_name: str) -> str:
+    unmatched_sql = comparison.unmatched_rows.sql_query()
+    by_cols = _select_cols(comparison.by_columns, alias="keys")
+    table_filter = f"keys.{_ident('table')} = {_sql_literal(table_name)}"
+    return f"SELECT {by_cols} FROM ({unmatched_sql}) AS keys WHERE {table_filter}"
+
+
 def slice_unmatched(comparison: "Comparison", table: str) -> duckdb.DuckDBPyRelation:
     table_name = _normalize_table_arg(comparison, table)
-    table_ref = comparison._unmatched_tables[table_name]
-    key_sql = f"SELECT * FROM {_ident(table_ref)}"
+    key_sql = _unmatched_keys_sql(comparison, table_name)
     return _fetch_rows_by_keys(
         comparison, table_name, key_sql, comparison.table_columns[table_name]
     )
@@ -51,13 +57,13 @@ def slice_unmatched_both(comparison: "Comparison") -> duckdb.DuckDBPyRelation:
     join_condition = _join_condition(comparison.by_columns, "keys", "base")
     selects = []
     for table_name in comparison.table_id:
-        keys_table = comparison._unmatched_tables[table_name]
+        keys_sql = _unmatched_keys_sql(comparison, table_name)
         base_table = comparison._handles[table_name].name
         selects.append(
             f"""
                 SELECT {_sql_literal(table_name)} AS table, {select_cols}
                 FROM {_ident(base_table)} AS base
-                JOIN {_ident(keys_table)} AS keys
+                JOIN ({keys_sql}) AS keys
                   ON {join_condition}
                 """
         )
