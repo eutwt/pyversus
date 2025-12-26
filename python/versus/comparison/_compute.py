@@ -17,7 +17,7 @@ def build_tables_frame(
     rows = []
     for identifier in table_id:
         handle = handles[identifier]
-        count = handle.count("*").fetchone()[0]
+        count = h.table_count(handle)
         rows.append((identifier, count, len(handle.columns)))
     schema = [
         ("table", "VARCHAR"),
@@ -87,7 +87,7 @@ def build_intersection_frame(
     first, second = table_id
     for column in value_columns:
         relation = diff_keys[column]
-        count = h.table_count(conn, relation)
+        count = h.table_count(relation)
         rows.append(
             (
                 column,
