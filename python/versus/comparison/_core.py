@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import duckdb
 
@@ -17,7 +17,7 @@ class Comparison:
     def __init__(
         self,
         *,
-        connection: duckdb.DuckDBPyConnection,
+        connection: h.VersusConn,
         handles: Mapping[str, h._TableHandle],
         table_id: Tuple[str, str],
         by_columns: List[str],
@@ -30,8 +30,6 @@ class Comparison:
         common_columns: List[str],
         table_columns: Mapping[str, List[str]],
         diff_key_tables: Mapping[str, duckdb.DuckDBPyRelation],
-        temp_tables: Sequence[str],
-        temp_views: Sequence[str],
         diff_lookup: Dict[str, int],
     ) -> None:
         self.connection = connection
@@ -52,20 +50,18 @@ class Comparison:
         self.table_columns = table_columns
         self.diff_key_tables = diff_key_tables
         self.diff_rows = diff_key_tables
-        self._temp_tables = list(temp_tables)
-        self._temp_views = list(temp_views)
         self._diff_lookup = diff_lookup
         self._closed = False
 
     def close(self) -> None:
         if self._closed:
             return
-        for view in reversed(self._temp_views):
+        for view in reversed(self.connection.versus.views):
             try:
                 self.connection.execute(f"DROP VIEW IF EXISTS {h.ident(view)}")
             except duckdb.Error:
                 pass
-        for view in self._temp_tables:
+        for view in self.connection.versus.temp_tables:
             try:
                 self.connection.execute(f"DROP TABLE IF EXISTS {h.ident(view)}")
             except duckdb.Error:
@@ -144,12 +140,9 @@ class Comparison:
             ("class_diffs", class_diffs),
         ]
         schema = [("difference", "VARCHAR"), ("found", "BOOLEAN")]
-        conn = h.VersusConn(
-            self.connection,
-            temp_tables=self._temp_tables,
-            views=self._temp_views,
+        summary_rel = h.build_rows_relation(
+            self.connection, rows, schema, materialize=True
         )
-        summary_rel = h.build_rows_relation(conn, rows, schema, materialize=True)
         return summary_rel
 
 
@@ -161,7 +154,7 @@ def compare(
     allow_both_na: bool = True,
     coerce: bool = True,
     table_id: Tuple[str, str] = ("a", "b"),
-    connection: Optional[Union[duckdb.DuckDBPyConnection, h.VersusConn]] = None,
+    connection: Optional[duckdb.DuckDBPyConnection] = None,
     materialize: bool = True,
 ) -> Comparison:
     conn_input = connection
@@ -170,13 +163,9 @@ def compare(
         conn_candidate = default_conn() if callable(default_conn) else default_conn
     else:
         conn_candidate = conn_input
-    if isinstance(conn_candidate, h.VersusConn):
-        base_conn = conn_candidate.raw_connection
-    elif isinstance(conn_candidate, duckdb.DuckDBPyConnection):
-        base_conn = conn_candidate
-    else:
+    if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
         raise ComparisonError("`connection` must be a DuckDB connection.")
-    conn = h.VersusConn(base_conn)
+    conn = h.VersusConn(conn_candidate)
     clean_ids = h.validate_table_id(table_id)
     by_columns = h.normalize_column_list(by, "by", allow_empty=False)
     handles = {
@@ -221,7 +210,7 @@ def compare(
     )
 
     return Comparison(
-        connection=base_conn,
+        connection=conn,
         handles=handles,
         table_id=clean_ids,
         by_columns=by_columns,
@@ -236,7 +225,5 @@ def compare(
             identifier: handle.columns[:] for identifier, handle in handles.items()
         },
         diff_key_tables=diff_key_handles,
-        temp_tables=conn.versus.temp_tables,
-        temp_views=conn.versus.views,
         diff_lookup=diff_lookup,
     )
