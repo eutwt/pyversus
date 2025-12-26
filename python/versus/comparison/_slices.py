@@ -23,6 +23,7 @@ def slice_diffs(
         diff_cols = [col for col in selected if comparison._get_diff_lookup()[col] > 0]
     if not diff_cols:
         return h.select_zero_from_table(comparison, table_name)
+    comparison._ensure_diff_keys_materialized()
     key_sql = h.collect_diff_keys(comparison, diff_cols)
     return h.fetch_rows_by_keys(comparison, table_name, key_sql)
 

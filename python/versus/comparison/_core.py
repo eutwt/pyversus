@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, cast
 
 try:
     from typing import Literal
@@ -93,13 +93,9 @@ class Comparison:
         self._diff_keys_materialized = True
 
     def _get_diff_lookup(self) -> Dict[str, int]:
-        if self._diff_lookup is not None:
-            return self._diff_lookup
-        if not self._diff_keys_materialized:
-            self._ensure_diff_keys_materialized()
-        self._refresh_intersection_and_lookup()
-        assert self._diff_lookup is not None
-        return self._diff_lookup
+        if self._diff_lookup is None:
+            self._refresh_intersection_and_lookup()
+        return cast(Dict[str, int], self._diff_lookup)
 
     def close(self) -> None:
         if self._closed:
@@ -248,8 +244,8 @@ def compare(
         clean_ids,
         diff_keys,
         conn,
-        materialize_summary and materialize_keys,
-        materialize_keys,
+        materialize_summary,
+        materialize in {"all", "summary"},
     )
     unmatched_keys = c.compute_unmatched_keys(
         conn, handles, clean_ids, by_columns, materialize_keys

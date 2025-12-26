@@ -207,11 +207,12 @@ computed when you evaluate them unless they were materialized.
   key tables as temp tables. This is fastest if you will call row-level
   helpers multiple times.
 - `materialize="summary"`: store the lightweight summary tables (`tables`,
-  `by`, `unmatched_cols`, `unmatched_rows`). Diff keys and intersection counts
-  stay lazy until you ask for them, then they are materialized once and reused.
-- `materialize="none"`: do not store summary tables up front. Diff keys and
-  counts are computed on demand the first time you ask for rows or summary
-  counts, then reused.
+  `by`, `intersection`, `unmatched_cols`, `unmatched_rows`). Counts are
+  computed during `compare()` but diff key tables stay lazy until you ask for
+  row-level data.
+- `materialize="none"`: do not store summary tables up front. Counts are
+  computed the first time you print or query the summaries. Diff key tables
+  stay lazy until you ask for row-level data.
 
 The package exposes the same high-level helpers as the R version
 (`value_diffs*`, `weave_diffs*`, `slice_*`), so if you already know the
