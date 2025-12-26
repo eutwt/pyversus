@@ -32,7 +32,6 @@ class _TableHandle:
 
 
 @dataclass
-@dataclass
 class VersusState:
     temp_tables: List[str]
     views: List[str]
