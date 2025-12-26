@@ -267,7 +267,7 @@ def build_intersection_frame(
     value_columns: List[str],
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
-    diff_key_tables: Mapping[str, duckdb.DuckDBPyRelation],
+    diff_keys: Mapping[str, duckdb.DuckDBPyRelation],
     conn: VersusConn,
     materialize: bool,
 ) -> Tuple[duckdb.DuckDBPyRelation, Dict[str, int]]:
@@ -275,7 +275,7 @@ def build_intersection_frame(
     diff_lookup: Dict[str, int] = {}
     first, second = table_id
     for column in value_columns:
-        relation = diff_key_tables[column]
+        relation = diff_keys[column]
         count = table_count(conn, relation)
         rows.append(
             (
@@ -296,7 +296,7 @@ def build_intersection_frame(
     return relation, diff_lookup
 
 
-def compute_diff_key_tables(
+def compute_diff_keys(
     conn: VersusConn,
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
@@ -305,18 +305,18 @@ def compute_diff_key_tables(
     allow_both_na: bool,
     materialize: bool,
 ) -> Dict[str, duckdb.DuckDBPyRelation]:
-    diff_tables: Dict[str, duckdb.DuckDBPyRelation] = {}
+    diff_keys: Dict[str, duckdb.DuckDBPyRelation] = {}
     join_sql = join_clause(handles, table_id, by_columns)
     select_by = select_cols(by_columns, alias="a")
     for column in value_columns:
         predicate = diff_predicate(column, allow_both_na, "a", "b")
         sql = f"SELECT {select_by} {join_sql} WHERE {predicate}"
         relation = finalize_relation(conn, sql, materialize)
-        diff_tables[column] = relation
-    return diff_tables
+        diff_keys[column] = relation
+    return diff_keys
 
 
-def compute_unmatched_rows(
+def compute_unmatched_keys(
     conn: VersusConn,
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
@@ -345,10 +345,27 @@ def compute_unmatched_rows(
     return finalize_relation(conn, keys_sql, materialize)
 
 
+def compute_unmatched_rows_summary(
+    conn: VersusConn,
+    unmatched_keys: duckdb.DuckDBPyRelation,
+    materialize: bool,
+) -> duckdb.DuckDBPyRelation:
+    keys_sql = unmatched_keys.sql_query()
+    table_col = ident("table")
+    count_col = ident("n_unmatched")
+    sql = f"""
+    SELECT {table_col}, COUNT(*) AS {count_col}
+    FROM ({keys_sql}) AS keys
+    GROUP BY {table_col}
+    ORDER BY {table_col}
+    """
+    return finalize_relation(conn, sql, materialize)
+
+
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
     selects = []
     for column in columns:
-        key_sql = comparison.diff_key_tables[column].sql_query()
+        key_sql = comparison.diff_keys[column].sql_query()
         selects.append(key_sql)
     return " UNION DISTINCT ".join(selects)
 
@@ -536,7 +553,7 @@ def table_count(conn: VersusConn, relation: duckdb.DuckDBPyRelation) -> int:
     sql = relation.sql_query()
     row = conn.sql(f"SELECT COUNT(*) FROM ({sql}) AS t").fetchone()
     if row is None:
-        raise ComparisonError("Failed to count rows for diff key table")
+        raise ComparisonError("Failed to count rows for diff key relation")
     return row[0]
 
 

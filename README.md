@@ -78,14 +78,13 @@ comparison
 # └─────────┴─────────┴─────────┘
 # 
 # unmatched_rows=
-# ┌─────────┬────────────┐
-# │  table  │    car     │
-# │ varchar │  varchar   │
-# ├─────────┼────────────┤
-# │ a       │ Mazda RX4  │
-# │ b       │ Merc 280C  │
-# │ b       │ Merc 450SE │
-# └─────────┴────────────┘
+# ┌─────────┬─────────────┐
+# │  table  │ n_unmatched │
+# │ varchar │    int64    │
+# ├─────────┼─────────────┤
+# │ a       │           1 │
+# │ b       │           2 │
+# └─────────┴─────────────┘
 # 
 # )
 
@@ -189,6 +188,8 @@ comparison.summary()
   blowing up Python memory.
 - Need insight into the inputs? `comparison.inputs` exposes a mapping
   from table id (e.g., `"a"`, `"b"`) to the input relations.
+- Need the row identifiers for unmatched rows? `comparison.unmatched_keys`
+  exposes the table id plus `by` columns for those keys.
 - By default `compare()` materializes the summary relations used in the
   repr (`tables`, `by`, `intersection`, `unmatched_*`). Pass
   `materialize=False` if you prefer to keep those lazy as well (at the
