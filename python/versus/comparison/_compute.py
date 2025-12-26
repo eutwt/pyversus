@@ -45,8 +45,8 @@ def build_by_frame(
         rows.append(
             (
                 column,
-                handles[first].types.get(column, ""),
-                handles[second].types.get(column, ""),
+                handles[first].types[column],
+                handles[second].types[column],
             )
         )
     schema = [
@@ -97,8 +97,8 @@ def build_intersection_frame(
             (
                 column,
                 count,
-                handles[first].types.get(column, ""),
-                handles[second].types.get(column, ""),
+                handles[first].types[column],
+                handles[second].types[column],
             )
         )
         diff_lookup[column] = count
