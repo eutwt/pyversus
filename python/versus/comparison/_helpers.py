@@ -443,8 +443,10 @@ def table_count(relation: Union[duckdb.DuckDBPyRelation, _TableHandle]) -> int:
 def select_zero_from_table(
     comparison: "Comparison",
     table: str,
-    columns: Sequence[str],
+    columns: Optional[Sequence[str]] = None,
 ) -> duckdb.DuckDBPyRelation:
+    if columns is None:
+        return comparison._handles[table].limit(0)
     if not columns:
         raise ComparisonError("Column list must be non-empty")
     select_cols_sql = select_cols(columns)

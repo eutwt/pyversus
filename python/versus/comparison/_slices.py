@@ -18,9 +18,9 @@ def slice_diffs(
     table_name = h.normalize_table_arg(comparison, table)
     selected = h.resolve_column_list(comparison, columns)
     diff_cols = [col for col in selected if comparison._diff_lookup[col] > 0]
-    table_columns = comparison.table_columns[table_name]
     if not diff_cols:
-        return h.select_zero_from_table(comparison, table_name, table_columns)
+        return h.select_zero_from_table(comparison, table_name)
+    table_columns = comparison.table_columns[table_name]
     key_sql = h.collect_diff_keys(comparison, diff_cols)
     return h.fetch_rows_by_keys(comparison, table_name, key_sql, table_columns)
 
