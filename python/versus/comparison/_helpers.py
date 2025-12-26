@@ -23,6 +23,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from ._core import Comparison
 
 
+# Data structures.
 @dataclass
 class _TableHandle:
     name: str
@@ -57,6 +58,125 @@ class VersusConn:
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._connection, name)
+
+
+# Core-only helpers.
+def resolve_materialize(materialize: str) -> Tuple[bool, bool]:
+    if not isinstance(materialize, str) or materialize not in {
+        "all",
+        "summary",
+        "none",
+    }:
+        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'none'")
+    materialize_summary = materialize in {"all", "summary"}
+    materialize_keys = materialize == "all"
+    return materialize_summary, materialize_keys
+
+
+def resolve_connection(
+    connection: Optional[duckdb.DuckDBPyConnection],
+) -> VersusConn:
+    if connection is not None:
+        conn_candidate = connection
+    else:
+        default_conn = duckdb.default_connection
+        conn_candidate = default_conn() if callable(default_conn) else default_conn
+    if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
+        raise ComparisonError("`connection` must be a DuckDB connection.")
+    return VersusConn(conn_candidate)
+
+
+def validate_columns_exist(
+    by_columns: Iterable[str],
+    handles: Mapping[str, _TableHandle],
+    table_id: Tuple[str, str],
+) -> None:
+    missing_a = [col for col in by_columns if col not in handles[table_id[0]].columns]
+    missing_b = [col for col in by_columns if col not in handles[table_id[1]].columns]
+    if missing_a:
+        raise ComparisonError(
+            f"`by` columns not found in `{table_id[0]}`: {', '.join(missing_a)}"
+        )
+    if missing_b:
+        raise ComparisonError(
+            f"`by` columns not found in `{table_id[1]}`: {', '.join(missing_b)}"
+        )
+
+
+def validate_class_compatibility(
+    handles: Mapping[str, _TableHandle],
+    table_id: Tuple[str, str],
+) -> None:
+    shared = set(handles[table_id[0]].columns) & set(handles[table_id[1]].columns)
+    for column in shared:
+        type_a = handles[table_id[0]].types.get(column)
+        type_b = handles[table_id[1]].types.get(column)
+        if type_a != type_b:
+            raise ComparisonError(
+                f"`coerce=False` requires compatible classes. Column `{column}` has types `{type_a}` vs `{type_b}`."
+            )
+
+
+def ensure_unique_by(
+    conn: VersusConn,
+    handle: _TableHandle,
+    by_columns: List[str],
+    identifier: str,
+) -> None:
+    cols = select_cols(by_columns, alias="t")
+    sql = f"""
+    SELECT {cols}, COUNT(*) AS n
+    FROM {ident(handle.name)} AS t
+    GROUP BY {cols}
+    HAVING COUNT(*) > 1
+    LIMIT 1
+    """
+    rel = run_sql(conn, sql)
+    rows = rel.fetchall()
+    if rows:
+        first = rows[0]
+        values = ", ".join(f"{col}={first[i]!r}" for i, col in enumerate(by_columns))
+        raise ComparisonError(
+            f"`{identifier}` has more than one row for by values ({values})"
+        )
+
+
+# Input validation and normalization.
+def validate_table_id(table_id: Tuple[str, str]) -> Tuple[str, str]:
+    if (
+        not isinstance(table_id, (tuple, list))
+        or len(table_id) != 2
+        or not all(isinstance(val, str) for val in table_id)
+    ):
+        raise ComparisonError("`table_id` must be a tuple of two strings")
+    first, second = table_id[0], table_id[1]
+    if not first.strip() or not second.strip():
+        raise ComparisonError("Entries of `table_id` must be non-empty strings")
+    if first == second:
+        raise ComparisonError("Entries of `table_id` must be distinct")
+    return (first, second)
+
+
+def normalize_column_list(
+    columns: Sequence[str],
+    arg_name: str,
+    *,
+    allow_empty: bool,
+) -> List[str]:
+    if isinstance(columns, str):
+        parsed = [columns]
+    else:
+        try:
+            parsed = list(columns)
+        except TypeError as exc:
+            raise ComparisonError(
+                f"`{arg_name}` must be a sequence of column names"
+            ) from exc
+    if not parsed and not allow_empty:
+        raise ComparisonError(f"`{arg_name}` must contain at least one column")
+    if not all(isinstance(item, str) for item in parsed):
+        raise ComparisonError(f"`{arg_name}` must only contain strings")
+    return parsed
 
 
 def normalize_table_arg(comparison: "Comparison", table: str) -> str:
@@ -120,124 +240,7 @@ def resolve_suffix(
     return (suffix[0], suffix[1])
 
 
-def validate_table_id(table_id: Tuple[str, str]) -> Tuple[str, str]:
-    if (
-        not isinstance(table_id, (tuple, list))
-        or len(table_id) != 2
-        or not all(isinstance(val, str) for val in table_id)
-    ):
-        raise ComparisonError("`table_id` must be a tuple of two strings")
-    first, second = table_id[0], table_id[1]
-    if not first.strip() or not second.strip():
-        raise ComparisonError("Entries of `table_id` must be non-empty strings")
-    if first == second:
-        raise ComparisonError("Entries of `table_id` must be distinct")
-    return (first, second)
-
-
-def normalize_column_list(
-    columns: Sequence[str],
-    arg_name: str,
-    *,
-    allow_empty: bool,
-) -> List[str]:
-    if isinstance(columns, str):
-        parsed = [columns]
-    else:
-        try:
-            parsed = list(columns)
-        except TypeError as exc:
-            raise ComparisonError(
-                f"`{arg_name}` must be a sequence of column names"
-            ) from exc
-    if not parsed and not allow_empty:
-        raise ComparisonError(f"`{arg_name}` must contain at least one column")
-    if not all(isinstance(item, str) for item in parsed):
-        raise ComparisonError(f"`{arg_name}` must only contain strings")
-    return parsed
-
-
-def resolve_materialize(materialize: str) -> Tuple[bool, bool]:
-    if not isinstance(materialize, str) or materialize not in {
-        "all",
-        "summary",
-        "none",
-    }:
-        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'none'")
-    materialize_summary = materialize in {"all", "summary"}
-    materialize_keys = materialize == "all"
-    return materialize_summary, materialize_keys
-
-
-def resolve_connection(
-    connection: Optional[duckdb.DuckDBPyConnection],
-) -> VersusConn:
-    if connection is not None:
-        conn_candidate = connection
-    else:
-        default_conn = duckdb.default_connection
-        conn_candidate = default_conn() if callable(default_conn) else default_conn
-    if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
-        raise ComparisonError("`connection` must be a DuckDB connection.")
-    return VersusConn(conn_candidate)
-
-
-# Core-only validation helpers.
-def validate_columns_exist(
-    by_columns: Iterable[str],
-    handles: Mapping[str, _TableHandle],
-    table_id: Tuple[str, str],
-) -> None:
-    missing_a = [col for col in by_columns if col not in handles[table_id[0]].columns]
-    missing_b = [col for col in by_columns if col not in handles[table_id[1]].columns]
-    if missing_a:
-        raise ComparisonError(
-            f"`by` columns not found in `{table_id[0]}`: {', '.join(missing_a)}"
-        )
-    if missing_b:
-        raise ComparisonError(
-            f"`by` columns not found in `{table_id[1]}`: {', '.join(missing_b)}"
-        )
-
-
-def validate_class_compatibility(
-    handles: Mapping[str, _TableHandle],
-    table_id: Tuple[str, str],
-) -> None:
-    shared = set(handles[table_id[0]].columns) & set(handles[table_id[1]].columns)
-    for column in shared:
-        type_a = handles[table_id[0]].types.get(column)
-        type_b = handles[table_id[1]].types.get(column)
-        if type_a != type_b:
-            raise ComparisonError(
-                f"`coerce=False` requires compatible classes. Column `{column}` has types `{type_a}` vs `{type_b}`."
-            )
-
-
-def ensure_unique_by(
-    conn: VersusConn,
-    handle: _TableHandle,
-    by_columns: List[str],
-    identifier: str,
-) -> None:
-    cols = select_cols(by_columns, alias="t")
-    sql = f"""
-    SELECT {cols}, COUNT(*) AS n
-    FROM {ident(handle.name)} AS t
-    GROUP BY {cols}
-    HAVING COUNT(*) > 1
-    LIMIT 1
-    """
-    rel = run_sql(conn, sql)
-    rows = rel.fetchall()
-    if rows:
-        first = rows[0]
-        values = ", ".join(f"{col}={first[i]!r}" for i, col in enumerate(by_columns))
-        raise ComparisonError(
-            f"`{identifier}` has more than one row for by values ({values})"
-        )
-
-
+# Input registration and metadata.
 def register_input_view(
     conn: VersusConn,
     source: Any,
@@ -274,6 +277,66 @@ def describe_view(conn: VersusConn, name: str) -> Tuple[List[str], Dict[str, str
     return columns, types
 
 
+# SQL builder helpers.
+def ident(name: str) -> str:
+    escaped = name.replace('"', '""')
+    return f'"{escaped}"'
+
+
+def col(alias: str, column: str) -> str:
+    return f"{alias}.{ident(column)}"
+
+
+def select_cols(columns: Sequence[str], alias: Optional[str] = None) -> str:
+    if not columns:
+        raise ComparisonError("Column list must be non-empty")
+    if alias is None:
+        return ", ".join(ident(column) for column in columns)
+    return ", ".join(col(alias, column) for column in columns)
+
+
+def join_condition(by_columns: List[str], left_alias: str, right_alias: str) -> str:
+    comparisons = [
+        f"{col(left_alias, column)} IS NOT DISTINCT FROM {col(right_alias, column)}"
+        for column in by_columns
+    ]
+    return " AND ".join(comparisons) if comparisons else "TRUE"
+
+
+def join_clause(
+    handles: Mapping[str, _TableHandle],
+    table_id: Tuple[str, str],
+    by_columns: List[str],
+) -> str:
+    join_condition_sql = join_condition(by_columns, "a", "b")
+    return (
+        f"FROM {ident(handles[table_id[0]].name)} AS a "
+        f"INNER JOIN {ident(handles[table_id[1]].name)} AS b ON {join_condition_sql}"
+    )
+
+
+def diff_predicate(
+    column: str, allow_both_na: bool, left_alias: str, right_alias: str
+) -> str:
+    left = col(left_alias, column)
+    right = col(right_alias, column)
+    if allow_both_na:
+        return f"{left} IS DISTINCT FROM {right}"
+    return f"(({left} IS NULL AND {right} IS NULL) OR {left} IS DISTINCT FROM {right})"
+
+
+def sql_literal(value: Any) -> str:
+    if value is None:
+        return "NULL"
+    if isinstance(value, str):
+        escaped = value.replace("'", "''")
+        return f"'{escaped}'"
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    return str(value)
+
+
+# Comparison-specific SQL assembly.
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
     selects = []
     for column in columns:
@@ -299,6 +362,7 @@ def fetch_rows_by_keys(
     return run_sql(comparison.connection, sql)
 
 
+# Relation utilities.
 def run_sql(
     conn: Union[VersusConn, duckdb.DuckDBPyConnection],
     sql: str,
@@ -308,59 +372,6 @@ def run_sql(
 
 def relation_is_empty(relation: duckdb.DuckDBPyRelation) -> bool:
     return relation.limit(1).fetchone() is None
-
-
-def diff_predicate(
-    column: str, allow_both_na: bool, left_alias: str, right_alias: str
-) -> str:
-    left = col(left_alias, column)
-    right = col(right_alias, column)
-    if allow_both_na:
-        return f"{left} IS DISTINCT FROM {right}"
-    return f"(({left} IS NULL AND {right} IS NULL) OR {left} IS DISTINCT FROM {right})"
-
-
-def join_clause(
-    handles: Mapping[str, _TableHandle],
-    table_id: Tuple[str, str],
-    by_columns: List[str],
-) -> str:
-    join_condition_sql = join_condition(by_columns, "a", "b")
-    return (
-        f"FROM {ident(handles[table_id[0]].name)} AS a "
-        f"INNER JOIN {ident(handles[table_id[1]].name)} AS b ON {join_condition_sql}"
-    )
-
-
-def join_condition(by_columns: List[str], left_alias: str, right_alias: str) -> str:
-    comparisons = [
-        f"{col(left_alias, column)} IS NOT DISTINCT FROM {col(right_alias, column)}"
-        for column in by_columns
-    ]
-    return " AND ".join(comparisons) if comparisons else "TRUE"
-
-
-def col(alias: str, column: str) -> str:
-    return f"{alias}.{ident(column)}"
-
-
-def select_cols(columns: Sequence[str], alias: Optional[str] = None) -> str:
-    if not columns:
-        raise ComparisonError("Column list must be non-empty")
-    if alias is None:
-        return ", ".join(ident(column) for column in columns)
-    return ", ".join(col(alias, column) for column in columns)
-
-
-def sql_literal(value: Any) -> str:
-    if value is None:
-        return "NULL"
-    if isinstance(value, str):
-        escaped = value.replace("'", "''")
-        return f"'{escaped}'"
-    if isinstance(value, bool):
-        return "TRUE" if value else "FALSE"
-    return str(value)
 
 
 def rows_relation_sql(
@@ -382,6 +393,12 @@ def rows_relation_sql(
     return (
         f"SELECT {select_list} FROM (VALUES {', '.join(value_rows)}) AS v({alias_cols})"
     )
+
+
+def materialize_temp_table(conn: VersusConn, sql: str) -> str:
+    name = f"__versus_table_{uuid.uuid4().hex}"
+    conn.execute(f"CREATE OR REPLACE TEMP TABLE {ident(name)} AS {sql}")
+    return name
 
 
 def finalize_relation(
@@ -428,14 +445,3 @@ def select_zero_from_table(
     LIMIT 0
     """
     return run_sql(comparison.connection, sql)
-
-
-def ident(name: str) -> str:
-    escaped = name.replace('"', '""')
-    return f'"{escaped}"'
-
-
-def materialize_temp_table(conn: VersusConn, sql: str) -> str:
-    name = f"__versus_table_{uuid.uuid4().hex}"
-    conn.execute(f"CREATE OR REPLACE TEMP TABLE {ident(name)} AS {sql}")
-    return name
