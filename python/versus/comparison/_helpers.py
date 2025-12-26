@@ -23,7 +23,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from ._core import Comparison
 
 
-# Data structures.
+# --------------- Data structures
 @dataclass
 class _TableHandle:
     name: str
@@ -60,7 +60,7 @@ class VersusConn:
         return getattr(self._connection, name)
 
 
-# Core-only helpers.
+# --------------- Core-only helpers
 def resolve_materialize(materialize: str) -> Tuple[bool, bool]:
     if not isinstance(materialize, str) or materialize not in {
         "all",
@@ -141,7 +141,7 @@ def ensure_unique_by(
         )
 
 
-# Input validation and normalization.
+# --------------- Input validation and normalization
 def validate_table_id(table_id: Tuple[str, str]) -> Tuple[str, str]:
     if (
         not isinstance(table_id, (tuple, list))
@@ -240,7 +240,7 @@ def resolve_suffix(
     return (suffix[0], suffix[1])
 
 
-# Input registration and metadata.
+# --------------- Input registration and metadata
 def register_input_view(
     conn: VersusConn,
     source: Any,
@@ -277,7 +277,7 @@ def describe_view(conn: VersusConn, name: str) -> Tuple[List[str], Dict[str, str
     return columns, types
 
 
-# SQL builder helpers.
+# --------------- SQL builder helpers
 def ident(name: str) -> str:
     escaped = name.replace('"', '""')
     return f'"{escaped}"'
@@ -336,7 +336,7 @@ def sql_literal(value: Any) -> str:
     return str(value)
 
 
-# Comparison-specific SQL assembly.
+# --------------- Comparison-specific SQL assembly
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
     selects = []
     for column in columns:
@@ -362,7 +362,7 @@ def fetch_rows_by_keys(
     return run_sql(comparison.connection, sql)
 
 
-# Relation utilities.
+# --------------- Relation utilities
 def run_sql(
     conn: Union[VersusConn, duckdb.DuckDBPyConnection],
     sql: str,
