@@ -11,7 +11,6 @@ import duckdb
 
 from . import _helpers as h
 from . import _slices, _value_diffs, _weave
-from ._exceptions import ComparisonError
 
 
 class Comparison:
@@ -163,15 +162,7 @@ def compare(
 ) -> Comparison:
     materialize_summary, materialize_keys = h.resolve_materialize(materialize)
 
-    conn_input = connection
-    if conn_input is not None:
-        conn_candidate = conn_input
-    else:
-        default_conn = duckdb.default_connection
-        conn_candidate = default_conn() if callable(default_conn) else default_conn
-    if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
-        raise ComparisonError("`connection` must be a DuckDB connection.")
-    conn = h.VersusConn(conn_candidate)
+    conn = h.resolve_connection(connection)
     clean_ids = h.validate_table_id(table_id)
     by_columns = h.normalize_column_list(by, "by", allow_empty=False)
     handles = {

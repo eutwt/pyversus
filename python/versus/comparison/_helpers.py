@@ -170,6 +170,19 @@ def resolve_materialize(materialize: str) -> Tuple[bool, bool]:
     return materialize_summary, materialize_keys
 
 
+def resolve_connection(
+    connection: Optional[duckdb.DuckDBPyConnection],
+) -> VersusConn:
+    if connection is not None:
+        conn_candidate = connection
+    else:
+        default_conn = duckdb.default_connection
+        conn_candidate = default_conn() if callable(default_conn) else default_conn
+    if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
+        raise ComparisonError("`connection` must be a DuckDB connection.")
+    return VersusConn(conn_candidate)
+
+
 def register_input_view(
     conn: VersusConn,
     source: Any,
