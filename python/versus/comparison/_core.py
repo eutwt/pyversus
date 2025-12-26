@@ -173,7 +173,7 @@ def compare(
     if not coerce:
         h.validate_class_compatibility(handles, clean_ids)
     for identifier in clean_ids:
-        h.ensure_unique_by(conn, handles[identifier], by_columns, identifier)
+        h.assert_unique_by(conn, handles[identifier], by_columns, identifier)
 
     tables_frame = c.build_tables_frame(conn, handles, clean_ids, materialize_summary)
     by_frame = c.build_by_frame(

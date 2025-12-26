@@ -121,7 +121,7 @@ def validate_class_compatibility(
             )
 
 
-def ensure_unique_by(
+def assert_unique_by(
     conn: VersusConn,
     handle: _TableHandle,
     by_columns: List[str],
