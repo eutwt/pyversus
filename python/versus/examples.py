@@ -44,7 +44,7 @@ def example_cars_a(
     connection: Optional[duckdb.DuckDBPyConnection] = None,
 ) -> duckdb.DuckDBPyRelation:
     """Return the example table A as a DuckDB relation."""
-    conn = _resolve_connection(connection)
+    conn = resolve_connection(connection)
     return conn.sql(EXAMPLE_CARS_A_SQL)
 
 
@@ -52,14 +52,14 @@ def example_cars_b(
     connection: Optional[duckdb.DuckDBPyConnection] = None,
 ) -> duckdb.DuckDBPyRelation:
     """Return the example table B as a DuckDB relation."""
-    conn = _resolve_connection(connection)
+    conn = resolve_connection(connection)
     return conn.sql(EXAMPLE_CARS_B_SQL)
 
 
 __all__ = ["example_cars_a", "example_cars_b"]
 
 
-def _resolve_connection(
+def resolve_connection(
     connection: Optional[duckdb.DuckDBPyConnection],
 ) -> duckdb.DuckDBPyConnection:
     if connection is not None:

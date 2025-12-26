@@ -39,7 +39,7 @@ future contributors can work without hunting through old context.
   for large tables. The summary relations shown in `Comparison.__repr__`
   are materialized by default so printing is cheap; pass
   `materialize=False` to `compare()` if you want them lazy instead.
-- Duplicate `by` keys are detected early (`_ensure_unique_by`) and raise
+- Duplicate `by` keys are detected early (`ensure_unique_by`) and raise
   `ComparisonError` listing the conflicting key values.
 - Temporary tables/views are created via `CREATE TEMP ...` with unique
   names scoped to the connection, so they never leak outside the current
@@ -75,7 +75,7 @@ future contributors can work without hunting through old context.
 
 ## Style notes
 
-- When accepting column lists, reuse `_resolve_column_list` so empty
+- When accepting column lists, reuse `resolve_column_list` so empty
   selections raise early and only shared columns are allowed.
 - Avoid materializing DuckDB relations into Python data structures
   unless absolutely necessary; keep as much work inside DuckDB as
