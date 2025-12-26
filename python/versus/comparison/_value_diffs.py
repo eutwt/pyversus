@@ -12,7 +12,7 @@ if TYPE_CHECKING:  # pragma: no cover
 
 def value_diffs(comparison: "Comparison", column: str) -> duckdb.DuckDBPyRelation:
     target_col = h.normalize_single_column(column)
-    h.ensure_column_allowed(comparison, target_col, "value_diffs")
+    h.assert_column_allowed(comparison, target_col, "value_diffs")
     key_relation = comparison.diff_keys[target_col]
     table_a, table_b = comparison.table_id
     select_cols = [

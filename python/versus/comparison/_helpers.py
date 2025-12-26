@@ -219,7 +219,7 @@ def resolve_column_list(
     return parsed
 
 
-def ensure_column_allowed(comparison: "Comparison", column: str, func: str) -> None:
+def assert_column_allowed(comparison: "Comparison", column: str, func: str) -> None:
     if column not in comparison.common_columns:
         raise ComparisonError(
             f"`{func}` can only reference columns in both tables: {column}"
