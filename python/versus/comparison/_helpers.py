@@ -447,10 +447,5 @@ def select_zero_from_table(
 ) -> duckdb.DuckDBPyRelation:
     if not columns:
         raise ComparisonError("Column list must be non-empty")
-    select_cols_sql = select_cols(columns, alias="base")
-    sql = f"""
-    SELECT {select_cols_sql}
-    FROM {ident(comparison._handles[table].name)} AS base
-    LIMIT 0
-    """
-    return run_sql(comparison.connection, sql)
+    select_cols_sql = select_cols(columns)
+    return comparison._handles[table].project(select_cols_sql).limit(0)

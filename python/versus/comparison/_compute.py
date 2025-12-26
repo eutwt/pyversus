@@ -17,8 +17,7 @@ def build_tables_frame(
     rows = []
     for identifier in table_id:
         handle = handles[identifier]
-        result = handle.count("*").fetchone()
-        count = result[0]
+        count = handle.count("*").fetchone()[0]
         rows.append((identifier, count, len(handle.columns)))
     schema = [
         ("table", "VARCHAR"),

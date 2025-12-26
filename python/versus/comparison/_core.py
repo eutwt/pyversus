@@ -39,8 +39,7 @@ class Comparison:
         self.connection = connection
         self._handles = dict(handles)
         self.inputs = {
-            identifier: self.connection.sql(f"SELECT * FROM {h.ident(handle.name)}")
-            for identifier, handle in self._handles.items()
+            identifier: handle.relation for identifier, handle in self._handles.items()
         }
         self.table_id = table_id
         self.by_columns = by_columns
