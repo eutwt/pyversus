@@ -9,6 +9,7 @@ except ImportError:  # pragma: no cover - Python < 3.8
 
 import duckdb
 
+from . import _compute as c
 from . import _helpers as h
 from . import _slices, _value_diffs, _weave
 
@@ -175,8 +176,8 @@ def compare(
     for identifier in clean_ids:
         h.ensure_unique_by(conn, handles[identifier], by_columns, identifier)
 
-    tables_frame = h.build_tables_frame(conn, handles, clean_ids, materialize_summary)
-    by_frame = h.build_by_frame(
+    tables_frame = c.build_tables_frame(conn, handles, clean_ids, materialize_summary)
+    by_frame = c.build_by_frame(
         conn, by_columns, handles, clean_ids, materialize_summary
     )
     common_all = [
@@ -185,10 +186,10 @@ def compare(
         if col in handles[clean_ids[1]].columns
     ]
     value_columns = [col for col in common_all if col not in by_columns]
-    unmatched_cols = h.build_unmatched_cols(
+    unmatched_cols = c.build_unmatched_cols(
         conn, handles, clean_ids, materialize_summary
     )
-    diff_keys = h.compute_diff_keys(
+    diff_keys = c.compute_diff_keys(
         conn,
         handles,
         clean_ids,
@@ -197,7 +198,7 @@ def compare(
         allow_both_na,
         materialize_keys,
     )
-    intersection, diff_lookup = h.build_intersection_frame(
+    intersection, diff_lookup = c.build_intersection_frame(
         value_columns,
         handles,
         clean_ids,
@@ -205,10 +206,10 @@ def compare(
         conn,
         materialize_summary,
     )
-    unmatched_keys = h.compute_unmatched_keys(
+    unmatched_keys = c.compute_unmatched_keys(
         conn, handles, clean_ids, by_columns, materialize_keys
     )
-    unmatched_rows_rel = h.compute_unmatched_rows_summary(
+    unmatched_rows_rel = c.compute_unmatched_rows_summary(
         conn, unmatched_keys, materialize_summary
     )
 
