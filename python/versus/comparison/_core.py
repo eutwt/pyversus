@@ -161,14 +161,7 @@ def compare(
     connection: Optional[duckdb.DuckDBPyConnection] = None,
     materialize: Literal["all", "summary", "none"] = "all",
 ) -> Comparison:
-    if not isinstance(materialize, str) or materialize not in {
-        "all",
-        "summary",
-        "none",
-    }:
-        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'none'")
-    materialize_summary = materialize in {"all", "summary"}
-    materialize_keys = materialize == "all"
+    materialize_summary, materialize_keys = h.resolve_materialize(materialize)
 
     conn_input = connection
     if conn_input is not None:

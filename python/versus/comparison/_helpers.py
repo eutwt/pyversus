@@ -158,6 +158,18 @@ def normalize_column_list(
     return parsed
 
 
+def resolve_materialize(materialize: str) -> Tuple[bool, bool]:
+    if not isinstance(materialize, str) or materialize not in {
+        "all",
+        "summary",
+        "none",
+    }:
+        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'none'")
+    materialize_summary = materialize in {"all", "summary"}
+    materialize_keys = materialize == "all"
+    return materialize_summary, materialize_keys
+
+
 def register_input_view(
     conn: VersusConn,
     source: Any,
