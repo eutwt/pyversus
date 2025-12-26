@@ -492,22 +492,20 @@ def sql_literal(value: Any) -> str:
 def rows_relation_sql(
     rows: Sequence[Sequence[Any]], schema: Sequence[Tuple[str, str]]
 ) -> str:
-    if rows:
-        value_rows = []
-        for row in rows:
-            value_rows.append(
-                "(" + ", ".join(sql_literal(value) for value in row) + ")"
-            )
-        alias_cols = ", ".join(f"col{i}" for i in range(len(schema)))
+    if not rows:
         select_list = ", ".join(
-            f"CAST(col{i} AS {dtype}) AS {ident(name)}"
-            for i, (name, dtype) in enumerate(schema)
+            f"CAST(NULL AS {dtype}) AS {ident(name)}" for name, dtype in schema
         )
-        return f"SELECT {select_list} FROM (VALUES {', '.join(value_rows)}) AS v({alias_cols})"
+        return f"SELECT {select_list} LIMIT 0"
+    value_rows = []
+    for row in rows:
+        value_rows.append("(" + ", ".join(sql_literal(value) for value in row) + ")")
+    alias_cols = ", ".join(f"col{i}" for i in range(len(schema)))
     select_list = ", ".join(
-        f"CAST(NULL AS {dtype}) AS {ident(name)}" for name, dtype in schema
+        f"CAST(col{i} AS {dtype}) AS {ident(name)}"
+        for i, (name, dtype) in enumerate(schema)
     )
-    return f"SELECT {select_list} WHERE 1=0"
+    return f"SELECT {select_list} FROM (VALUES {', '.join(value_rows)}) AS v({alias_cols})"
 
 
 def finalize_relation(
@@ -515,11 +513,11 @@ def finalize_relation(
     sql: str,
     materialize: bool,
 ) -> duckdb.DuckDBPyRelation:
-    if materialize:
-        table = materialize_temp_table(conn, sql)
-        conn.versus.temp_tables.append(table)
-        return conn.sql(f"SELECT * FROM {ident(table)}")
-    return conn.sql(sql)
+    if not materialize:
+        return conn.sql(sql)
+    table = materialize_temp_table(conn, sql)
+    conn.versus.temp_tables.append(table)
+    return conn.sql(f"SELECT * FROM {ident(table)}")
 
 
 def build_rows_relation(

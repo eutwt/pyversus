@@ -158,11 +158,11 @@ def compare(
     materialize: bool = True,
 ) -> Comparison:
     conn_input = connection
-    if conn_input is None:
+    if conn_input is not None:
+        conn_candidate = conn_input
+    else:
         default_conn = duckdb.default_connection
         conn_candidate = default_conn() if callable(default_conn) else default_conn
-    else:
-        conn_candidate = conn_input
     if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
         raise ComparisonError("`connection` must be a DuckDB connection.")
     conn = h.VersusConn(conn_candidate)
