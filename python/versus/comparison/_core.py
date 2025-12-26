@@ -58,6 +58,7 @@ class Comparison:
         self.table_columns = table_columns
         self.diff_keys = diff_keys
         self._diff_lookup = diff_lookup
+        self._summary_materialized = materialize_mode in {"all", "summary"}
         self._closed = False
 
     @property
@@ -66,8 +67,13 @@ class Comparison:
             self._get_diff_lookup()
         return self._intersection
 
-    def _refresh_intersection_and_lookup(self) -> None:
-        materialize_summary = self._materialize_mode in {"all", "summary"}
+    def _refresh_intersection_and_lookup(
+        self, *, materialize: Optional[bool] = None
+    ) -> None:
+        if materialize is None:
+            materialize_summary = self._materialize_mode in {"all", "summary"}
+        else:
+            materialize_summary = materialize
         intersection, diff_lookup = c.build_intersection_frame(
             self.common_columns,
             self._handles,
@@ -79,6 +85,24 @@ class Comparison:
         )
         self._intersection = intersection
         self._diff_lookup = diff_lookup if diff_lookup is not None else {}
+
+    def _ensure_summary_materialized(self) -> None:
+        if self._summary_materialized:
+            return
+        self.tables = h.finalize_relation(
+            self.connection, self.tables.sql_query(), materialize=True
+        )
+        self.by = h.finalize_relation(
+            self.connection, self.by.sql_query(), materialize=True
+        )
+        self.unmatched_cols = h.finalize_relation(
+            self.connection, self.unmatched_cols.sql_query(), materialize=True
+        )
+        self.unmatched_rows = h.finalize_relation(
+            self.connection, self.unmatched_rows.sql_query(), materialize=True
+        )
+        self._refresh_intersection_and_lookup(materialize=True)
+        self._summary_materialized = True
 
     def _ensure_diff_keys_materialized(self) -> None:
         if self._diff_keys_materialized:
@@ -122,6 +146,7 @@ class Comparison:
             pass
 
     def __repr__(self) -> str:
+        self._ensure_summary_materialized()
         return (
             "Comparison("
             f"tables=\n{self.tables}\n"
@@ -202,7 +227,7 @@ def compare(
     coerce: bool = True,
     table_id: Tuple[str, str] = ("a", "b"),
     connection: Optional[duckdb.DuckDBPyConnection] = None,
-    materialize: Literal["all", "summary", "none"] = "all",
+    materialize: Literal["all", "summary", "lazy"] = "all",
 ) -> Comparison:
     materialize_summary, materialize_keys = h.resolve_materialize(materialize)
 

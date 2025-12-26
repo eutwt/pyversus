@@ -210,9 +210,9 @@ computed when you evaluate them unless they were materialized.
   `by`, `intersection`, `unmatched_cols`, `unmatched_rows`). Counts are
   computed during `compare()` but diff key tables stay lazy until you ask for
   row-level data.
-- `materialize="none"`: do not store summary tables up front. Counts are
-  computed the first time you print or query the summaries. Diff key tables
-  stay lazy until you ask for row-level data.
+- `materialize="lazy"`: do not store summary tables up front. The first time
+  you print the comparison, those summary tables are materialized and reused.
+  Diff key tables stay lazy until you ask for row-level data.
 
 The package exposes the same high-level helpers as the R version
 (`value_diffs*`, `weave_diffs*`, `slice_*`), so if you already know the
