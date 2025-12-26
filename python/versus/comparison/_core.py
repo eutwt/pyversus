@@ -204,7 +204,7 @@ def compare(
     intersection, diff_lookup, intersection_table = h.build_intersection_frame(
         value_columns, handles, clean_ids, diff_key_handles, conn, materialize
     )
-    unmatched_rows_rel, unmatched_summary_table = h.compute_unmatched_rows(
+    unmatched_rows_rel, unmatched_keys_table = h.compute_unmatched_rows(
         conn, handles, clean_ids, by_columns, materialize
     )
     temp_tables = list(diff_tables.values()) + [
@@ -214,7 +214,7 @@ def compare(
             by_table,
             unmatched_cols_table,
             intersection_table,
-            unmatched_summary_table,
+            unmatched_keys_table,
         ]
         if name is not None
     ]

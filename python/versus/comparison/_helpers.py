@@ -306,14 +306,14 @@ def compute_unmatched_rows(
     by_columns: List[str],
     materialize: bool,
 ) -> Tuple[duckdb.DuckDBPyRelation, Optional[str]]:
-    summary_parts = []
+    keys_parts = []
     for identifier in table_id:
         other = table_id[1] if identifier == table_id[0] else table_id[0]
         handle_left = handles[identifier]
         handle_right = handles[other]
         select_by = select_cols(by_columns, alias="left_tbl")
         condition = join_condition(by_columns, "left_tbl", "right_tbl")
-        summary_parts.append(
+        keys_parts.append(
             f"""
             SELECT {sql_literal(identifier)} AS table, {select_by}
             FROM {ident(handle_left.name)} AS left_tbl
@@ -324,9 +324,9 @@ def compute_unmatched_rows(
             )
             """
         )
-    summary_sql = " UNION ALL ".join(summary_parts)
-    summary_rel, summary_table = finalize_relation(conn, summary_sql, materialize)
-    return summary_rel, summary_table
+    keys_sql = " UNION ALL ".join(keys_parts)
+    keys_rel, keys_table = finalize_relation(conn, keys_sql, materialize)
+    return keys_rel, keys_table
 
 
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
