@@ -9,6 +9,9 @@ or queries) without materializing them. The `compare()` function gives a `Compar
 object that shows where the tables disagree, with methods for displaying the
 differences.
 
+> **Alpha status:** This package is in active development. Backward compatibility
+> is not guaranteed between releases yet.
+
 ## Installation
 
 Clone the repo (or add it as a submodule) and install it into your
