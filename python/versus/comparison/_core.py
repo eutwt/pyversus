@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
+try:
+    from typing import Literal
+except ImportError:  # pragma: no cover - Python < 3.8
+    from typing_extensions import Literal
+
 import duckdb
 
 from . import _helpers as h
 from . import _slices, _value_diffs, _weave
-from ._exceptions import ComparisonError
 
 
 class Comparison:
@@ -24,10 +28,11 @@ class Comparison:
         by: duckdb.DuckDBPyRelation,
         intersection: duckdb.DuckDBPyRelation,
         unmatched_cols: duckdb.DuckDBPyRelation,
+        unmatched_keys: duckdb.DuckDBPyRelation,
         unmatched_rows: duckdb.DuckDBPyRelation,
         common_columns: List[str],
         table_columns: Mapping[str, List[str]],
-        diff_key_tables: Mapping[str, duckdb.DuckDBPyRelation],
+        diff_keys: Mapping[str, duckdb.DuckDBPyRelation],
         diff_lookup: Dict[str, int],
     ) -> None:
         self.connection = connection
@@ -43,11 +48,11 @@ class Comparison:
         self.by = by
         self.intersection = intersection
         self.unmatched_cols = unmatched_cols
+        self.unmatched_keys = unmatched_keys
         self.unmatched_rows = unmatched_rows
         self.common_columns = common_columns
         self.table_columns = table_columns
-        self.diff_key_tables = diff_key_tables
-        self.diff_rows = diff_key_tables
+        self.diff_keys = diff_keys
         self._diff_lookup = diff_lookup
         self._closed = False
 
@@ -153,17 +158,11 @@ def compare(
     coerce: bool = True,
     table_id: Tuple[str, str] = ("a", "b"),
     connection: Optional[duckdb.DuckDBPyConnection] = None,
-    materialize: bool = True,
+    materialize: Literal["all", "summary", "none"] = "all",
 ) -> Comparison:
-    conn_input = connection
-    if conn_input is not None:
-        conn_candidate = conn_input
-    else:
-        default_conn = duckdb.default_connection
-        conn_candidate = default_conn() if callable(default_conn) else default_conn
-    if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
-        raise ComparisonError("`connection` must be a DuckDB connection.")
-    conn = h.VersusConn(conn_candidate)
+    materialize_summary, materialize_keys = h.resolve_materialize(materialize)
+
+    conn = h.resolve_connection(connection)
     clean_ids = h.validate_table_id(table_id)
     by_columns = h.normalize_column_list(by, "by", allow_empty=False)
     handles = {
@@ -176,35 +175,41 @@ def compare(
     for identifier in clean_ids:
         h.ensure_unique_by(conn, handles[identifier], by_columns, identifier)
 
-    tables_frame = h.build_tables_frame(conn, handles, clean_ids, materialize)
-    by_frame = h.build_by_frame(conn, by_columns, handles, clean_ids, materialize)
+    tables_frame = h.build_tables_frame(conn, handles, clean_ids, materialize_summary)
+    by_frame = h.build_by_frame(
+        conn, by_columns, handles, clean_ids, materialize_summary
+    )
     common_all = [
         col
         for col in handles[clean_ids[0]].columns
         if col in handles[clean_ids[1]].columns
     ]
     value_columns = [col for col in common_all if col not in by_columns]
-    unmatched_cols = h.build_unmatched_cols(conn, handles, clean_ids, materialize)
-    diff_tables = h.compute_diff_key_tables(
+    unmatched_cols = h.build_unmatched_cols(
+        conn, handles, clean_ids, materialize_summary
+    )
+    diff_keys = h.compute_diff_keys(
         conn,
         handles,
         clean_ids,
         by_columns,
         value_columns,
         allow_both_na,
-        materialize,
+        materialize_keys,
     )
-    diff_key_handles = {col: diff_tables[col] for col in value_columns}
     intersection, diff_lookup = h.build_intersection_frame(
         value_columns,
         handles,
         clean_ids,
-        diff_key_handles,
+        diff_keys,
         conn,
-        materialize,
+        materialize_summary,
     )
-    unmatched_rows_rel = h.compute_unmatched_rows(
-        conn, handles, clean_ids, by_columns, materialize
+    unmatched_keys = h.compute_unmatched_keys(
+        conn, handles, clean_ids, by_columns, materialize_keys
+    )
+    unmatched_rows_rel = h.compute_unmatched_rows_summary(
+        conn, unmatched_keys, materialize_summary
     )
 
     return Comparison(
@@ -217,11 +222,12 @@ def compare(
         by=by_frame,
         intersection=intersection,
         unmatched_cols=unmatched_cols,
+        unmatched_keys=unmatched_keys,
         unmatched_rows=unmatched_rows_rel,
         common_columns=value_columns,
         table_columns={
             identifier: handle.columns[:] for identifier, handle in handles.items()
         },
-        diff_key_tables=diff_key_handles,
+        diff_keys=diff_keys,
         diff_lookup=diff_lookup,
     )

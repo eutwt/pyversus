@@ -26,7 +26,7 @@ def slice_diffs(
 
 
 def unmatched_keys_sql(comparison: "Comparison", table_name: str) -> str:
-    unmatched_sql = comparison.unmatched_rows.sql_query()
+    unmatched_sql = comparison.unmatched_keys.sql_query()
     by_cols = h.select_cols(comparison.by_columns, alias="keys")
     table_filter = f"keys.{h.ident('table')} = {h.sql_literal(table_name)}"
     return f"SELECT {by_cols} FROM ({unmatched_sql}) AS keys WHERE {table_filter}"

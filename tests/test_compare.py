@@ -219,6 +219,15 @@ def test_compare_errors_when_table_id_blank():
         compare(rel_a, rel_b, by=["id"], table_id=(" ", "b"), connection=con)
 
 
+def test_compare_errors_when_materialize_invalid():
+    con, rel_a, rel_b = build_connection()
+    with pytest.raises(ComparisonError):
+        compare(rel_a, rel_b, by=["id"], connection=con, materialize=cast(Any, "nope"))
+    with pytest.raises(ComparisonError):
+        compare(rel_a, rel_b, by=["id"], connection=con, materialize=cast(Any, True))
+    con.close()
+
+
 def test_intersection_empty_when_no_value_columns():
     sql = "SELECT * FROM (VALUES (1, 10)) AS t(id, value)"
     comp = comparison_from_sql(sql, sql, by=["id", "value"])
@@ -259,7 +268,11 @@ def test_compare_handles_no_common_rows():
         by=["id"],
     )
     assert rel_values(comp.intersection, "n_diffs") == [0]
-    assert rel_height(comp.unmatched_rows) == 4
+    assert rel_height(comp.unmatched_keys) == 4
+    counts = {
+        (row["table"], row["n_unmatched"]) for row in rel_dicts(comp.unmatched_rows)
+    }
+    assert counts == {("a", 2), ("b", 2)}
     comp.close()
 
 
@@ -348,10 +361,17 @@ def test_unmatched_cols_empty_preserves_types():
     comp.close()
 
 
+def test_unmatched_keys_empty_structure():
+    comp = identical_comparison()
+    assert rel_height(comp.unmatched_keys) == 0
+    assert rel_dtypes(comp.unmatched_keys) == ["VARCHAR", "INTEGER"]
+    comp.close()
+
+
 def test_unmatched_rows_empty_structure():
     comp = identical_comparison()
     assert rel_height(comp.unmatched_rows) == 0
-    assert rel_dtypes(comp.unmatched_rows) == ["VARCHAR", "INTEGER"]
+    assert rel_dtypes(comp.unmatched_rows) == ["VARCHAR", "BIGINT"]
     comp.close()
 
 
