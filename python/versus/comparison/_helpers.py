@@ -28,8 +28,12 @@ if TYPE_CHECKING:  # pragma: no cover
 class _TableHandle:
     name: str
     display: str
+    relation: duckdb.DuckDBPyRelation
     columns: List[str]
     types: Dict[str, str]
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.relation, name)
 
 
 @dataclass
@@ -266,7 +270,14 @@ def register_input_view(
     conn.versus.views.append(name)
 
     columns, types = describe_view(conn, name)
-    return _TableHandle(name=name, display=display, columns=columns, types=types)
+    relation = conn.table(name)
+    return _TableHandle(
+        name=name,
+        display=display,
+        relation=relation,
+        columns=columns,
+        types=types,
+    )
 
 
 def describe_view(conn: VersusConn, name: str) -> Tuple[List[str], Dict[str, str]]:
