@@ -20,8 +20,6 @@ def build_tables_frame(
         result = conn.sql(
             f"SELECT COUNT(*) AS n FROM {h.ident(handle.name)}"
         ).fetchone()
-        if result is None:
-            raise ComparisonError("Failed to count rows for comparison table metadata")
         count = result[0]
         rows.append((identifier, count, len(handle.columns)))
     schema = [

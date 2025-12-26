@@ -426,8 +426,6 @@ def build_rows_relation(
 def table_count(conn: VersusConn, relation: duckdb.DuckDBPyRelation) -> int:
     sql = relation.sql_query()
     row = conn.sql(f"SELECT COUNT(*) FROM ({sql}) AS t").fetchone()
-    if row is None:
-        raise ComparisonError("Failed to count rows for diff key relation")
     return row[0]
 
 
