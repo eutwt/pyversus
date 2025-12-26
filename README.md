@@ -190,9 +190,9 @@ comparison.summary()
   from table id (e.g., `"a"`, `"b"`) to the input relations.
 - Need the row identifiers for unmatched rows? `comparison.unmatched_keys`
   exposes the table id plus `by` columns for those keys.
-- By default `compare()` materializes the repr tables plus the diff and
+- By default `compare()` materializes the tables shown in the printed summary plus the diff and
   unmatched key relations (`materialize="all"`). Use
-  `materialize="summary"` to only materialize the repr tables, or
+  `materialize="summary"` to only materialize the printed summary tables, or
   `materialize="none"` to keep everything lazy (at the cost of
   recomputing them when accessed).
 - Inputs stay lazy as well: `compare()` never materialises the full
