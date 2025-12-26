@@ -184,9 +184,8 @@ comparison.summary()
   weave helpers, etc.), the library runs SQL in DuckDB and returns the
   results as DuckDB relations, so you can inspect huge tables without
   blowing up Python memory.
-- Need insight into the inputs? `comparison.handles` exposes a
-  read-only mapping from table id (e.g., `"a"`, `"b"`) to the registered
-  DuckDB view, including the column/type metadata.
+- Need insight into the inputs? `comparison.inputs` exposes a mapping
+  from table id (e.g., `"a"`, `"b"`) to the input relations.
 - By default `compare()` materializes the summary relations used in the
   repr (`tables`, `by`, `intersection`, `unmatched_*`). Pass
   `materialize=False` if you prefer to keep those lazy as well (at the

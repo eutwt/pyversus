@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from types import MappingProxyType
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 import duckdb
 
@@ -30,13 +29,17 @@ class Comparison:
         unmatched_rows: duckdb.DuckDBPyRelation,
         common_columns: List[str],
         table_columns: Mapping[str, List[str]],
-        diff_key_tables: Mapping[str, str],
+        diff_key_tables: Mapping[str, duckdb.DuckDBPyRelation],
         temp_tables: Sequence[str],
+        temp_views: Sequence[str],
         diff_lookup: Dict[str, int],
     ) -> None:
         self.connection = connection
         self._handles = dict(handles)
-        self._handles_view = MappingProxyType(self._handles)
+        self.inputs = {
+            identifier: self.connection.sql(f"SELECT * FROM {h.ident(handle.name)}")
+            for identifier, handle in self._handles.items()
+        }
         self.table_id = table_id
         self.by_columns = by_columns
         self.allow_both_na = allow_both_na
@@ -50,15 +53,16 @@ class Comparison:
         self.diff_key_tables = diff_key_tables
         self.diff_rows = diff_key_tables
         self._temp_tables = list(temp_tables)
+        self._temp_views = list(temp_views)
         self._diff_lookup = diff_lookup
         self._closed = False
 
     def close(self) -> None:
         if self._closed:
             return
-        for handle in self._handles.values():
+        for view in reversed(self._temp_views):
             try:
-                handle.cleanup()
+                self.connection.execute(f"DROP VIEW IF EXISTS {h.ident(view)}")
             except duckdb.Error:
                 pass
         for view in self._temp_tables:
@@ -84,10 +88,6 @@ class Comparison:
             f"unmatched_rows=\n{self.unmatched_rows}\n"
             ")"
         )
-
-    @property
-    def handles(self) -> Mapping[str, h._TableHandle]:
-        return self._handles_view
 
     def value_diffs(self, column: str) -> duckdb.DuckDBPyRelation:
         return _value_diffs.value_diffs(self, column)
@@ -144,9 +144,12 @@ class Comparison:
             ("class_diffs", class_diffs),
         ]
         schema = [("difference", "VARCHAR"), ("found", "BOOLEAN")]
-        summary_rel, _ = h.build_rows_relation(
-            self.connection, rows, schema, materialize=True
+        conn = h.VersusConn(
+            self.connection,
+            temp_tables=self._temp_tables,
+            views=self._temp_views,
         )
+        summary_rel = h.build_rows_relation(conn, rows, schema, materialize=True)
         return summary_rel
 
 
@@ -158,7 +161,7 @@ def compare(
     allow_both_na: bool = True,
     coerce: bool = True,
     table_id: Tuple[str, str] = ("a", "b"),
-    connection: Optional[duckdb.DuckDBPyConnection] = None,
+    connection: Optional[Union[duckdb.DuckDBPyConnection, h.VersusConn]] = None,
     materialize: bool = True,
 ) -> Comparison:
     conn_input = connection
@@ -167,9 +170,13 @@ def compare(
         conn_candidate = default_conn() if callable(default_conn) else default_conn
     else:
         conn_candidate = conn_input
-    if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
+    if isinstance(conn_candidate, h.VersusConn):
+        base_conn = conn_candidate.raw_connection
+    elif isinstance(conn_candidate, duckdb.DuckDBPyConnection):
+        base_conn = conn_candidate
+    else:
         raise ComparisonError("`connection` must be a DuckDB connection.")
-    conn = conn_candidate
+    conn = h.VersusConn(base_conn)
     clean_ids = h.validate_table_id(table_id)
     by_columns = h.normalize_column_list(by, "by", allow_empty=False)
     handles = {
@@ -182,45 +189,39 @@ def compare(
     for identifier in clean_ids:
         h.ensure_unique_by(conn, handles[identifier], by_columns, identifier)
 
-    tables_frame, tables_table = h.build_tables_frame(
-        conn, handles, clean_ids, materialize
-    )
-    by_frame, by_table = h.build_by_frame(
-        conn, by_columns, handles, clean_ids, materialize
-    )
+    tables_frame = h.build_tables_frame(conn, handles, clean_ids, materialize)
+    by_frame = h.build_by_frame(conn, by_columns, handles, clean_ids, materialize)
     common_all = [
         col
         for col in handles[clean_ids[0]].columns
         if col in handles[clean_ids[1]].columns
     ]
     value_columns = [col for col in common_all if col not in by_columns]
-    unmatched_cols, unmatched_cols_table = h.build_unmatched_cols(
-        conn, handles, clean_ids, materialize
-    )
+    unmatched_cols = h.build_unmatched_cols(conn, handles, clean_ids, materialize)
     diff_tables = h.compute_diff_key_tables(
-        conn, handles, clean_ids, by_columns, value_columns, allow_both_na
+        conn,
+        handles,
+        clean_ids,
+        by_columns,
+        value_columns,
+        allow_both_na,
+        materialize,
     )
     diff_key_handles = {col: diff_tables[col] for col in value_columns}
-    intersection, diff_lookup, intersection_table = h.build_intersection_frame(
-        value_columns, handles, clean_ids, diff_key_handles, conn, materialize
+    intersection, diff_lookup = h.build_intersection_frame(
+        value_columns,
+        handles,
+        clean_ids,
+        diff_key_handles,
+        conn,
+        materialize,
     )
-    unmatched_rows_rel, unmatched_keys_table = h.compute_unmatched_rows(
+    unmatched_rows_rel = h.compute_unmatched_rows(
         conn, handles, clean_ids, by_columns, materialize
     )
-    temp_tables = list(diff_tables.values()) + [
-        name
-        for name in [
-            tables_table,
-            by_table,
-            unmatched_cols_table,
-            intersection_table,
-            unmatched_keys_table,
-        ]
-        if name is not None
-    ]
 
     return Comparison(
-        connection=conn,
+        connection=base_conn,
         handles=handles,
         table_id=clean_ids,
         by_columns=by_columns,
@@ -235,6 +236,7 @@ def compare(
             identifier: handle.columns[:] for identifier, handle in handles.items()
         },
         diff_key_tables=diff_key_handles,
-        temp_tables=temp_tables,
+        temp_tables=conn.versus.temp_tables,
+        temp_views=conn.versus.views,
         diff_lookup=diff_lookup,
     )

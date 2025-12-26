@@ -4,7 +4,6 @@ import uuid
 from dataclasses import dataclass
 from typing import (
     Any,
-    Callable,
     Dict,
     Iterable,
     List,
@@ -13,6 +12,7 @@ from typing import (
     Sequence,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 import duckdb
@@ -29,7 +29,35 @@ class _TableHandle:
     display: str
     columns: List[str]
     types: Dict[str, str]
-    cleanup: Callable[[], None]
+
+
+@dataclass
+@dataclass
+class VersusState:
+    temp_tables: List[str]
+    views: List[str]
+
+
+class VersusConn:
+    def __init__(
+        self,
+        connection: duckdb.DuckDBPyConnection,
+        *,
+        temp_tables: Optional[List[str]] = None,
+        views: Optional[List[str]] = None,
+    ) -> None:
+        self._connection = connection
+        self.versus = VersusState(
+            temp_tables if temp_tables is not None else [],
+            views if views is not None else [],
+        )
+
+    @property
+    def raw_connection(self) -> duckdb.DuckDBPyConnection:
+        return self._connection
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._connection, name)
 
 
 def normalize_table_arg(comparison: "Comparison", table: str) -> str:
@@ -131,18 +159,17 @@ def normalize_column_list(
 
 
 def register_input_view(
-    conn: duckdb.DuckDBPyConnection,
+    conn: VersusConn,
     source: Any,
     label: str,
 ) -> _TableHandle:
     name = f"__versus_{label}_{uuid.uuid4().hex}"
-    cleanup_statements: List[str] = []
     display = "relation"
     if isinstance(source, duckdb.DuckDBPyRelation):
         base_name = f"{name}_base"
         source.to_view(base_name, replace=True)
         source_ref = ident(base_name)
-        cleanup_statements.append(f"DROP VIEW IF EXISTS {source_ref}")
+        conn.versus.views.append(base_name)
         display = getattr(source, "alias", "relation")
     elif isinstance(source, str):
         source_ref = f"({source})"
@@ -153,24 +180,13 @@ def register_input_view(
     conn.execute(
         f"CREATE OR REPLACE TEMP VIEW {ident(name)} AS SELECT * FROM {source_ref}"
     )
-    cleanup_statements.insert(0, f"DROP VIEW IF EXISTS {ident(name)}")
-
-    def cleanup() -> None:
-        for stmt in cleanup_statements:
-            try:
-                conn.execute(stmt)
-            except duckdb.Error:
-                pass
+    conn.versus.views.append(name)
 
     columns, types = describe_view(conn, name)
-    return _TableHandle(
-        name=name, display=display, columns=columns, types=types, cleanup=cleanup
-    )
+    return _TableHandle(name=name, display=display, columns=columns, types=types)
 
 
-def describe_view(
-    conn: duckdb.DuckDBPyConnection, name: str
-) -> Tuple[List[str], Dict[str, str]]:
+def describe_view(conn: VersusConn, name: str) -> Tuple[List[str], Dict[str, str]]:
     rel = run_sql(conn, f"DESCRIBE SELECT * FROM {ident(name)}")
     rows = rel.fetchall()
     columns = [row[0] for row in rows]
@@ -179,11 +195,11 @@ def describe_view(
 
 
 def build_tables_frame(
-    conn: duckdb.DuckDBPyConnection,
+    conn: VersusConn,
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
     materialize: bool,
-) -> Tuple[duckdb.DuckDBPyRelation, Optional[str]]:
+) -> duckdb.DuckDBPyRelation:
     rows = []
     for identifier in table_id:
         handle = handles[identifier]
@@ -201,12 +217,12 @@ def build_tables_frame(
 
 
 def build_by_frame(
-    conn: duckdb.DuckDBPyConnection,
+    conn: VersusConn,
     by_columns: List[str],
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
     materialize: bool,
-) -> Tuple[duckdb.DuckDBPyRelation, Optional[str]]:
+) -> duckdb.DuckDBPyRelation:
     rows = []
     first, second = table_id
     for column in by_columns:
@@ -226,11 +242,11 @@ def build_by_frame(
 
 
 def build_unmatched_cols(
-    conn: duckdb.DuckDBPyConnection,
+    conn: VersusConn,
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
     materialize: bool,
-) -> Tuple[duckdb.DuckDBPyRelation, Optional[str]]:
+) -> duckdb.DuckDBPyRelation:
     rows = []
     first, second = table_id
     cols_first = set(handles[first].columns)
@@ -251,16 +267,16 @@ def build_intersection_frame(
     value_columns: List[str],
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
-    diff_key_tables: Mapping[str, str],
-    conn: duckdb.DuckDBPyConnection,
+    diff_key_tables: Mapping[str, duckdb.DuckDBPyRelation],
+    conn: VersusConn,
     materialize: bool,
-) -> Tuple[duckdb.DuckDBPyRelation, Dict[str, int], Optional[str]]:
+) -> Tuple[duckdb.DuckDBPyRelation, Dict[str, int]]:
     rows = []
     diff_lookup: Dict[str, int] = {}
     first, second = table_id
     for column in value_columns:
-        table = diff_key_tables[column]
-        count = table_count(conn, table)
+        relation = diff_key_tables[column]
+        count = table_count(conn, relation)
         rows.append(
             (
                 column,
@@ -276,36 +292,37 @@ def build_intersection_frame(
         (f"class_{first}", "VARCHAR"),
         (f"class_{second}", "VARCHAR"),
     ]
-    relation, table_name = build_rows_relation(conn, rows, schema, materialize)
-    return relation, diff_lookup, table_name
+    relation = build_rows_relation(conn, rows, schema, materialize)
+    return relation, diff_lookup
 
 
 def compute_diff_key_tables(
-    conn: duckdb.DuckDBPyConnection,
+    conn: VersusConn,
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
     by_columns: List[str],
     value_columns: List[str],
     allow_both_na: bool,
-) -> Dict[str, str]:
-    diff_tables: Dict[str, str] = {}
+    materialize: bool,
+) -> Dict[str, duckdb.DuckDBPyRelation]:
+    diff_tables: Dict[str, duckdb.DuckDBPyRelation] = {}
     join_sql = join_clause(handles, table_id, by_columns)
     select_by = select_cols(by_columns, alias="a")
     for column in value_columns:
         predicate = diff_predicate(column, allow_both_na, "a", "b")
         sql = f"SELECT {select_by} {join_sql} WHERE {predicate}"
-        table_name = materialize_temp_table(conn, sql)
-        diff_tables[column] = table_name
+        relation = finalize_relation(conn, sql, materialize)
+        diff_tables[column] = relation
     return diff_tables
 
 
 def compute_unmatched_rows(
-    conn: duckdb.DuckDBPyConnection,
+    conn: VersusConn,
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
     by_columns: List[str],
     materialize: bool,
-) -> Tuple[duckdb.DuckDBPyRelation, Optional[str]]:
+) -> duckdb.DuckDBPyRelation:
     keys_parts = []
     for identifier in table_id:
         other = table_id[1] if identifier == table_id[0] else table_id[0]
@@ -325,14 +342,14 @@ def compute_unmatched_rows(
             """
         )
     keys_sql = " UNION ALL ".join(keys_parts)
-    keys_rel, keys_table = finalize_relation(conn, keys_sql, materialize)
-    return keys_rel, keys_table
+    return finalize_relation(conn, keys_sql, materialize)
 
 
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
     selects = []
     for column in columns:
-        selects.append(f"SELECT * FROM {ident(comparison.diff_key_tables[column])}")
+        key_sql = comparison.diff_key_tables[column].sql_query()
+        selects.append(key_sql)
     return " UNION DISTINCT ".join(selects)
 
 
@@ -353,7 +370,10 @@ def fetch_rows_by_keys(
     return run_sql(comparison.connection, sql)
 
 
-def run_sql(conn: duckdb.DuckDBPyConnection, sql: str) -> duckdb.DuckDBPyRelation:
+def run_sql(
+    conn: Union[VersusConn, duckdb.DuckDBPyConnection],
+    sql: str,
+) -> duckdb.DuckDBPyRelation:
     return conn.sql(sql)
 
 
@@ -393,7 +413,7 @@ def validate_class_compatibility(
 
 
 def ensure_unique_by(
-    conn: duckdb.DuckDBPyConnection,
+    conn: VersusConn,
     handle: _TableHandle,
     by_columns: List[str],
     identifier: str,
@@ -491,30 +511,30 @@ def rows_relation_sql(
 
 
 def finalize_relation(
-    conn: duckdb.DuckDBPyConnection,
+    conn: VersusConn,
     sql: str,
     materialize: bool,
-) -> Tuple[duckdb.DuckDBPyRelation, Optional[str]]:
+) -> duckdb.DuckDBPyRelation:
     if materialize:
         table = materialize_temp_table(conn, sql)
-        return conn.sql(f"SELECT * FROM {ident(table)}"), table
-    return conn.sql(sql), None
+        conn.versus.temp_tables.append(table)
+        return conn.sql(f"SELECT * FROM {ident(table)}")
+    return conn.sql(sql)
 
 
 def build_rows_relation(
-    conn: duckdb.DuckDBPyConnection,
+    conn: VersusConn,
     rows: Sequence[Sequence[Any]],
     schema: Sequence[Tuple[str, str]],
     materialize: bool,
-) -> Tuple[duckdb.DuckDBPyRelation, Optional[str]]:
+) -> duckdb.DuckDBPyRelation:
     sql = rows_relation_sql(rows, schema)
     return finalize_relation(conn, sql, materialize)
 
 
-def table_count(conn: duckdb.DuckDBPyConnection, table_name: Optional[str]) -> int:
-    if table_name is None:
-        return 0
-    row = conn.sql(f"SELECT COUNT(*) FROM {ident(table_name)}").fetchone()
+def table_count(conn: VersusConn, relation: duckdb.DuckDBPyRelation) -> int:
+    sql = relation.sql_query()
+    row = conn.sql(f"SELECT COUNT(*) FROM ({sql}) AS t").fetchone()
     if row is None:
         raise ComparisonError("Failed to count rows for diff key table")
     return row[0]
@@ -541,7 +561,7 @@ def ident(name: str) -> str:
     return f'"{escaped}"'
 
 
-def materialize_temp_table(conn: duckdb.DuckDBPyConnection, sql: str) -> str:
+def materialize_temp_table(conn: VersusConn, sql: str) -> str:
     name = f"__versus_table_{uuid.uuid4().hex}"
     conn.execute(f"CREATE OR REPLACE TEMP TABLE {ident(name)} AS {sql}")
     return name
