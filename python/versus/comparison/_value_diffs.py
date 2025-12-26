@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Sequence
 
 import duckdb
 

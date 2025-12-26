@@ -4,11 +4,9 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 import duckdb
 
-from ._exceptions import ComparisonError
 from . import _helpers as h
-from . import _slices
-from . import _value_diffs
-from . import _weave
+from . import _slices, _value_diffs, _weave
+from ._exceptions import ComparisonError
 
 
 class Comparison:

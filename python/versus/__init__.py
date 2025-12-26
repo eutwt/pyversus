@@ -1,7 +1,7 @@
 """DuckDB-powered tools for comparing two relations."""
 
-from .comparison import Comparison, ComparisonError, compare
 from . import examples
+from .comparison import Comparison, ComparisonError, compare
 
 __all__ = [
     "Comparison",

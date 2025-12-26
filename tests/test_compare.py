@@ -2,7 +2,6 @@ from typing import Any, Tuple, cast
 
 import duckdb
 import pytest
-
 from versus import ComparisonError, compare, examples
 
 

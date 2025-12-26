@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Iterable,
@@ -11,7 +12,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -505,7 +505,9 @@ def rows_relation_sql(
         f"CAST(col{i} AS {dtype}) AS {ident(name)}"
         for i, (name, dtype) in enumerate(schema)
     )
-    return f"SELECT {select_list} FROM (VALUES {', '.join(value_rows)}) AS v({alias_cols})"
+    return (
+        f"SELECT {select_list} FROM (VALUES {', '.join(value_rows)}) AS v({alias_cols})"
+    )
 
 
 def finalize_relation(

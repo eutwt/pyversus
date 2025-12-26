@@ -6,9 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import duckdb
-
 from versus import compare, examples
-
 
 NOTE = (
     "# (The `column` argument only decides which diffs include a row; the returned relation\n"
