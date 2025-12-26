@@ -23,10 +23,8 @@ def slice_diffs(
         diff_cols = [col for col in selected if comparison._get_diff_lookup()[col] > 0]
     if not diff_cols:
         return h.select_zero_from_table(comparison, table_name)
-    comparison._ensure_diff_keys_materialized()
-    table_columns = comparison.table_columns[table_name]
     key_sql = h.collect_diff_keys(comparison, diff_cols)
-    return h.fetch_rows_by_keys(comparison, table_name, key_sql, table_columns)
+    return h.fetch_rows_by_keys(comparison, table_name, key_sql)
 
 
 def unmatched_keys_sql(comparison: "Comparison", table_name: str) -> str:
@@ -39,9 +37,7 @@ def unmatched_keys_sql(comparison: "Comparison", table_name: str) -> str:
 def slice_unmatched(comparison: "Comparison", table: str) -> duckdb.DuckDBPyRelation:
     table_name = h.normalize_table_arg(comparison, table)
     key_sql = unmatched_keys_sql(comparison, table_name)
-    return h.fetch_rows_by_keys(
-        comparison, table_name, key_sql, comparison.table_columns[table_name]
-    )
+    return h.fetch_rows_by_keys(comparison, table_name, key_sql)
 
 
 def slice_unmatched_both(comparison: "Comparison") -> duckdb.DuckDBPyRelation:

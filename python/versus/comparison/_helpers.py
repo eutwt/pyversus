@@ -361,9 +361,14 @@ def fetch_rows_by_keys(
     comparison: "Comparison",
     table: str,
     key_sql: str,
-    columns: Sequence[str],
+    columns: Optional[Sequence[str]] = None,
 ) -> duckdb.DuckDBPyRelation:
-    select_cols_sql = select_cols(columns, alias="base")
+    if columns is None:
+        select_cols_sql = "base.*"
+    else:
+        if not columns:
+            raise ComparisonError("Column list must be non-empty")
+        select_cols_sql = select_cols(columns, alias="base")
     join_condition_sql = join_condition(comparison.by_columns, "keys", "base")
     sql = f"""
     SELECT {select_cols_sql}

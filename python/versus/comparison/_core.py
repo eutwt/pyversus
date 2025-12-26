@@ -50,7 +50,7 @@ class Comparison:
         self._diff_keys_materialized = diff_keys_materialized
         self.tables = tables
         self.by = by
-        self.intersection = intersection
+        self._intersection = intersection
         self.unmatched_cols = unmatched_cols
         self.unmatched_keys = unmatched_keys
         self.unmatched_rows = unmatched_rows
@@ -60,8 +60,28 @@ class Comparison:
         self._diff_lookup = diff_lookup
         self._closed = False
 
+    @property
+    def intersection(self) -> duckdb.DuckDBPyRelation:
+        if self._diff_lookup is None:
+            self._get_diff_lookup()
+        return self._intersection
+
+    def _refresh_intersection_and_lookup(self) -> None:
+        materialize_summary = self._materialize_mode in {"all", "summary"}
+        intersection, diff_lookup = c.build_intersection_frame(
+            self.common_columns,
+            self._handles,
+            self.table_id,
+            self.diff_keys,
+            self.connection,
+            materialize_summary,
+            compute_counts=True,
+        )
+        self._intersection = intersection
+        self._diff_lookup = diff_lookup if diff_lookup is not None else {}
+
     def _ensure_diff_keys_materialized(self) -> None:
-        if self._diff_keys_materialized or self._materialize_mode != "summary":
+        if self._diff_keys_materialized:
             return
         diff_keys: Dict[str, duckdb.DuckDBPyRelation] = {}
         for column, relation in self.diff_keys.items():
@@ -73,9 +93,12 @@ class Comparison:
         self._diff_keys_materialized = True
 
     def _get_diff_lookup(self) -> Dict[str, int]:
-        if self._diff_lookup is None:
-            rows = self.intersection.fetchall()
-            self._diff_lookup = {row[0]: row[1] for row in rows}
+        if self._diff_lookup is not None:
+            return self._diff_lookup
+        if not self._diff_keys_materialized:
+            self._ensure_diff_keys_materialized()
+        self._refresh_intersection_and_lookup()
+        assert self._diff_lookup is not None
         return self._diff_lookup
 
     def close(self) -> None:
@@ -225,8 +248,8 @@ def compare(
         clean_ids,
         diff_keys,
         conn,
-        materialize_summary,
-        materialize != "none",
+        materialize_summary and materialize_keys,
+        materialize_keys,
     )
     unmatched_keys = c.compute_unmatched_keys(
         conn, handles, clean_ids, by_columns, materialize_keys

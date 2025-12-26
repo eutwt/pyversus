@@ -204,14 +204,14 @@ data (diff keys and unmatched keys). These are DuckDB relations; they are
 computed when you evaluate them unless they were materialized.
 
 - `materialize="all"`: store both the printed summary tables and the diff
-  key tables as temp tables. This is fastest if you will call row‑level
+  key tables as temp tables. This is fastest if you will call row-level
   helpers multiple times.
-- `materialize="summary"`: store only the printed summary tables. Diff key
-  tables stay lazy until you ask for rows (e.g., `value_diffs`, `slice_*`,
-  `weave_*`), and then they are materialized once and reused.
-- `materialize="none"`: do not store temp tables. Summary counts are not
-  computed during `compare()`; they are computed when you query them. Repeated
-  calls may recompute work.
+- `materialize="summary"`: store the lightweight summary tables (`tables`,
+  `by`, `unmatched_cols`, `unmatched_rows`). Diff keys and intersection counts
+  stay lazy until you ask for them, then they are materialized once and reused.
+- `materialize="none"`: do not store summary tables up front. Diff keys and
+  counts are computed on demand the first time you ask for rows or summary
+  counts, then reused.
 
 The package exposes the same high-level helpers as the R version
 (`value_diffs*`, `weave_diffs*`, `slice_*`), so if you already know the
