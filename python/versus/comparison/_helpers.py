@@ -182,6 +182,61 @@ def resolve_connection(
     return VersusConn(conn_candidate)
 
 
+def validate_columns_exist(
+    by_columns: Iterable[str],
+    handles: Mapping[str, _TableHandle],
+    table_id: Tuple[str, str],
+) -> None:
+    missing_a = [col for col in by_columns if col not in handles[table_id[0]].columns]
+    missing_b = [col for col in by_columns if col not in handles[table_id[1]].columns]
+    if missing_a:
+        raise ComparisonError(
+            f"`by` columns not found in `{table_id[0]}`: {', '.join(missing_a)}"
+        )
+    if missing_b:
+        raise ComparisonError(
+            f"`by` columns not found in `{table_id[1]}`: {', '.join(missing_b)}"
+        )
+
+
+def validate_class_compatibility(
+    handles: Mapping[str, _TableHandle],
+    table_id: Tuple[str, str],
+) -> None:
+    shared = set(handles[table_id[0]].columns) & set(handles[table_id[1]].columns)
+    for column in shared:
+        type_a = handles[table_id[0]].types.get(column)
+        type_b = handles[table_id[1]].types.get(column)
+        if type_a != type_b:
+            raise ComparisonError(
+                f"`coerce=False` requires compatible classes. Column `{column}` has types `{type_a}` vs `{type_b}`."
+            )
+
+
+def ensure_unique_by(
+    conn: VersusConn,
+    handle: _TableHandle,
+    by_columns: List[str],
+    identifier: str,
+) -> None:
+    cols = select_cols(by_columns, alias="t")
+    sql = f"""
+    SELECT {cols}, COUNT(*) AS n
+    FROM {ident(handle.name)} AS t
+    GROUP BY {cols}
+    HAVING COUNT(*) > 1
+    LIMIT 1
+    """
+    rel = run_sql(conn, sql)
+    rows = rel.fetchall()
+    if rows:
+        first = rows[0]
+        values = ", ".join(f"{col}={first[i]!r}" for i, col in enumerate(by_columns))
+        raise ComparisonError(
+            f"`{identifier}` has more than one row for by values ({values})"
+        )
+
+
 def register_input_view(
     conn: VersusConn,
     source: Any,
@@ -252,61 +307,6 @@ def run_sql(
 
 def relation_is_empty(relation: duckdb.DuckDBPyRelation) -> bool:
     return relation.limit(1).fetchone() is None
-
-
-def validate_columns_exist(
-    by_columns: Iterable[str],
-    handles: Mapping[str, _TableHandle],
-    table_id: Tuple[str, str],
-) -> None:
-    missing_a = [col for col in by_columns if col not in handles[table_id[0]].columns]
-    missing_b = [col for col in by_columns if col not in handles[table_id[1]].columns]
-    if missing_a:
-        raise ComparisonError(
-            f"`by` columns not found in `{table_id[0]}`: {', '.join(missing_a)}"
-        )
-    if missing_b:
-        raise ComparisonError(
-            f"`by` columns not found in `{table_id[1]}`: {', '.join(missing_b)}"
-        )
-
-
-def validate_class_compatibility(
-    handles: Mapping[str, _TableHandle],
-    table_id: Tuple[str, str],
-) -> None:
-    shared = set(handles[table_id[0]].columns) & set(handles[table_id[1]].columns)
-    for column in shared:
-        type_a = handles[table_id[0]].types.get(column)
-        type_b = handles[table_id[1]].types.get(column)
-        if type_a != type_b:
-            raise ComparisonError(
-                f"`coerce=False` requires compatible classes. Column `{column}` has types `{type_a}` vs `{type_b}`."
-            )
-
-
-def ensure_unique_by(
-    conn: VersusConn,
-    handle: _TableHandle,
-    by_columns: List[str],
-    identifier: str,
-) -> None:
-    cols = select_cols(by_columns, alias="t")
-    sql = f"""
-    SELECT {cols}, COUNT(*) AS n
-    FROM {ident(handle.name)} AS t
-    GROUP BY {cols}
-    HAVING COUNT(*) > 1
-    LIMIT 1
-    """
-    rel = run_sql(conn, sql)
-    rows = rel.fetchall()
-    if rows:
-        first = rows[0]
-        values = ", ".join(f"{col}={first[i]!r}" for i, col in enumerate(by_columns))
-        raise ComparisonError(
-            f"`{identifier}` has more than one row for by values ({values})"
-        )
 
 
 def diff_predicate(
