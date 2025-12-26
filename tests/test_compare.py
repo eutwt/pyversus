@@ -219,6 +219,15 @@ def test_compare_errors_when_table_id_blank():
         compare(rel_a, rel_b, by=["id"], table_id=(" ", "b"), connection=con)
 
 
+def test_compare_errors_when_materialize_invalid():
+    con, rel_a, rel_b = build_connection()
+    with pytest.raises(ComparisonError):
+        compare(rel_a, rel_b, by=["id"], connection=con, materialize=cast(Any, "nope"))
+    with pytest.raises(ComparisonError):
+        compare(rel_a, rel_b, by=["id"], connection=con, materialize=cast(Any, True))
+    con.close()
+
+
 def test_intersection_empty_when_no_value_columns():
     sql = "SELECT * FROM (VALUES (1, 10)) AS t(id, value)"
     comp = comparison_from_sql(sql, sql, by=["id", "value"])

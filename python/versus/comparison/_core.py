@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple
 
 import duckdb
 
@@ -154,8 +154,17 @@ def compare(
     coerce: bool = True,
     table_id: Tuple[str, str] = ("a", "b"),
     connection: Optional[duckdb.DuckDBPyConnection] = None,
-    materialize: bool = True,
+    materialize: Literal["all", "summary", "none"] = "all",
 ) -> Comparison:
+    if not isinstance(materialize, str) or materialize not in {
+        "all",
+        "summary",
+        "none",
+    }:
+        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'none'")
+    materialize_summary = materialize in {"all", "summary"}
+    materialize_keys = materialize == "all"
+
     conn_input = connection
     if conn_input is not None:
         conn_candidate = conn_input
@@ -177,15 +186,19 @@ def compare(
     for identifier in clean_ids:
         h.ensure_unique_by(conn, handles[identifier], by_columns, identifier)
 
-    tables_frame = h.build_tables_frame(conn, handles, clean_ids, materialize)
-    by_frame = h.build_by_frame(conn, by_columns, handles, clean_ids, materialize)
+    tables_frame = h.build_tables_frame(conn, handles, clean_ids, materialize_summary)
+    by_frame = h.build_by_frame(
+        conn, by_columns, handles, clean_ids, materialize_summary
+    )
     common_all = [
         col
         for col in handles[clean_ids[0]].columns
         if col in handles[clean_ids[1]].columns
     ]
     value_columns = [col for col in common_all if col not in by_columns]
-    unmatched_cols = h.build_unmatched_cols(conn, handles, clean_ids, materialize)
+    unmatched_cols = h.build_unmatched_cols(
+        conn, handles, clean_ids, materialize_summary
+    )
     diff_keys = h.compute_diff_keys(
         conn,
         handles,
@@ -193,7 +206,7 @@ def compare(
         by_columns,
         value_columns,
         allow_both_na,
-        materialize,
+        materialize_keys,
     )
     intersection, diff_lookup = h.build_intersection_frame(
         value_columns,
@@ -201,13 +214,13 @@ def compare(
         clean_ids,
         diff_keys,
         conn,
-        materialize,
+        materialize_summary,
     )
     unmatched_keys = h.compute_unmatched_keys(
-        conn, handles, clean_ids, by_columns, materialize
+        conn, handles, clean_ids, by_columns, materialize_keys
     )
     unmatched_rows_rel = h.compute_unmatched_rows_summary(
-        conn, unmatched_keys, materialize
+        conn, unmatched_keys, materialize_summary
     )
 
     return Comparison(
