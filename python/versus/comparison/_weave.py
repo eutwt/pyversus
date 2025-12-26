@@ -16,7 +16,7 @@ def weave_diffs_wide(
     suffix: Optional[Tuple[str, str]] = None,
 ) -> duckdb.DuckDBPyRelation:
     selected = h.resolve_column_list(comparison, columns)
-    diff_cols = [col for col in selected if comparison._diff_lookup[col] > 0]
+    diff_cols = [col for col in selected if comparison._get_diff_lookup()[col] > 0]
     table_a, table_b = comparison.table_id
     out_cols = comparison.by_columns + comparison.common_columns
     if not diff_cols:
@@ -55,7 +55,7 @@ def weave_diffs_long(
     columns: Optional[Sequence[str]] = None,
 ) -> duckdb.DuckDBPyRelation:
     selected = h.resolve_column_list(comparison, columns)
-    diff_cols = [col for col in selected if comparison._diff_lookup[col] > 0]
+    diff_cols = [col for col in selected if comparison._get_diff_lookup()[col] > 0]
     table_a, table_b = comparison.table_id
     out_cols = comparison.by_columns + comparison.common_columns
     if not diff_cols:

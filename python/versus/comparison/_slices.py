@@ -17,7 +17,10 @@ def slice_diffs(
 ) -> duckdb.DuckDBPyRelation:
     table_name = h.normalize_table_arg(comparison, table)
     selected = h.resolve_column_list(comparison, columns)
-    diff_cols = [col for col in selected if comparison._diff_lookup[col] > 0]
+    if comparison._materialize_mode == "none":
+        diff_cols = selected
+    else:
+        diff_cols = [col for col in selected if comparison._get_diff_lookup()[col] > 0]
     if not diff_cols:
         return h.select_zero_from_table(comparison, table_name)
     comparison._ensure_diff_keys_materialized()

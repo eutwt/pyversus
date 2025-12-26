@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Mapping, Tuple
+from typing import Dict, List, Mapping, Optional, Tuple
 
 import duckdb
 
@@ -81,10 +81,39 @@ def build_intersection_frame(
     diff_keys: Mapping[str, duckdb.DuckDBPyRelation],
     conn: h.VersusConn,
     materialize: bool,
-) -> Tuple[duckdb.DuckDBPyRelation, Dict[str, int]]:
+    compute_counts: bool,
+) -> Tuple[duckdb.DuckDBPyRelation, Optional[Dict[str, int]]]:
+    first, second = table_id
+    schema = [
+        ("column", "VARCHAR"),
+        ("n_diffs", "BIGINT"),
+        (f"class_{first}", "VARCHAR"),
+        (f"class_{second}", "VARCHAR"),
+    ]
+    if not value_columns:
+        relation = h.build_rows_relation(conn, [], schema, materialize)
+        return relation, {} if compute_counts else None
+    if not compute_counts:
+        selects = []
+        for column in value_columns:
+            relation = diff_keys[column]
+            relation_sql = relation.sql_query()
+            selects.append(
+                f"""
+                SELECT
+                  {h.sql_literal(column)} AS {h.ident('column')},
+                  COUNT(*) AS {h.ident('n_diffs')},
+                  {h.sql_literal(handles[first].types[column])} AS {h.ident(f'class_{first}')},
+                  {h.sql_literal(handles[second].types[column])} AS {h.ident(f'class_{second}')}
+                FROM ({relation_sql}) AS diff_keys
+                """
+            )
+        sql = " UNION ALL ".join(selects)
+        relation = h.finalize_relation(conn, sql, materialize)
+        return relation, None
+
     rows = []
     diff_lookup: Dict[str, int] = {}
-    first, second = table_id
     for column in value_columns:
         relation = diff_keys[column]
         count = h.table_count(relation)
@@ -97,12 +126,6 @@ def build_intersection_frame(
             )
         )
         diff_lookup[column] = count
-    schema = [
-        ("column", "VARCHAR"),
-        ("n_diffs", "BIGINT"),
-        (f"class_{first}", "VARCHAR"),
-        (f"class_{second}", "VARCHAR"),
-    ]
     relation = h.build_rows_relation(conn, rows, schema, materialize)
     return relation, diff_lookup
 

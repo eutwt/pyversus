@@ -36,7 +36,7 @@ class Comparison:
         common_columns: List[str],
         table_columns: Mapping[str, List[str]],
         diff_keys: Mapping[str, duckdb.DuckDBPyRelation],
-        diff_lookup: Dict[str, int],
+        diff_lookup: Optional[Dict[str, int]],
     ) -> None:
         self.connection = connection
         self._handles = dict(handles)
@@ -71,6 +71,12 @@ class Comparison:
             )
         self.diff_keys = diff_keys
         self._diff_keys_materialized = True
+
+    def _get_diff_lookup(self) -> Dict[str, int]:
+        if self._diff_lookup is None:
+            rows = self.intersection.fetchall()
+            self._diff_lookup = {row[0]: row[1] for row in rows}
+        return self._diff_lookup
 
     def close(self) -> None:
         if self._closed:
@@ -220,6 +226,7 @@ def compare(
         diff_keys,
         conn,
         materialize_summary,
+        materialize != "none",
     )
     unmatched_keys = c.compute_unmatched_keys(
         conn, handles, clean_ids, by_columns, materialize_keys
