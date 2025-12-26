@@ -182,6 +182,7 @@ def resolve_connection(
     return VersusConn(conn_candidate)
 
 
+# Core-only validation helpers.
 def validate_columns_exist(
     by_columns: Iterable[str],
     handles: Mapping[str, _TableHandle],
