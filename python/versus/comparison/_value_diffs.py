@@ -13,6 +13,7 @@ if TYPE_CHECKING:  # pragma: no cover
 def value_diffs(comparison: "Comparison", column: str) -> duckdb.DuckDBPyRelation:
     target_col = h.normalize_single_column(column)
     h.assert_column_allowed(comparison, target_col, "value_diffs")
+    comparison._ensure_diff_keys_materialized()
     key_relation = comparison.diff_keys[target_col]
     table_a, table_b = comparison.table_id
     select_cols = [
@@ -38,6 +39,7 @@ def value_diffs_stacked(
     comparison: "Comparison", columns: Optional[Sequence[str]] = None
 ) -> duckdb.DuckDBPyRelation:
     selected = h.resolve_column_list(comparison, columns, allow_empty=False)
+    comparison._ensure_diff_keys_materialized()
     selects = [
         stack_value_diffs_sql(comparison, column, comparison.diff_keys[column])
         for column in selected
