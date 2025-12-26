@@ -2,7 +2,6 @@ from typing import Any, Tuple, cast
 
 import duckdb
 import pytest
-
 from versus import ComparisonError, compare, examples
 
 
@@ -79,14 +78,13 @@ def test_compare_summary():
     assert value_row["n_diffs"] == 1
 
 
-def test_handles_property_exposes_table_metadata():
+def test_inputs_property_exposes_relations():
     con, rel_a, rel_b = build_connection()
     comp = compare(rel_a, rel_b, by=["id"], connection=con)
-    handles = comp.handles
-    assert "a" in handles and "b" in handles
-    assert "id" in handles["a"].columns
-    with pytest.raises(TypeError):
-        handles["extra"] = None  # type: ignore[index]
+    inputs = comp.inputs
+    assert isinstance(inputs, dict)
+    assert "a" in inputs and "b" in inputs
+    assert "id" in inputs["a"].columns
     comp.close()
 
 

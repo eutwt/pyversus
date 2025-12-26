@@ -28,10 +28,12 @@ future contributors can work without hunting through old context.
   correct database.
 - The `Comparison` object stores:
   - table metadata (`tables`, `by`, `unmatched_cols`, `intersection`)
-  - handles to the temp views plus a mapping of column name to
-    diff-key temp table (available via `Comparison.diff_rows` even though
+  - internal handles to the temp views plus a mapping of column name to
+    diff-key relation (available via `Comparison.diff_rows` even though
     the intersection table only shows counts) so helper methods can
     fetch diff keys without recomputing predicates
+  - `Comparison.inputs`, a mapping from table id to the input relations
+    for direct querying
   - lookup tables for unmatched rows/diff counts
 - Helper methods (`value_diffs`, `slice_diffs`, `weave_diffs_*`,
   `slice_unmatched*`) push their work back into DuckDB and return
@@ -47,6 +49,8 @@ future contributors can work without hunting through old context.
 
 ## Testing & tooling
 
+- Run tests as needed without asking; prefer `uv run pytest` from the
+  repo root.
 - Use the checked-in `.venv` managed by `uv`:
   1. `uv venv .venv`
   2. `uv pip install -e . pytest`

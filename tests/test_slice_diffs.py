@@ -2,7 +2,6 @@ from collections import Counter
 
 import duckdb
 import pytest
-
 from versus import ComparisonError, compare
 
 
