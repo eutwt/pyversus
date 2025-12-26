@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 try:
     from typing import Literal
@@ -93,9 +93,12 @@ class Comparison:
         self._diff_keys_materialized = True
 
     def _get_diff_lookup(self) -> Dict[str, int]:
-        if self._diff_lookup is None:
+        diff_lookup = self._diff_lookup
+        if diff_lookup is None:
             self._refresh_intersection_and_lookup()
-        return cast(Dict[str, int], self._diff_lookup)
+            diff_lookup = self._diff_lookup
+            assert diff_lookup is not None
+        return diff_lookup
 
     def close(self) -> None:
         if self._closed:

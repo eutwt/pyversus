@@ -13,7 +13,6 @@ from typing import (
     Sequence,
     Tuple,
     Union,
-    cast,
 )
 
 import duckdb
@@ -442,7 +441,8 @@ def build_rows_relation(
 
 def table_count(relation: Union[duckdb.DuckDBPyRelation, _TableHandle]) -> int:
     row = relation.count("*").fetchall()[0]
-    return cast(int, row[0])
+    assert isinstance(row[0], int)
+    return row[0]
 
 
 def select_zero_from_table(
