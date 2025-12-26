@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+
+try:
+    from typing import Literal
+except ImportError:  # pragma: no cover - Python < 3.8
+    from typing_extensions import Literal
 
 import duckdb
 
