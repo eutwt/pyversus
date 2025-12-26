@@ -16,11 +16,12 @@ def weave_diffs_wide(
     suffix: Optional[Tuple[str, str]] = None,
 ) -> duckdb.DuckDBPyRelation:
     selected = h.resolve_column_list(comparison, columns)
-    diff_cols = [col for col in selected if comparison._diff_lookup[col] > 0]
+    diff_cols = [col for col in selected if comparison._get_diff_lookup()[col] > 0]
     table_a, table_b = comparison.table_id
     out_cols = comparison.by_columns + comparison.common_columns
     if not diff_cols:
         return h.select_zero_from_table(comparison, table_a, out_cols)
+    comparison._ensure_diff_keys_materialized()
     suffix = h.resolve_suffix(suffix, comparison.table_id)
     keys = h.collect_diff_keys(comparison, diff_cols)
     select_parts = []
@@ -54,7 +55,7 @@ def weave_diffs_long(
     columns: Optional[Sequence[str]] = None,
 ) -> duckdb.DuckDBPyRelation:
     selected = h.resolve_column_list(comparison, columns)
-    diff_cols = [col for col in selected if comparison._diff_lookup[col] > 0]
+    diff_cols = [col for col in selected if comparison._get_diff_lookup()[col] > 0]
     table_a, table_b = comparison.table_id
     out_cols = comparison.by_columns + comparison.common_columns
     if not diff_cols:
@@ -63,6 +64,7 @@ def weave_diffs_long(
             "base",
             f"SELECT {h.sql_literal(table_a)} AS table, {h.select_cols(out_cols)} FROM base",
         )
+    comparison._ensure_diff_keys_materialized()
     keys = h.collect_diff_keys(comparison, diff_cols)
     table_column = h.ident("table")
     select_cols_a = h.select_cols(out_cols, alias="a")

@@ -13,7 +13,6 @@ from typing import (
     Sequence,
     Tuple,
     Union,
-    cast,
 )
 
 import duckdb
@@ -70,9 +69,9 @@ def resolve_materialize(materialize: str) -> Tuple[bool, bool]:
     if not isinstance(materialize, str) or materialize not in {
         "all",
         "summary",
-        "none",
+        "lazy",
     }:
-        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'none'")
+        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'lazy'")
     materialize_summary = materialize in {"all", "summary"}
     materialize_keys = materialize == "all"
     return materialize_summary, materialize_keys
@@ -361,9 +360,14 @@ def fetch_rows_by_keys(
     comparison: "Comparison",
     table: str,
     key_sql: str,
-    columns: Sequence[str],
+    columns: Optional[Sequence[str]] = None,
 ) -> duckdb.DuckDBPyRelation:
-    select_cols_sql = select_cols(columns, alias="base")
+    if columns is None:
+        select_cols_sql = "base.*"
+    else:
+        if not columns:
+            raise ComparisonError("Column list must be non-empty")
+        select_cols_sql = select_cols(columns, alias="base")
     join_condition_sql = join_condition(comparison.by_columns, "keys", "base")
     sql = f"""
     SELECT {select_cols_sql}
@@ -437,7 +441,8 @@ def build_rows_relation(
 
 def table_count(relation: Union[duckdb.DuckDBPyRelation, _TableHandle]) -> int:
     row = relation.count("*").fetchall()[0]
-    return cast(int, row[0])
+    assert isinstance(row[0], int)
+    return row[0]
 
 
 def select_zero_from_table(

@@ -190,15 +190,29 @@ comparison.summary()
   from table id (e.g., `"a"`, `"b"`) to the input relations.
 - Need the row identifiers for unmatched rows? `comparison.unmatched_keys`
   exposes the table id plus `by` columns for those keys.
-- By default `compare()` materializes the tables shown in the printed summary plus the diff and
-  unmatched key relations (`materialize="all"`). Use
-  `materialize="summary"` to only materialize the printed summary tables, or
-  `materialize="none"` to keep everything lazy (at the cost of
-  recomputing them when accessed).
 - Inputs stay lazy as well: `compare()` never materialises the full
   source tables in Python.
 - Want to kick the tires quickly? The `versus.examples.example_cars_*`
   helpers used in the quick start are available for ad-hoc testing.
+
+### Materialization
+
+When you call `compare()`, Versus defines a few summary tables for the
+printed output (`tables`, `by`, `intersection`, `unmatched_cols`,
+`unmatched_rows`). It also defines the key relations used to fetch row‑level
+data (diff keys and unmatched keys). These are DuckDB relations; they are
+computed when you evaluate them unless they were materialized.
+
+- `materialize="all"`: store both the printed summary tables and the diff
+  key tables as temp tables. This is fastest if you will call row-level
+  helpers multiple times.
+- `materialize="summary"`: store the lightweight summary tables (`tables`,
+  `by`, `intersection`, `unmatched_cols`, `unmatched_rows`). Counts are
+  computed during `compare()` but diff key tables stay lazy until you ask for
+  row-level data.
+- `materialize="lazy"`: do not store summary tables up front. The first time
+  you print the comparison, those summary tables are materialized and reused.
+  Diff key tables stay lazy until you ask for row-level data.
 
 The package exposes the same high-level helpers as the R version
 (`value_diffs*`, `weave_diffs*`, `slice_*`), so if you already know the
