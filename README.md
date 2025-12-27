@@ -242,9 +242,7 @@ skip diff keys and compute diff counts inline.
 - `materialize="summary"`: store only the summary tables. Row-level
   helpers run inline predicates and return lazy relations.
 - `materialize="none"`: do not store anything up front. Printing the
-  comparison materializes the summary tables and enables diff-count and
-  unmatched-row optimizations for later row-level helpers, but helper
-  outputs stay lazy.
+  comparison materializes the summary tables.
 
 Row-level helper outputs are always returned as DuckDB relations and are
 never materialized automatically; materialize them explicitly if needed.
