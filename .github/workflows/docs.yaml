@@ -1,0 +1,85 @@
+name: docs
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, closed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install docs dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .[docs]
+
+      - name: Build site
+        run: mkdocs build --strict
+
+      - name: Deploy to GitHub pages (main)
+        if: github.event_name != 'pull_request'
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        with:
+          branch: gh-pages
+          folder: site
+
+      - name: Deploy preview to GitHub pages (PR)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        with:
+          branch: gh-pages
+          folder: site
+          target-folder: pr-${{ github.event.pull_request.number }}
+
+  cleanup-preview:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.head.repo.fork == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove preview folder
+        run: |
+          if ! git ls-remote --exit-code --heads origin gh-pages; then
+            echo "No gh-pages branch; skipping preview cleanup."
+            exit 0
+          fi
+          git fetch origin gh-pages
+          git checkout gh-pages
+          preview_dir="pr-${{ github.event.pull_request.number }}"
+          if [ ! -d "${preview_dir}" ]; then
+            echo "No preview folder to remove."
+            exit 0
+          fi
+          rm -rf "${preview_dir}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Remove docs preview for PR #${{ github.event.pull_request.number }}"
+          git push origin gh-pages

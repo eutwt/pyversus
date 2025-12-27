@@ -15,7 +15,11 @@ from . import _slices, _value_diffs, _weave
 
 
 class Comparison:
-    """In-memory description of how two relations differ."""
+    """In-memory description of how two relations differ.
+
+    Provides summary relations plus helper methods to retrieve the exact
+    differences without materializing the full input tables.
+    """
 
     def __init__(
         self,
@@ -104,6 +108,7 @@ class Comparison:
             self._unmatched_lookup = unmatched_lookup
 
     def close(self) -> None:
+        """Release any temporary views or tables created for the comparison."""
         if self._closed:
             return
         for view in reversed(self.connection.versus.views):
@@ -136,11 +141,35 @@ class Comparison:
         )
 
     def value_diffs(self, column: str) -> duckdb.DuckDBPyRelation:
+        """Return rows where a single column differs between the tables.
+
+        Parameters
+        ----------
+        column : str
+            Column name to compare.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with the differing values plus the `by` columns.
+        """
         return _value_diffs.value_diffs(self, column)
 
     def value_diffs_stacked(
         self, columns: Optional[Sequence[str]] = None
     ) -> duckdb.DuckDBPyRelation:
+        """Return a stacked view of value differences for multiple columns.
+
+        Parameters
+        ----------
+        columns : sequence of str, optional
+            Columns to compare. Defaults to all comparable columns.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with `column`, `val_<table_id>`, and `by` columns.
+        """
         return _value_diffs.value_diffs_stacked(self, columns)
 
     def slice_diffs(
@@ -148,12 +177,45 @@ class Comparison:
         table: str,
         columns: Optional[Sequence[str]] = None,
     ) -> duckdb.DuckDBPyRelation:
+        """Return rows from one table that differ in the selected columns.
+
+        Parameters
+        ----------
+        table : str
+            Table identifier to return (one of `table_id`).
+        columns : sequence of str, optional
+            Columns to check for differences. Defaults to all comparable columns.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with the full schema of the requested table.
+        """
         return _slices.slice_diffs(self, table, columns)
 
     def slice_unmatched(self, table: str) -> duckdb.DuckDBPyRelation:
+        """Return rows from one table whose keys are missing in the other.
+
+        Parameters
+        ----------
+        table : str
+            Table identifier to return (one of `table_id`).
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with unmatched rows from the requested table.
+        """
         return _slices.slice_unmatched(self, table)
 
     def slice_unmatched_both(self) -> duckdb.DuckDBPyRelation:
+        """Return unmatched rows from both tables.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with `table_name` plus key and common columns.
+        """
         return _slices.slice_unmatched_both(self)
 
     def weave_diffs_wide(
@@ -161,16 +223,49 @@ class Comparison:
         columns: Optional[Sequence[str]] = None,
         suffix: Optional[Tuple[str, str]] = None,
     ) -> duckdb.DuckDBPyRelation:
+        """Return a wide view of differing rows with split columns.
+
+        Parameters
+        ----------
+        columns : sequence of str, optional
+            Columns to compare. Defaults to all comparable columns.
+        suffix : tuple[str, str], optional
+            Suffixes appended to differing columns from table A and B.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with key columns and common columns, where differing
+            columns are split into `<name><suffix>`.
+        """
         return _weave.weave_diffs_wide(self, columns, suffix)
 
     def weave_diffs_long(
         self,
         columns: Optional[Sequence[str]] = None,
     ) -> duckdb.DuckDBPyRelation:
+        """Return a long view of differing rows stacked by table.
+
+        Parameters
+        ----------
+        columns : sequence of str, optional
+            Columns to compare. Defaults to all comparable columns.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with `table_name` plus key and common columns.
+        """
         return _weave.weave_diffs_long(self, columns)
 
     def summary(self) -> duckdb.DuckDBPyRelation:
-        """Summarize which difference categories are present."""
+        """Summarize which difference categories are present.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with `difference` and `found` columns.
+        """
         value_diffs = not h.relation_is_empty(
             self.intersection.filter(f"{h.ident('n_diffs')} > 0")
         )
@@ -209,6 +304,44 @@ def compare(
     connection: Optional[duckdb.DuckDBPyConnection] = None,
     materialize: Literal["all", "summary", "none"] = "all",
 ) -> Comparison:
+    """Compare two DuckDB relations (or SQL queries) by key columns.
+
+    Parameters
+    ----------
+    table_a, table_b : Any
+        DuckDB relations or SQL strings to compare.
+    by : sequence of str
+        Column names that uniquely identify rows.
+    allow_both_na : bool, default True
+        Whether to treat NULL/NA values as equal when both sides are missing.
+    coerce : bool, default True
+        If True, allow DuckDB to coerce compatible types. If False, require
+        exact type matches for shared columns.
+    table_id : tuple[str, str], default ("a", "b")
+        Labels used in outputs for the two tables.
+    connection : duckdb.DuckDBPyConnection, optional
+        DuckDB connection used to register the inputs and run queries.
+    materialize : {"all", "summary", "none"}, default "all"
+        Controls which helper tables are materialized upfront.
+
+    Returns
+    -------
+    Comparison
+        Comparison object with summary relations and diff helpers.
+
+    Examples
+    --------
+    >>> import duckdb
+    >>> from versus import compare, examples
+    >>> con = duckdb.connect()
+    >>> comparison = compare(
+    ...     examples.example_cars_a(con),
+    ...     examples.example_cars_b(con),
+    ...     by=["car"],
+    ...     connection=con,
+    ... )
+    >>> comparison.summary()
+    """
     materialize_summary, materialize_keys = h.resolve_materialize(materialize)
 
     conn = h.resolve_connection(connection)
