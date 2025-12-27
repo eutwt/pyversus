@@ -1,4 +1,4 @@
-from typing import Any, Tuple, cast
+from typing import Any, cast
 
 import duckdb
 import pytest

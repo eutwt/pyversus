@@ -5,7 +5,6 @@ from typing import Dict, List, Mapping, Optional, Tuple
 import duckdb
 
 from . import _helpers as h
-from ._exceptions import ComparisonError
 
 
 def build_tables_frame(
