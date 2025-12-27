@@ -32,8 +32,7 @@ def main() -> None:
     )
     if result.returncode != 0:
         raise SystemExit(
-            "Quarto render failed. Ensure `quarto` is installed and R (with knitr/"
-            "reticulate) is available."
+            "Quarto render failed. Ensure `quarto` is installed and on PATH."
         )
 
 
