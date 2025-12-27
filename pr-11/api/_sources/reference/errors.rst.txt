@@ -1,0 +1,4 @@
+Errors
+======
+
+.. autoexception:: versus.ComparisonError
