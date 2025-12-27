@@ -68,9 +68,11 @@ def _weave_select_parts(
             ]
         return [h.col("a", column)]
 
-    return [h.col("a", column) for column in comparison.by_columns] + [
+    by_parts = [h.col("a", column) for column in comparison.by_columns]
+    common_parts = [
         part for column in comparison.common_columns for part in parts_for(column)
     ]
+    return by_parts + common_parts
 
 
 def _weave_diffs_wide_with_keys(
