@@ -139,7 +139,7 @@ def _weave_diffs_long_with_keys(
     order_cols = h.select_cols(comparison.by_columns)
     sql = f"""
     WITH
-      diff_keys AS (
+      keys AS (
         {keys}
       )
     SELECT
@@ -152,7 +152,7 @@ def _weave_diffs_long_with_keys(
           '{table_a}' AS {table_column},
           {select_cols_a}
         FROM
-          diff_keys AS keys
+          keys
           JOIN {h.ident(comparison._handles[table_a].name)} AS a
             ON {join_a}
         UNION ALL
@@ -161,7 +161,7 @@ def _weave_diffs_long_with_keys(
           '{table_b}' AS {table_column},
           {select_cols_b}
         FROM
-          diff_keys AS keys
+          keys
           JOIN {h.ident(comparison._handles[table_b].name)} AS b
             ON {join_b}
       ) AS stacked
