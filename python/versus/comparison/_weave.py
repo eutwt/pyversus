@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from itertools import chain
 from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
 
 import duckdb
@@ -69,9 +70,9 @@ def _weave_select_parts(
         return [h.col("a", column)]
 
     by_parts = [h.col("a", column) for column in comparison.by_columns]
-    common_parts = [
-        part for column in comparison.common_columns for part in parts_for(column)
-    ]
+    common_parts = list(
+        chain.from_iterable(parts_for(column) for column in comparison.common_columns)
+    )
     return by_parts + common_parts
 
 
