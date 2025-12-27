@@ -99,13 +99,14 @@ def slice_unmatched_both(comparison: "Comparison") -> duckdb.DuckDBPyRelation:
     selects = [select_for(table_name) for table_name in table_names]
     if not selects:
         base = h.select_zero_from_table(comparison, comparison.table_id[0], out_cols)
-        relation = base.query(
-            "base",
-            (
-                f"SELECT {h.sql_literal(comparison.table_id[0])} AS table, "
-                f"{h.select_cols(out_cols)} FROM base"
-            ),
-        )
+        sql = f"""
+        SELECT
+          {h.sql_literal(comparison.table_id[0])} AS table,
+          {h.select_cols(out_cols)}
+        FROM
+          base
+        """
+        relation = base.query("base", sql)
         return relation
     sql = " UNION ALL ".join(selects)
     return h.run_sql(comparison.connection, sql)
