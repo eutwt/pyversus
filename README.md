@@ -200,9 +200,14 @@ comparison.summary()
 When you call `compare()`, Versus defines summary tables for the printed
 output (`tables`, `by`, `intersection`, `unmatched_cols`, `unmatched_rows`).
 These are relation-like wrappers that materialize themselves on print.
-Diff key relations are only built when you choose full materialization;
-other modes compute diff counts inline. Everything stays as DuckDB relations
-until evaluated.
+The input tables are never materialized by Versus in any mode; they stay
+as DuckDB relations and are queried lazily.
+
+In full materialization, Versus also builds diff key relations: per-column
+relations of `by` keys where values differ. Those precomputed keys let
+row-level helpers fetch the exact differing rows quickly via joins, which
+can be faster when you call multiple helpers.
+Other modes skip diff keys and compute diff counts inline.
 
 - `materialize="all"`: store the summary tables and diff key tables as temp
   tables. This is fastest if you will call row-level helpers multiple times.

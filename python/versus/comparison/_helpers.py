@@ -325,15 +325,16 @@ def register_input_view(
         )
     except duckdb.Error as exc:
         if base_name is not None and base_name in str(exc):
+            arg_name = f"table_{label}"
             if connection_supplied:
                 hint = (
-                    "Input relation appears to be bound to a different DuckDB "
+                    f"`{arg_name}` appears to be bound to a different DuckDB "
                     "connection than the one passed to `compare()`. Pass the same "
                     "connection that created the relations via `connection=...`."
                 )
             else:
                 hint = (
-                    "Input relation appears to be bound to a non-default DuckDB "
+                    f"`{arg_name}` appears to be bound to a non-default DuckDB "
                     "connection. Pass that connection to `compare()` via "
                     "`connection=...`."
                 )

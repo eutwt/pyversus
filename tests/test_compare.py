@@ -281,7 +281,7 @@ def test_compare_errors_on_relations_from_non_default_connection():
     try:
         rel_a = other_conn.sql("SELECT 1 AS id, 10 AS value")
         rel_b = other_conn.sql("SELECT 1 AS id, 11 AS value")
-        with pytest.raises(ComparisonError, match="non-default DuckDB connection"):
+        with pytest.raises(ComparisonError, match="table_a"):
             compare(rel_a, rel_b, by=["id"])
     finally:
         setattr(duckdb, "default_connection", original_default)
