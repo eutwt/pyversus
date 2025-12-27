@@ -407,9 +407,7 @@ multiple times.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">materialize=&quot;summary&quot;</span></code>: store only the summary tables. Row-level
 helpers run inline predicates and return lazy relations.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">materialize=&quot;none&quot;</span></code>: do not store anything up front. Printing the
-comparison materializes the summary tables and enables diff-count and
-unmatched-row optimizations for later row-level helpers, but helper
-outputs stay lazy.</p></li>
+comparison materializes the summary tables.</p></li>
 </ul>
 <p>Row-level helper outputs are always returned as DuckDB relations and are
 never materialized automatically; materialize them explicitly if needed.</p>
