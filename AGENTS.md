@@ -93,6 +93,8 @@ future contributors can work without hunting through old context.
   we keep a consistent relation-first flow.
 - Never add untracked files to git unless the user explicitly confirms
   they should be included.
+- Prefer functional-style list construction (comprehensions or generator
+  joins) over mutating lists in loops where feasible.
 - Format multi-line SQL strings using Mozilla SQL style (each clause on
   its own line with indented bodies). Single-line SQL literals can stay
   compact.

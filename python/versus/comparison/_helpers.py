@@ -434,11 +434,7 @@ def require_diff_keys(
 
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
     diff_keys = require_diff_keys(comparison)
-    selects = []
-    for column in columns:
-        key_sql = diff_keys[column].sql_query()
-        selects.append(key_sql)
-    return " UNION DISTINCT ".join(selects)
+    return " UNION DISTINCT ".join(diff_keys[column].sql_query() for column in columns)
 
 
 def fetch_rows_by_keys(
@@ -501,9 +497,9 @@ def rows_relation_sql(
             f"CAST(NULL AS {dtype}) AS {ident(name)}" for name, dtype in schema
         )
         return f"SELECT {select_list} LIMIT 0"
-    value_rows = []
-    for row in rows:
-        value_rows.append("(" + ", ".join(sql_literal(value) for value in row) + ")")
+    value_rows = [
+        "(" + ", ".join(sql_literal(value) for value in row) + ")" for row in rows
+    ]
     alias_cols = ", ".join(f"col{i}" for i in range(len(schema)))
     select_list = ", ".join(
         f"CAST(col{i} AS {dtype}) AS {ident(name)}"

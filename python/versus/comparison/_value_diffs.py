@@ -148,18 +148,21 @@ def _empty_value_diffs_stacked(
     handle_a = comparison._handles[table_a]
     handle_b = comparison._handles[table_b]
     by_columns = comparison.by_columns
-    selects = []
-    for column in columns:
+
+    def select_for(column: str) -> str:
         type_a = handle_a.types[column]
         type_b = handle_b.types[column]
+        by_parts = [
+            f"CAST(NULL AS {handle_a.types[by_col]}) AS {h.ident(by_col)}"
+            for by_col in by_columns
+        ]
         select_parts = [
             f"{h.sql_literal(column)} AS {h.ident('column')}",
             f"CAST(NULL AS {type_a}) AS {h.ident(f'val_{table_a}')}",
             f"CAST(NULL AS {type_b}) AS {h.ident(f'val_{table_b}')}",
+            *by_parts,
         ]
-        for by_col in by_columns:
-            by_type = handle_a.types[by_col]
-            select_parts.append(f"CAST(NULL AS {by_type}) AS {h.ident(by_col)}")
-        selects.append(f"SELECT {', '.join(select_parts)} LIMIT 0")
-    sql = " UNION ALL ".join(selects)
+        return f"SELECT {', '.join(select_parts)} LIMIT 0"
+
+    sql = " UNION ALL ".join(select_for(column) for column in columns)
     return h.run_sql(comparison.connection, sql)

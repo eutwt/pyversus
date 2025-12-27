@@ -13,11 +13,11 @@ def build_tables_frame(
     table_id: Tuple[str, str],
     materialize: bool,
 ) -> duckdb.DuckDBPyRelation:
-    rows = []
-    for identifier in table_id:
+    def row_for(identifier: str) -> Tuple[str, int, int]:
         handle = handles[identifier]
-        count = h.table_count(handle)
-        rows.append((identifier, count, len(handle.columns)))
+        return identifier, h.table_count(handle), len(handle.columns)
+
+    rows = [row_for(identifier) for identifier in table_id]
     schema = [
         ("table", "VARCHAR"),
         ("nrow", "BIGINT"),
@@ -33,16 +33,15 @@ def build_by_frame(
     table_id: Tuple[str, str],
     materialize: bool,
 ) -> duckdb.DuckDBPyRelation:
-    rows = []
     first, second = table_id
-    for column in by_columns:
-        rows.append(
-            (
-                column,
-                handles[first].types[column],
-                handles[second].types[column],
-            )
+    rows = [
+        (
+            column,
+            handles[first].types[column],
+            handles[second].types[column],
         )
+        for column in by_columns
+    ]
     schema = [
         ("column", "VARCHAR"),
         (f"type_{first}", "VARCHAR"),
@@ -57,14 +56,16 @@ def build_unmatched_cols(
     table_id: Tuple[str, str],
     materialize: bool,
 ) -> duckdb.DuckDBPyRelation:
-    rows = []
     first, second = table_id
     cols_first = set(handles[first].columns)
     cols_second = set(handles[second].columns)
-    for column in sorted(cols_first - cols_second):
-        rows.append((first, column, handles[first].types[column]))
-    for column in sorted(cols_second - cols_first):
-        rows.append((second, column, handles[second].types[column]))
+    rows = [
+        (first, column, handles[first].types[column])
+        for column in sorted(cols_first - cols_second)
+    ] + [
+        (second, column, handles[second].types[column])
+        for column in sorted(cols_second - cols_first)
+    ]
     schema = [
         ("table", "VARCHAR"),
         ("column", "VARCHAR"),
@@ -116,22 +117,20 @@ def _build_intersection_frame_with_keys(
     if not value_columns:
         relation = h.build_rows_relation(conn, [], schema, materialize)
         return relation, {} if materialize else None
-    selects = []
-    for column in value_columns:
-        relation = diff_keys[column]
-        relation_sql = relation.sql_query()
-        selects.append(
-            f"""
-            SELECT
-              {h.sql_literal(column)} AS {h.ident('column')},
-              COUNT(*) AS {h.ident('n_diffs')},
-              {h.sql_literal(handles[first].types[column])} AS {h.ident(f'type_{first}')},
-              {h.sql_literal(handles[second].types[column])} AS {h.ident(f'type_{second}')}
-            FROM
-              ({relation_sql}) AS diff_keys
-            """
-        )
-    sql = " UNION ALL ".join(selects)
+
+    def select_for(column: str) -> str:
+        relation_sql = diff_keys[column].sql_query()
+        return f"""
+        SELECT
+          {h.sql_literal(column)} AS {h.ident('column')},
+          COUNT(*) AS {h.ident('n_diffs')},
+          {h.sql_literal(handles[first].types[column])} AS {h.ident(f'type_{first}')},
+          {h.sql_literal(handles[second].types[column])} AS {h.ident(f'type_{second}')}
+        FROM
+          ({relation_sql}) AS diff_keys
+        """
+
+    sql = " UNION ALL ".join(select_for(column) for column in value_columns)
     relation = h.finalize_relation(conn, sql, materialize)
     if not materialize:
         return relation, None
@@ -158,25 +157,26 @@ def _build_intersection_frame_inline(
         relation = h.build_rows_relation(conn, [], schema, materialize)
         return relation, {} if materialize else None
     join_sql = h.join_clause(handles, table_id, by_columns)
-    count_aliases = []
-    count_exprs = []
-    for index, column in enumerate(value_columns):
-        alias = f"n_diffs_{index}"
-        count_aliases.append(alias)
-        predicate = h.diff_predicate(column, allow_both_na, "a", "b")
-        count_exprs.append(f"COUNT(*) FILTER (WHERE {predicate}) AS {h.ident(alias)}")
-    count_columns = ",\n      ".join(count_exprs)
-    struct_rows = []
-    for index, column in enumerate(value_columns):
-        struct_rows.append(
-            f"struct_pack("
+
+    def diff_alias(column: str) -> str:
+        return f"n_diffs_{column}"
+
+    count_columns = ",\n      ".join(
+        f"COUNT(*) FILTER (WHERE {h.diff_predicate(column, allow_both_na, 'a', 'b')}) "
+        f"AS {h.ident(diff_alias(column))}"
+        for column in value_columns
+    )
+    struct_list = ",\n        ".join(
+        (
+            "struct_pack("
             f"{h.ident('column')} := {h.sql_literal(column)}, "
-            f"{h.ident('n_diffs')} := counts.{h.ident(count_aliases[index])}, "
+            f"{h.ident('n_diffs')} := counts.{h.ident(diff_alias(column))}, "
             f"{h.ident(f'type_{first}')} := {h.sql_literal(handles[first].types[column])}, "
             f"{h.ident(f'type_{second}')} := {h.sql_literal(handles[second].types[column])}"
-            f")"
+            ")"
         )
-    struct_list = ",\n        ".join(struct_rows)
+        for column in value_columns
+    )
     sql = f"""
     WITH counts AS (
       SELECT
@@ -236,31 +236,30 @@ def compute_unmatched_keys(
     by_columns: List[str],
     materialize: bool,
 ) -> duckdb.DuckDBPyRelation:
-    keys_parts = []
-    for identifier in table_id:
+    def key_part(identifier: str) -> str:
         other = table_id[1] if identifier == table_id[0] else table_id[0]
         handle_left = handles[identifier]
         handle_right = handles[other]
         select_by = h.select_cols(by_columns, alias="left_tbl")
         condition = h.join_condition(by_columns, "left_tbl", "right_tbl")
-        keys_parts.append(
-            f"""
+        return f"""
+        SELECT
+          {h.sql_literal(identifier)} AS table,
+          {select_by}
+        FROM
+          {h.ident(handle_left.name)} AS left_tbl
+        WHERE
+          NOT EXISTS (
             SELECT
-              {h.sql_literal(identifier)} AS table,
-              {select_by}
+              1
             FROM
-              {h.ident(handle_left.name)} AS left_tbl
+              {h.ident(handle_right.name)} AS right_tbl
             WHERE
-              NOT EXISTS (
-                SELECT
-                  1
-                FROM
-                  {h.ident(handle_right.name)} AS right_tbl
-                WHERE
-                  {condition}
-              )
-            """
-        )
+              {condition}
+          )
+        """
+
+    keys_parts = [key_part(identifier) for identifier in table_id]
     keys_sql = " UNION ALL ".join(keys_parts)
     return h.finalize_relation(conn, keys_sql, materialize)
 

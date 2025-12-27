@@ -76,24 +76,27 @@ def slice_unmatched_both(comparison: "Comparison") -> duckdb.DuckDBPyRelation:
     out_cols = comparison.by_columns + comparison.common_columns
     select_cols = h.select_cols(out_cols, alias="base")
     join_condition = h.join_condition(comparison.by_columns, "keys", "base")
-    selects = []
     unmatched_lookup = comparison._unmatched_lookup
-    for table_name in comparison.table_id:
-        if unmatched_lookup is not None and unmatched_lookup[table_name] == 0:
-            continue
+    table_names = [
+        table_name
+        for table_name in comparison.table_id
+        if unmatched_lookup is None or unmatched_lookup[table_name] != 0
+    ]
+
+    def select_for(table_name: str) -> str:
         keys_sql = unmatched_keys_sql(comparison, table_name)
         base_table = comparison._handles[table_name].name
-        selects.append(
-            f"""
-            SELECT
-              {h.sql_literal(table_name)} AS table,
-              {select_cols}
-            FROM
-              {h.ident(base_table)} AS base
-              JOIN ({keys_sql}) AS keys
-                ON {join_condition}
-            """
-        )
+        return f"""
+        SELECT
+          {h.sql_literal(table_name)} AS table,
+          {select_cols}
+        FROM
+          {h.ident(base_table)} AS base
+          JOIN ({keys_sql}) AS keys
+            ON {join_condition}
+        """
+
+    selects = [select_for(table_name) for table_name in table_names]
     if not selects:
         base = h.select_zero_from_table(comparison, comparison.table_id[0], out_cols)
         relation = base.query(

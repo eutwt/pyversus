@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, List, Optional, Sequence, Tuple
 
 import duckdb
 
@@ -53,6 +53,26 @@ def weave_diffs_long(
     return relation
 
 
+def _weave_select_parts(
+    comparison: "Comparison",
+    diff_cols: Sequence[str],
+    suffix: Tuple[str, str],
+) -> List[str]:
+    diff_set = set(diff_cols)
+
+    def parts_for(column: str) -> List[str]:
+        if column in diff_set:
+            return [
+                f"{h.col('a', column)} AS {h.ident(f'{column}{suffix[0]}')}",
+                f"{h.col('b', column)} AS {h.ident(f'{column}{suffix[1]}')}",
+            ]
+        return [h.col("a", column)]
+
+    return [h.col("a", column) for column in comparison.by_columns] + [
+        part for column in comparison.common_columns for part in parts_for(column)
+    ]
+
+
 def _weave_diffs_wide_with_keys(
     comparison: "Comparison",
     diff_cols: Sequence[str],
@@ -61,19 +81,7 @@ def _weave_diffs_wide_with_keys(
     table_a, table_b = comparison.table_id
     suffix = h.resolve_suffix(suffix, comparison.table_id)
     keys = h.collect_diff_keys(comparison, diff_cols)
-    select_parts = []
-    for column in comparison.by_columns:
-        select_parts.append(h.col("a", column))
-    for column in comparison.common_columns:
-        if column in diff_cols:
-            select_parts.append(
-                f"{h.col('a', column)} AS {h.ident(f'{column}{suffix[0]}')}"
-            )
-            select_parts.append(
-                f"{h.col('b', column)} AS {h.ident(f'{column}{suffix[1]}')}"
-            )
-        else:
-            select_parts.append(h.col("a", column))
+    select_parts = _weave_select_parts(comparison, diff_cols, suffix)
     join_a = h.join_condition(comparison.by_columns, "keys", "a")
     join_b = h.join_condition(comparison.by_columns, "keys", "b")
     sql = f"""
@@ -96,19 +104,7 @@ def _weave_diffs_wide_inline(
 ) -> duckdb.DuckDBPyRelation:
     table_a, table_b = comparison.table_id
     suffix = h.resolve_suffix(suffix, comparison.table_id)
-    select_parts = []
-    for column in comparison.by_columns:
-        select_parts.append(h.col("a", column))
-    for column in comparison.common_columns:
-        if column in diff_cols:
-            select_parts.append(
-                f"{h.col('a', column)} AS {h.ident(f'{column}{suffix[0]}')}"
-            )
-            select_parts.append(
-                f"{h.col('b', column)} AS {h.ident(f'{column}{suffix[1]}')}"
-            )
-        else:
-            select_parts.append(h.col("a", column))
+    select_parts = _weave_select_parts(comparison, diff_cols, suffix)
     join_sql = h.join_clause(
         comparison._handles, comparison.table_id, comparison.by_columns
     )
