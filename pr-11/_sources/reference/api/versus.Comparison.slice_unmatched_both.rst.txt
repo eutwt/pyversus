@@ -1,0 +1,6 @@
+﻿versus.Comparison.slice\_unmatched\_both
+========================================
+
+.. currentmodule:: versus
+
+.. automethod:: Comparison.slice_unmatched_both

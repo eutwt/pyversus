@@ -1,673 +1,608 @@
 
-<!doctype html>
-<html lang="en" class="no-js">
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
   <head>
-    
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width,initial-scale=1">
-      
-        <meta name="description" content="DuckDB-powered tools for comparing two relations.">
-      
-      
-      
-        <link rel="canonical" href="https://eutwt.github.io/pyversus/">
-      
-      
-      
-        <link rel="next" href="getting-started/">
-      
-      
-        
-      
-      
-      <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
-    
-    
-      
-        <title>pyversus</title>
-      
-    
-    
-      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
-      
-        
-        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
-      
-      
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
+    <title>Quick start &#8212; pyversus  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-    
-      
-    
-    
-      
-        
-        
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
-        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
-      
-    
-    
-      <link rel="stylesheet" href="assets/_markdown_exec_pyodide.css">
-    
-      <link rel="stylesheet" href="assets/_markdown_exec_ansi.css">
-    
-      <link rel="stylesheet" href="stylesheets/extra.css">
-    
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
-    
-      
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-    
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=003a45eb" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=ccdb6887"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting started" href="getting-started.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
   </head>
   
   
-    
-    
-      
-    
-    
-    
-    
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="indigo">
-  
-    
-    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
-    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
-    <label class="md-overlay" for="__drawer"></label>
-    <div data-md-component="skip">
-      
-        
-        <a href="#pyversus" class="md-skip">
-          Skip to content
-        </a>
-      
-    </div>
-    <div data-md-component="announce">
-      
-    </div>
-    
-    
-      
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<header class="md-header md-header--shadow" data-md-component="header">
-  <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="pyversus" class="md-header__button md-logo" aria-label="pyversus" data-md-component="logo">
-      
   
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
-
-    </a>
-    <label class="md-header__button md-icon" for="__drawer">
-      
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
-    </label>
-    <div class="md-header__title" data-md-component="header-title">
-      <div class="md-header__ellipsis">
-        <div class="md-header__topic">
-          <span class="md-ellipsis">
-            pyversus
-          </span>
-        </div>
-        <div class="md-header__topic" data-md-component="header-topic">
-          <span class="md-ellipsis">
-            
-              Home
-            
-          </span>
-        </div>
-      </div>
-    </div>
+  <dialog id="pst-search-dialog">
     
-      
-        <form class="md-header__option" data-md-component="palette">
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
-    
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
-      </label>
-    
-  
-    
-    
-    
-    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
-    
-      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
-      </label>
-    
-  
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form>
-      
-    
-    
-      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
-    
-    
-    
-      
-      
-        <label class="md-header__button md-icon" for="__search">
-          
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-        </label>
-        <div class="md-search" data-md-component="search" role="dialog">
-  <label class="md-search__overlay" for="__search"></label>
-  <div class="md-search__inner" role="search">
-    <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
-      <label class="md-search__icon md-icon" for="__search">
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
-        
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
-      </label>
-      <nav class="md-search__options" aria-label="Search">
-        
-        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
-          
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        </button>
-      </nav>
-      
-    </form>
-    <div class="md-search__output">
-      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
-        <div class="md-search-result" data-md-component="search-result">
-          <div class="md-search-result__meta">
-            Initializing search
-          </div>
-          <ol class="md-search-result__list" role="presentation"></ol>
-        </div>
-      </div>
-    </div>
-  </div>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-      
-    
-    
-      <div class="md-header__source">
-        <a href="https://github.com/eutwt/pyversus" title="Go to repository" class="md-source" data-md-component="source">
-  <div class="md-source__icon md-icon">
-    
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
-  </div>
-  <div class="md-source__repository">
-    eutwt/pyversus
-  </div>
-</a>
-      </div>
-    
-  </nav>
+
   
-</header>
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
     
-    <div class="md-container" data-md-component="container">
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="#">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">pyversus  documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
       
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started.html">
+    Getting started
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference/compare.html">
+    compare
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference/comparison.html">
+    Comparison
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference/errors.html">
+    Errors
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference/examples.html">
+    Examples
+  </a>
+</li>
+
+  </ul>
+</nav></div>
       
-        
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
           
-        
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
       
-      <main class="md-main" data-md-component="main">
-        <div class="md-main__inner md-grid">
-          
-            
-              
-              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
-                <div class="md-sidebar__scrollwrap">
-                  <div class="md-sidebar__inner">
-                    
-
-
-
-<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
-  <label class="md-nav__title" for="__drawer">
-    <a href="." title="pyversus" class="md-nav__button md-logo" aria-label="pyversus" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+        <div class="navbar-item">
 
-    </a>
-    pyversus
-  </label>
-  
-    <div class="md-nav__source">
-      <a href="https://github.com/eutwt/pyversus" title="Go to repository" class="md-source" data-md-component="source">
-  <div class="md-source__icon md-icon">
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+    </div>
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
   </div>
-  <div class="md-source__repository">
-    eutwt/pyversus
-  </div>
-</a>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
     </div>
   
-  <ul class="md-nav__list" data-md-scrollfix>
-    
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
       
-      
-  
-  
-    
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
         
       
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
           
-  
-  
-  <span class="md-ellipsis">
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
     
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Home
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick start
-      
-    </span>
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="getting-started.html">
+    Getting started
   </a>
-  
 </li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
 
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="getting-started/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Getting Started
-  
 
-    
-  </span>
-  
-  
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference/compare.html">
+    compare
+  </a>
+</li>
 
-      </a>
-    </li>
-  
 
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    API
-  
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference/comparison.html">
+    Comparison
+  </a>
+</li>
 
-    
-  </span>
-  
-  
 
-      </a>
-    </li>
-  
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference/errors.html">
+    Errors
+  </a>
+</li>
 
-    
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="reference/examples.html">
+    Examples
+  </a>
+</li>
+
   </ul>
-</nav>
-                  </div>
-                </div>
-              </div>
-            
-            
-              
-              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
-                <div class="md-sidebar__scrollwrap">
-                  <div class="md-sidebar__inner">
-                    
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
+</nav></div>
+          
+        
+      </div>
     
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+      </div>
+    
+  </div>
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
       
-        <li class="md-nav__item">
-  <a href="#quick-start" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Quick start
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-                  </div>
-                </div>
-              </div>
-            
-          
-          
-            <div class="md-content" data-md-component="content">
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
               
-              <article class="md-content__inner md-typeset">
+              <div class="bd-header-article d-print-none"></div>
+              
+              
+              
                 
+<div id="searchbox"></div>
+                <article class="bd-article">
                   
-
-
-  
-  
-
-
-<h1 id="pyversus">pyversus<a class="headerlink" href="#pyversus" title="Permanent link">&para;</a></h1>
-<p>DuckDB-powered tools for comparing two relations (tables, views, or SQL queries)
-without materializing them in Python.</p>
-<div class="admonition note">
+  <section id="quick-start">
+<h1>Quick start<a class="headerlink" href="#quick-start" title="Link to this heading">#</a></h1>
+<p>DuckDB-powered tools for comparing two relations (tables or views) or
+pandas/polars DataFrames without materializing them in Python.</p>
+<div class="admonition-alpha-status admonition">
 <p class="admonition-title">Alpha status</p>
 <p>This package is still evolving and may change between releases.</p>
 </div>
-<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <p>The two relations below are used as an example to demonstrate functionality.</p>
-<p></p>
-<p>Use <code>compare()</code> to create a comparison of two tables.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">duckdb</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">versus</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span><span class="p">,</span> <span class="n">examples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">con</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">example_a</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_a</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">example_b</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_b</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Use <code class="code docutils literal notranslate"><span class="pre">compare()</span></code> to create a comparison of two tables.</p>
 <p>A comparison contains:</p>
-<ul>
-<li><code>comparison.intersection</code>: columns in both tables and rows with differing values</li>
-<li><code>comparison.unmatched_cols</code>: columns in only one table</li>
-<li><code>comparison.unmatched_rows</code>: rows in only one table</li>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">comparison.intersection</span></code>: columns in both tables and rows with differing values</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">comparison.unmatched_cols</span></code>: columns in only one table</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">comparison.unmatched_rows</span></code>: rows in only one table</p></li>
 </ul>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Comparison(tables=
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>┌────────────┬───────┬───────┐
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│ table_name │ nrow  │ ncol  │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│  varchar   │ int64 │ int64 │
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├────────────┼───────┼───────┤
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ a          │     9 │     9 │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│ b          │    10 │     9 │
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>└────────────┴───────┴───────┘
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>by=
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>┌─────────┬─────────┬─────────┐
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│ column  │ type_a  │ type_b  │
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>│ varchar │ varchar │ varchar │
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>├─────────┼─────────┼─────────┤
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│ car     │ VARCHAR │ VARCHAR │
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>└─────────┴─────────┴─────────┘
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>intersection=
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>┌─────────┬─────────┬──────────────┬──────────────┐
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>│ column  │ n_diffs │    type_a    │    type_b    │
-<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>│ varchar │  int64  │   varchar    │   varchar    │
-<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>├─────────┼─────────┼──────────────┼──────────────┤
-<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>│ mpg     │       2 │ DECIMAL(3,1) │ DECIMAL(3,1) │
-<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>│ cyl     │       0 │ INTEGER      │ INTEGER      │
-<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>│ disp    │       2 │ INTEGER      │ INTEGER      │
-<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>│ hp      │       0 │ INTEGER      │ INTEGER      │
-<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>│ drat    │       0 │ DECIMAL(3,2) │ DECIMAL(3,2) │
-<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>│ wt      │       0 │ DECIMAL(3,2) │ DECIMAL(3,2) │
-<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>│ vs      │       0 │ INTEGER      │ INTEGER      │
-<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>└─────────┴─────────┴──────────────┴──────────────┘
-<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>
-<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>unmatched_cols=
-<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>┌────────────┬─────────┬─────────┐
-<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>│ table_name │ column  │  type   │
-<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>│  varchar   │ varchar │ varchar │
-<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>├────────────┼─────────┼─────────┤
-<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>│ a          │ am      │ INTEGER │
-<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>│ b          │ carb    │ INTEGER │
-<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>└────────────┴─────────┴─────────┘
-<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>
-<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>unmatched_rows=
-<a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>┌────────────┬─────────────┐
-<a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>│ table_name │ n_unmatched │
-<a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>│  varchar   │    int64    │
-<a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>├────────────┼─────────────┤
-<a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>│ a          │           1 │
-<a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>│ b          │           2 │
-<a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>└────────────┴─────────────┘
-<a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>
-<a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>)
-</code></pre></div>
-<p>Use <code>value_diffs()</code> to see the values that are different.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌────────┬────────┬────────────────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│ disp_a │ disp_b │      car       │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│ int32  │ int32  │    varchar     │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├────────┼────────┼────────────────┤
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│    109 │    108 │ Datsun 710     │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│    259 │    258 │ Hornet 4 Drive │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>└────────┴────────┴────────────────┘
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────┬───────────────┬───────────────┬────────────────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│ column  │     val_a     │     val_b     │      car       │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│ varchar │ decimal(11,1) │ decimal(11,1) │    varchar     │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├─────────┼───────────────┼───────────────┼────────────────┤
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ mpg     │          24.4 │          26.4 │ Merc 240D      │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ mpg     │          14.3 │          16.3 │ Duster 360     │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│ disp    │         109.0 │         108.0 │ Datsun 710     │
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│ disp    │         259.0 │         258.0 │ Hornet 4 Drive │
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>└─────────┴───────────────┴───────────────┴────────────────┘
-</code></pre></div>
-<p>Use <code>weave_diffs_*()</code> to see the differing values in context.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌────────────────┬──────────────┬───────┬────────┬────────┬───────┬──────────────┬──────────────┬───────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│      car       │     mpg      │  cyl  │ disp_a │ disp_b │  hp   │     drat     │      wt      │  vs   │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│    varchar     │ decimal(3,1) │ int32 │ int32  │ int32  │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├────────────────┼──────────────┼───────┼────────┼────────┼───────┼──────────────┼──────────────┼───────┤
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ Datsun 710     │         22.8 │  NULL │    109 │    108 │    93 │         3.85 │         2.32 │     1 │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ Hornet 4 Drive │         21.4 │     6 │    259 │    258 │   110 │         3.08 │         3.22 │     1 │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>└────────────────┴──────────────┴───────┴────────┴────────┴───────┴──────────────┴──────────────┴───────┘
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌────────────────┬──────────────┬──────────────┬───────┬────────┬────────┬───────┬──────────────┬──────────────┬───────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│      car       │    mpg_a     │    mpg_b     │  cyl  │ disp_a │ disp_b │  hp   │     drat     │      wt      │  vs   │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│    varchar     │ decimal(3,1) │ decimal(3,1) │ int32 │ int32  │ int32  │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├────────────────┼──────────────┼──────────────┼───────┼────────┼────────┼───────┼──────────────┼──────────────┼───────┤
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ Duster 360     │         14.3 │         16.3 │     8 │    360 │    360 │   245 │         3.21 │         3.57 │     0 │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ Datsun 710     │         22.8 │         22.8 │  NULL │    109 │    108 │    93 │         3.85 │         2.32 │     1 │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│ Merc 240D      │         24.4 │         26.4 │     4 │    147 │    147 │    62 │         3.69 │         3.19 │     1 │
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│ Hornet 4 Drive │         21.4 │         21.4 │     6 │    259 │    258 │   110 │         3.08 │         3.22 │     1 │
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>└────────────────┴──────────────┴──────────────┴───────┴────────┴────────┴───────┴──────────────┴──────────────┴───────┘
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌────────────┬────────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│ table_name │      car       │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  varchar   │    varchar     │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├────────────┼────────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ a          │ Datsun 710     │         22.8 │  NULL │   109 │    93 │         3.85 │         2.32 │     1 │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ b          │ Datsun 710     │         22.8 │  NULL │   108 │    93 │         3.85 │         2.32 │     1 │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│ a          │ Hornet 4 Drive │         21.4 │     6 │   259 │   110 │         3.08 │         3.22 │     1 │
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│ b          │ Hornet 4 Drive │         21.4 │     6 │   258 │   110 │         3.08 │         3.22 │     1 │
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>└────────────┴────────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
-</code></pre></div>
-<p>Use <code>slice_diffs()</code> to get the rows with differing values from one table.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┬───────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│    car     │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │  am   │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  varchar   │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │ int32 │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┼───────┤
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ Duster 360 │         14.3 │     8 │   360 │   245 │         3.21 │         3.57 │     0 │     0 │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ Merc 240D  │         24.4 │     4 │   147 │    62 │         3.69 │         3.19 │     1 │     0 │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>└────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┴───────┘
-</code></pre></div>
-<p>Use <code>slice_unmatched()</code> to get the unmatched rows from one or both tables.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌───────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┬───────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│    car    │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │  am   │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  varchar  │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │ int32 │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├───────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┼───────┤
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ Mazda RX4 │         21.0 │     6 │   160 │   110 │         3.90 │         2.62 │     0 │     1 │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>└───────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┴───────┘
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌────────────┬────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│ table_name │    car     │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  varchar   │  varchar   │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├────────────┼────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ a          │ Mazda RX4  │         21.0 │     6 │   160 │   110 │         3.90 │         2.62 │     0 │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ b          │ Merc 280C  │         17.8 │     6 │   168 │   123 │         3.92 │         3.44 │     1 │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│ b          │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>└────────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
-</code></pre></div>
-<p>Use <code>summary()</code> to see what kind of differences were found.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌────────────────┬─────────┐
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│   difference   │  found  │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│    varchar     │ boolean │
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├────────────────┼─────────┤
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│ value_diffs    │ true    │
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│ unmatched_cols │ true    │
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│ unmatched_rows │ true    │
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│ type_diffs     │ false   │
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>└────────────────┴─────────┘
-</code></pre></div>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span> <span class="o">=</span> <span class="n">compare</span><span class="p">(</span><span class="n">example_a</span><span class="p">,</span> <span class="n">example_b</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;car&quot;</span><span class="p">],</span> <span class="n">connection</span><span class="o">=</span><span class="n">con</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span>
+<span class="go">Comparison(tables=</span>
+<span class="go">┌────────────┬───────┬───────┐</span>
+<span class="go">│ table_name │ nrow  │ ncol  │</span>
+<span class="go">│  varchar   │ int64 │ int64 │</span>
+<span class="go">├────────────┼───────┼───────┤</span>
+<span class="go">│ a          │     9 │     9 │</span>
+<span class="go">│ b          │    10 │     9 │</span>
+<span class="go">└────────────┴───────┴───────┘</span>
+
+<span class="go">by=</span>
+<span class="go">┌─────────┬─────────┬─────────┐</span>
+<span class="go">│ column  │ type_a  │ type_b  │</span>
+<span class="go">│ varchar │ varchar │ varchar │</span>
+<span class="go">├─────────┼─────────┼─────────┤</span>
+<span class="go">│ car     │ VARCHAR │ VARCHAR │</span>
+<span class="go">└─────────┴─────────┴─────────┘</span>
+
+<span class="go">intersection=</span>
+<span class="go">┌─────────┬─────────┬──────────────┬──────────────┐</span>
+<span class="go">│ column  │ n_diffs │    type_a    │    type_b    │</span>
+<span class="go">│ varchar │  int64  │   varchar    │   varchar    │</span>
+<span class="go">├─────────┼─────────┼──────────────┼──────────────┤</span>
+<span class="go">│ mpg     │       2 │ DECIMAL(3,1) │ DECIMAL(3,1) │</span>
+<span class="go">│ cyl     │       0 │ INTEGER      │ INTEGER      │</span>
+<span class="go">│ disp    │       2 │ INTEGER      │ INTEGER      │</span>
+<span class="go">│ hp      │       0 │ INTEGER      │ INTEGER      │</span>
+<span class="go">│ drat    │       0 │ DECIMAL(3,2) │ DECIMAL(3,2) │</span>
+<span class="go">│ wt      │       0 │ DECIMAL(3,2) │ DECIMAL(3,2) │</span>
+<span class="go">│ vs      │       0 │ INTEGER      │ INTEGER      │</span>
+<span class="go">└─────────┴─────────┴──────────────┴──────────────┘</span>
+
+<span class="go">unmatched_cols=</span>
+<span class="go">┌────────────┬─────────┬─────────┐</span>
+<span class="go">│ table_name │ column  │  type   │</span>
+<span class="go">│  varchar   │ varchar │ varchar │</span>
+<span class="go">├────────────┼─────────┼─────────┤</span>
+<span class="go">│ a          │ am      │ INTEGER │</span>
+<span class="go">│ b          │ carb    │ INTEGER │</span>
+<span class="go">└────────────┴─────────┴─────────┘</span>
+
+<span class="go">unmatched_rows=</span>
+<span class="go">┌────────────┬─────────────┐</span>
+<span class="go">│ table_name │ n_unmatched │</span>
+<span class="go">│  varchar   │    int64    │</span>
+<span class="go">├────────────┼─────────────┤</span>
+<span class="go">│ a          │           1 │</span>
+<span class="go">│ b          │           2 │</span>
+<span class="go">└────────────┴─────────────┘</span>
+
+<span class="go">)</span>
+</pre></div>
+</div>
+<p>Use <code class="code docutils literal notranslate"><span class="pre">value_diffs()</span></code> to see the values that are different.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">value_diffs</span><span class="p">(</span><span class="s2">&quot;disp&quot;</span><span class="p">)</span>
+<span class="go">┌────────┬────────┬────────────────┐</span>
+<span class="go">│ disp_a │ disp_b │      car       │</span>
+<span class="go">│ int32  │ int32  │    varchar     │</span>
+<span class="go">├────────┼────────┼────────────────┤</span>
+<span class="go">│    109 │    108 │ Datsun 710     │</span>
+<span class="go">│    259 │    258 │ Hornet 4 Drive │</span>
+<span class="go">└────────┴────────┴────────────────┘</span>
+</pre></div>
+</div>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">value_diffs_stacked</span><span class="p">([</span><span class="s2">&quot;mpg&quot;</span><span class="p">,</span> <span class="s2">&quot;disp&quot;</span><span class="p">])</span>
+<span class="go">┌─────────┬───────────────┬───────────────┬────────────────┐</span>
+<span class="go">│ column  │     val_a     │     val_b     │      car       │</span>
+<span class="go">│ varchar │ decimal(11,1) │ decimal(11,1) │    varchar     │</span>
+<span class="go">├─────────┼───────────────┼───────────────┼────────────────┤</span>
+<span class="go">│ mpg     │          24.4 │          26.4 │ Merc 240D      │</span>
+<span class="go">│ mpg     │          14.3 │          16.3 │ Duster 360     │</span>
+<span class="go">│ disp    │         109.0 │         108.0 │ Datsun 710     │</span>
+<span class="go">│ disp    │         259.0 │         258.0 │ Hornet 4 Drive │</span>
+<span class="go">└─────────┴───────────────┴───────────────┴────────────────┘</span>
+</pre></div>
+</div>
+<p>Use <code class="code docutils literal notranslate"><span class="pre">weave_diffs_*()</span></code> to see the differing values in context.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">weave_diffs_wide</span><span class="p">([</span><span class="s2">&quot;disp&quot;</span><span class="p">])</span>
+<span class="go">┌────────────────┬──────────────┬───────┬────────┬────────┬───────┬──────────────┬──────────────┬───────┐</span>
+<span class="go">│      car       │     mpg      │  cyl  │ disp_a │ disp_b │  hp   │     drat     │      wt      │  vs   │</span>
+<span class="go">│    varchar     │ decimal(3,1) │ int32 │ int32  │ int32  │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │</span>
+<span class="go">├────────────────┼──────────────┼───────┼────────┼────────┼───────┼──────────────┼──────────────┼───────┤</span>
+<span class="go">│ Datsun 710     │         22.8 │  NULL │    109 │    108 │    93 │         3.85 │         2.32 │     1 │</span>
+<span class="go">│ Hornet 4 Drive │         21.4 │     6 │    259 │    258 │   110 │         3.08 │         3.22 │     1 │</span>
+<span class="go">└────────────────┴──────────────┴───────┴────────┴────────┴───────┴──────────────┴──────────────┴───────┘</span>
+</pre></div>
+</div>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">weave_diffs_wide</span><span class="p">([</span><span class="s2">&quot;mpg&quot;</span><span class="p">,</span> <span class="s2">&quot;disp&quot;</span><span class="p">])</span>
+<span class="go">┌────────────────┬──────────────┬──────────────┬───────┬────────┬────────┬───────┬──────────────┬──────────────┬───────┐</span>
+<span class="go">│      car       │    mpg_a     │    mpg_b     │  cyl  │ disp_a │ disp_b │  hp   │     drat     │      wt      │  vs   │</span>
+<span class="go">│    varchar     │ decimal(3,1) │ decimal(3,1) │ int32 │ int32  │ int32  │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │</span>
+<span class="go">├────────────────┼──────────────┼──────────────┼───────┼────────┼────────┼───────┼──────────────┼──────────────┼───────┤</span>
+<span class="go">│ Duster 360     │         14.3 │         16.3 │     8 │    360 │    360 │   245 │         3.21 │         3.57 │     0 │</span>
+<span class="go">│ Datsun 710     │         22.8 │         22.8 │  NULL │    109 │    108 │    93 │         3.85 │         2.32 │     1 │</span>
+<span class="go">│ Merc 240D      │         24.4 │         26.4 │     4 │    147 │    147 │    62 │         3.69 │         3.19 │     1 │</span>
+<span class="go">│ Hornet 4 Drive │         21.4 │         21.4 │     6 │    259 │    258 │   110 │         3.08 │         3.22 │     1 │</span>
+<span class="go">└────────────────┴──────────────┴──────────────┴───────┴────────┴────────┴───────┴──────────────┴──────────────┴───────┘</span>
+</pre></div>
+</div>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">weave_diffs_long</span><span class="p">([</span><span class="s2">&quot;disp&quot;</span><span class="p">])</span>
+<span class="go">┌────────────┬────────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐</span>
+<span class="go">│ table_name │      car       │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │</span>
+<span class="go">│  varchar   │    varchar     │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │</span>
+<span class="go">├────────────┼────────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤</span>
+<span class="go">│ a          │ Datsun 710     │         22.8 │  NULL │   109 │    93 │         3.85 │         2.32 │     1 │</span>
+<span class="go">│ b          │ Datsun 710     │         22.8 │  NULL │   108 │    93 │         3.85 │         2.32 │     1 │</span>
+<span class="go">│ a          │ Hornet 4 Drive │         21.4 │     6 │   259 │   110 │         3.08 │         3.22 │     1 │</span>
+<span class="go">│ b          │ Hornet 4 Drive │         21.4 │     6 │   258 │   110 │         3.08 │         3.22 │     1 │</span>
+<span class="go">└────────────┴────────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘</span>
+</pre></div>
+</div>
+<p>Use <code class="code docutils literal notranslate"><span class="pre">slice_diffs()</span></code> to get the rows with differing values from one table.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">slice_diffs</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mpg&quot;</span><span class="p">])</span>
+<span class="go">┌────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┬───────┐</span>
+<span class="go">│    car     │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │  am   │</span>
+<span class="go">│  varchar   │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │ int32 │</span>
+<span class="go">├────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┼───────┤</span>
+<span class="go">│ Duster 360 │         14.3 │     8 │   360 │   245 │         3.21 │         3.57 │     0 │     0 │</span>
+<span class="go">│ Merc 240D  │         24.4 │     4 │   147 │    62 │         3.69 │         3.19 │     1 │     0 │</span>
+<span class="go">└────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┴───────┘</span>
+</pre></div>
+</div>
+<p>Use <code class="code docutils literal notranslate"><span class="pre">slice_unmatched()</span></code> to get the unmatched rows from one or both tables.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">slice_unmatched</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span>
+<span class="go">┌───────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┬───────┐</span>
+<span class="go">│    car    │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │  am   │</span>
+<span class="go">│  varchar  │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │ int32 │</span>
+<span class="go">├───────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┼───────┤</span>
+<span class="go">│ Mazda RX4 │         21.0 │     6 │   160 │   110 │         3.90 │         2.62 │     0 │     1 │</span>
+<span class="go">└───────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┴───────┘</span>
+</pre></div>
+</div>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">slice_unmatched_both</span><span class="p">()</span>
+<span class="go">┌────────────┬────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐</span>
+<span class="go">│ table_name │    car     │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │</span>
+<span class="go">│  varchar   │  varchar   │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │</span>
+<span class="go">├────────────┼────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤</span>
+<span class="go">│ a          │ Mazda RX4  │         21.0 │     6 │   160 │   110 │         3.90 │         2.62 │     0 │</span>
+<span class="go">│ b          │ Merc 280C  │         17.8 │     6 │   168 │   123 │         3.92 │         3.44 │     1 │</span>
+<span class="go">│ b          │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │</span>
+<span class="go">└────────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘</span>
+</pre></div>
+</div>
+<p>Use <code class="code docutils literal notranslate"><span class="pre">summary()</span></code> to see what kind of differences were found.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span>
+<span class="go">┌────────────────┬─────────┐</span>
+<span class="go">│   difference   │  found  │</span>
+<span class="go">│    varchar     │ boolean │</span>
+<span class="go">├────────────────┼─────────┤</span>
+<span class="go">│ value_diffs    │ true    │</span>
+<span class="go">│ unmatched_cols │ true    │</span>
+<span class="go">│ unmatched_rows │ true    │</span>
+<span class="go">│ type_diffs     │ false   │</span>
+<span class="go">└────────────────┴─────────┘</span>
+</pre></div>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting-started.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting-started.html#inputs">Inputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting-started.html#materialization-modes">Materialization modes</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference/compare.html">compare</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference/compare.html#versus.compare"><code class="docutils literal notranslate"><span class="pre">compare()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference/comparison.html">Comparison</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference/comparison.html#versus.Comparison"><code class="docutils literal notranslate"><span class="pre">Comparison</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/api/versus.Comparison.value_diffs.html">versus.Comparison.value_diffs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/api/versus.Comparison.value_diffs_stacked.html">versus.Comparison.value_diffs_stacked</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/api/versus.Comparison.weave_diffs_wide.html">versus.Comparison.weave_diffs_wide</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/api/versus.Comparison.weave_diffs_long.html">versus.Comparison.weave_diffs_long</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/api/versus.Comparison.slice_diffs.html">versus.Comparison.slice_diffs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/api/versus.Comparison.slice_unmatched.html">versus.Comparison.slice_unmatched</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/api/versus.Comparison.slice_unmatched_both.html">versus.Comparison.slice_unmatched_both</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/api/versus.Comparison.summary.html">versus.Comparison.summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/api/versus.Comparison.close.html">versus.Comparison.close</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference/errors.html">Errors</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference/errors.html#versus.ComparisonError"><code class="docutils literal notranslate"><span class="pre">ComparisonError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="reference/examples.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference/examples.html#versus.examples.example_cars_a"><code class="docutils literal notranslate"><span class="pre">example_cars_a()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference/examples.html#versus.examples.example_cars_b"><code class="docutils literal notranslate"><span class="pre">example_cars_b()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
 
 
-
-
-
-
-
-
-
-
-
-
-                
-              </article>
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="right-next"
+       href="getting-started.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Getting started</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
             </div>
-          
-          
-<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
-        </div>
-        
-          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
-  Back to top
-</button>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
         
       </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
       
-        <footer class="md-footer">
-  
-  <div class="md-footer-meta md-typeset">
-    <div class="md-footer-meta__inner md-grid">
-      <div class="md-copyright">
-  
-  
-    Made with
-    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
-      Material for MkDocs
-    </a>
-  
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.0.4.
+    <br/>
+  </p>
 </div>
       
     </div>
-  </div>
-</footer>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
       
     </div>
-    <div class="md-dialog" data-md-component="dialog">
-      <div class="md-dialog__inner md-typeset"></div>
-    </div>
-    
-    
-    
-      
-      
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tracking", "navigation.sections", "navigation.instant", "navigation.top", "content.code.copy"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
-    
-    
-      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
-      
-        <script src="assets/_markdown_exec_pyodide.js"></script>
-      
-    
+  
+</div>
+
+  </footer>
   </body>
 </html>
