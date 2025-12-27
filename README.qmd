@@ -1,0 +1,135 @@
+---
+format:
+  gfm:
+    standalone: false
+title: "pyversus"
+title-block: false
+execute:
+  echo: true
+  warning: false
+  message: false
+  error: false
+  eval: true
+---
+`pyversus` (imported as `versus`) is a Python package that mirrors the the original R library while pushing
+all heavy work into DuckDB. Use it to compare two duckdb relations (tables, views,
+or queries) without materializing them. The `compare()` function gives a `Comparison`
+object that shows where the tables disagree, with methods for displaying the
+differences.
+
+> **Alpha status:** This package is in active development. Backward compatibility
+> is not guaranteed between releases yet.
+
+## Installation
+
+Clone the repo (or add it as a submodule) and install it into your
+environment using:
+
+```bash
+pip install -e .
+```
+
+That command installs DuckDB, the only runtime dependency.
+
+## Quick start
+
+Here is a small interactive session you can paste into a Python REPL:
+
+```{python}
+import duckdb
+from versus import compare, examples
+
+con = duckdb.connect()
+rel_a = examples.example_cars_a(con)
+rel_b = examples.example_cars_b(con)
+
+comparison = compare(rel_a, rel_b, by="car", connection=con)
+comparison
+```
+
+```{python}
+comparison.value_diffs("disp")
+```
+
+```{python}
+comparison.value_diffs_stacked(["mpg", "disp"])
+```
+
+```{python}
+comparison.weave_diffs_wide(["mpg", "disp"])
+```
+
+```{python}
+comparison.weave_diffs_long("disp")
+```
+
+```{python}
+comparison.slice_diffs("a", "mpg")
+```
+
+> Note: The `column` argument only decides which diffs include a row; the returned relation
+> always keeps the full schema of the requested table.
+
+```{python}
+comparison.slice_unmatched("b")
+```
+
+```{python}
+comparison.slice_unmatched_both()
+```
+
+```{python}
+comparison.summary()
+```
+
+## Usage
+
+- Call `compare()` with DuckDB relations or SQL strings/views. If your
+  relations live on a custom DuckDB connection, pass it via
+  `connection=` so the comparison queries use the same database.
+- The `by` columns must uniquely identify rows in each table. When they
+  do not, `compare()` raises `ComparisonError` and tells you which key
+  values repeat.
+- The resulting `Comparison` object stores only metadata and row
+  identifiers. Whenever you ask for actual rows (`value_diffs`, slices,
+  weave helpers, etc.), the library runs SQL in DuckDB and returns the
+  results as DuckDB relations, so you can inspect huge tables without
+  blowing up Python memory.
+- Need insight into the inputs? `comparison.inputs` exposes a mapping
+  from table id (e.g., `"a"`, `"b"`) to the input relations.
+- Need the row identifiers for unmatched rows? `comparison.unmatched_keys`
+  exposes the table id plus `by` columns for those keys.
+- Inputs stay lazy as well: `compare()` never materialises the full
+  source tables in Python.
+- Want to kick the tires quickly? The `versus.examples.example_cars_*`
+  helpers used in the quick start are available for ad-hoc testing.
+
+### Materialization
+
+When you call `compare()`, Pyversus defines summary tables for the printed
+output (`tables`, `by`, `intersection`, `unmatched_cols`, `unmatched_rows`).
+These are relation-like wrappers that materialize themselves on print.
+The input tables are never materialized by Pyversus in any mode; they stay
+as DuckDB relations and are queried lazily.
+
+In full materialization, Pyversus also builds diff key relations: per-column
+relations of `by` keys where values differ. Those precomputed keys let
+row-level helpers fetch the exact differing rows quickly via joins, which
+can be faster when you call multiple helpers.
+Other modes skip diff keys and compute diff counts inline.
+
+- `materialize="all"`: store the summary tables and diff key tables as temp
+  tables. This is fastest if you will call row-level helpers multiple times.
+- `materialize="summary"`: store only the summary tables. Row-level helpers
+  run inline predicates and return lazy relations.
+- `materialize="none"`: do not store anything up front. Printing the
+  comparison materializes the summary tables and enables diff-count and
+  unmatched-row optimizations for later row-level helpers, but helper
+  outputs stay lazy.
+
+Row-level helper outputs are always returned as DuckDB relations and are
+never materialized automatically; materialize them explicitly if needed.
+
+The package exposes the same high-level helpers as the R version
+(`value_diffs*`, `weave_diffs*`, `slice_*`), so if you already know the
+R API you can continue working the same way here.

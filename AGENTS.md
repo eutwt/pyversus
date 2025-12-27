@@ -75,11 +75,11 @@ future contributors can work without hunting through old context.
 - Before pushing, run `scripts/pre_push.sh` (or symlink it into
   `.git/hooks/pre-push`) so Ruff formatting, `pytest`, and `ty check`
   finish successfully. The script aborts pushes if any step fails.
-- The `README.md` Quick Start tables are always programmatically
-  generated with `scripts/update_readme.py` (do not edit them by hand).
-  Whenever a change affects any helper output (or periodically to keep
-  hashes current), run `uv run python scripts/update_readme.py` and
-  commit the result so the documentation shows real data.
+- The `README.md` Quick Start tables are rendered from `README.qmd` via
+  Quarto (do not edit them by hand). Whenever a change affects any helper
+  output (or periodically to keep outputs current), run
+  `quarto render README.qmd --to gfm` (or `uv run python scripts/update_readme.py`)
+  and commit the result so the documentation shows real data.
 
 ## Style notes
 
