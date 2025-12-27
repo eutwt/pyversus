@@ -1,8 +1,4 @@
 
-<!-- README.md now describes the Python package -->
-
-# versus (Python)
-
 `versus` is a Python package that mirrors the the original R library while pushing
 all heavy work into DuckDB. Use it to compare two duckdb relations (tables, views,
 or queries) without materializing them. The `compare()` function gives a `Comparison`
@@ -224,4 +220,3 @@ never materialized automatically; materialize them explicitly if needed.
 The package exposes the same high-level helpers as the R version
 (`value_diffs*`, `weave_diffs*`, `slice_*`), so if you already know the
 R API you can continue working the same way here.
-# pyversus
