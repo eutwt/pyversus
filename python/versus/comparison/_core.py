@@ -26,6 +26,7 @@ if TYPE_CHECKING:  # pragma: no cover
     import pandas
     import polars
 
+
 class Comparison:
     """In-memory description of how two relations differ.
 
@@ -486,12 +487,8 @@ class Comparison:
 
 
 def compare(
-    table_a: Union[
-        duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"
-    ],
-    table_b: Union[
-        duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"
-    ],
+    table_a: Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"],
+    table_b: Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"],
     *,
     by: Sequence[str],
     allow_both_na: bool = True,
