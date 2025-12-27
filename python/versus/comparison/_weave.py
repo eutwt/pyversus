@@ -42,7 +42,7 @@ def weave_diffs_long(
         relation = base.query(
             "base",
             (
-                f"SELECT {h.sql_literal(table_a)} AS table, "
+                f"SELECT {h.sql_literal(table_a)} AS table_name, "
                 f"{h.select_cols(out_cols)} FROM base"
             ),
         )
@@ -131,7 +131,7 @@ def _weave_diffs_long_with_keys(
     table_a, table_b = comparison.table_id
     out_cols = comparison.by_columns + comparison.common_columns
     keys = h.collect_diff_keys(comparison, diff_cols)
-    table_column = h.ident("table")
+    table_column = h.ident("table_name")
     select_cols_a = h.select_cols(out_cols, alias="a")
     select_cols_b = h.select_cols(out_cols, alias="b")
     join_a = h.join_condition(comparison.by_columns, "keys", "a")
@@ -177,7 +177,7 @@ def _weave_diffs_long_inline(
 ) -> duckdb.DuckDBPyRelation:
     table_a, table_b = comparison.table_id
     out_cols = comparison.by_columns + comparison.common_columns
-    table_column = h.ident("table")
+    table_column = h.ident("table_name")
     select_cols_a = h.select_cols(out_cols, alias="a")
     select_cols_b = h.select_cols(out_cols, alias="b")
     join_sql = h.join_clause(

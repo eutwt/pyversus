@@ -29,7 +29,7 @@ def test_slice_unmatched_returns_rows(comparison_with_unmatched):
 
 def test_slice_unmatched_both_includes_table_label(comparison_with_unmatched):
     out = comparison_with_unmatched.slice_unmatched_both()
-    assert set(rel_values(out, "table")) == {"a", "b"}
+    assert set(rel_values(out, "table_name")) == {"a", "b"}
     assert "id" in out.columns
 
 
@@ -50,6 +50,6 @@ def test_slice_unmatched_respects_custom_table_id():
     left = comp.slice_unmatched("left")
     assert rel_values(left, "id") == [1]
     both = comp.slice_unmatched_both()
-    assert set(rel_values(both, "table")) == {"left", "right"}
+    assert set(rel_values(both, "table_name")) == {"left", "right"}
     comp.close()
     con.close()

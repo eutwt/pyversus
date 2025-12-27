@@ -142,7 +142,7 @@ def test_materialize_modes_helpers(materialize):
     unmatched = comp.slice_unmatched("a")
     assert rel_first(unmatched, "id") == 1
     unmatched_both = comp.slice_unmatched_both()
-    assert "table" in unmatched_both.columns
+    assert "table_name" in unmatched_both.columns
     comp.close()
     con.close()
 
@@ -373,7 +373,8 @@ def test_compare_handles_no_common_rows():
     assert rel_values(comp.intersection, "n_diffs") == [0]
     assert rel_height(comp.unmatched_keys) == 4
     counts = {
-        (row["table"], row["n_unmatched"]) for row in rel_dicts(comp.unmatched_rows)
+        (row["table_name"], row["n_unmatched"])
+        for row in rel_dicts(comp.unmatched_rows)
     }
     assert counts == {("a", 2), ("b", 2)}
     comp.close()
@@ -385,7 +386,9 @@ def test_compare_reports_unmatched_columns():
         "SELECT * FROM (VALUES (1, 1, 88), (2, 3, 88)) AS t(id, value, extra_b)",
         by=["id"],
     )
-    cols = {(row["table"], row["column"]) for row in rel_dicts(comp.unmatched_cols)}
+    cols = {
+        (row["table_name"], row["column"]) for row in rel_dicts(comp.unmatched_cols)
+    }
     assert cols == {("a", "extra_a"), ("b", "extra_b")}
     comp.close()
 
@@ -435,7 +438,7 @@ def test_weave_long_empty_structure():
     comp = identical_comparison()
     rel = comp.weave_diffs_long(["value"])
     assert rel_height(rel) == 0
-    assert rel.columns == ["table", "id", "value"]
+    assert rel.columns == ["table_name", "id", "value"]
     assert rel_dtypes(rel) == ["VARCHAR", "INTEGER", "INTEGER"]
     comp.close()
 
@@ -453,7 +456,7 @@ def test_slice_unmatched_both_empty_structure():
     comp = identical_comparison()
     rel = comp.slice_unmatched_both()
     assert rel_height(rel) == 0
-    assert rel.columns == ["table", "id", "value"]
+    assert rel.columns == ["table_name", "id", "value"]
     assert rel_dtypes(rel) == ["VARCHAR", "INTEGER", "INTEGER"]
     comp.close()
 
@@ -476,7 +479,8 @@ def test_unmatched_rows_empty_structure():
     assert rel_height(comp.unmatched_rows) == 2
     assert rel_dtypes(comp.unmatched_rows) == ["VARCHAR", "BIGINT"]
     counts = {
-        (row["table"], row["n_unmatched"]) for row in rel_dicts(comp.unmatched_rows)
+        (row["table_name"], row["n_unmatched"])
+        for row in rel_dicts(comp.unmatched_rows)
     }
     assert counts == {("a", 0), ("b", 0)}
     comp.close()
@@ -490,7 +494,7 @@ def test_unmatched_rows_order_matches_table_id():
         table_id=("right", "left"),
     )
     rows = rel_dicts(comp.unmatched_rows)
-    assert [row["table"] for row in rows] == ["right", "left"]
+    assert [row["table_name"] for row in rows] == ["right", "left"]
     comp.close()
 
 

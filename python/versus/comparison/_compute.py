@@ -19,7 +19,7 @@ def build_tables_frame(
 
     rows = [row_for(identifier) for identifier in table_id]
     schema = [
-        ("table", "VARCHAR"),
+        ("table_name", "VARCHAR"),
         ("nrow", "BIGINT"),
         ("ncol", "BIGINT"),
     ]
@@ -67,7 +67,7 @@ def build_unmatched_cols(
         for column in sorted(cols_second - cols_first)
     ]
     schema = [
-        ("table", "VARCHAR"),
+        ("table_name", "VARCHAR"),
         ("column", "VARCHAR"),
         ("type", "VARCHAR"),
     ]
@@ -244,7 +244,7 @@ def compute_unmatched_keys(
         condition = h.join_condition(by_columns, "left_tbl", "right_tbl")
         return f"""
         SELECT
-          {h.sql_literal(identifier)} AS table,
+          {h.sql_literal(identifier)} AS table_name,
           {select_by}
         FROM
           {h.ident(handle_left.name)} AS left_tbl
@@ -271,10 +271,10 @@ def compute_unmatched_rows_summary(
     materialize: bool,
 ) -> duckdb.DuckDBPyRelation:
     keys_sql = unmatched_keys.sql_query()
-    table_col = h.ident("table")
+    table_col = h.ident("table_name")
     count_col = h.ident("n_unmatched")
     base_sql = h.rows_relation_sql(
-        [(table_id[0],), (table_id[1],)], [("table", "VARCHAR")]
+        [(table_id[0],), (table_id[1],)], [("table_name", "VARCHAR")]
     )
     counts_sql = f"""
     SELECT

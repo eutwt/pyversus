@@ -59,7 +59,7 @@ def _slice_diffs_inline(
 def unmatched_keys_sql(comparison: "Comparison", table_name: str) -> str:
     unmatched_sql = comparison.unmatched_keys.sql_query()
     by_cols = h.select_cols(comparison.by_columns, alias="keys")
-    table_filter = f"keys.{h.ident('table')} = {h.sql_literal(table_name)}"
+    table_filter = f"keys.{h.ident('table_name')} = {h.sql_literal(table_name)}"
     return f"SELECT {by_cols} FROM ({unmatched_sql}) AS keys WHERE {table_filter}"
 
 
@@ -88,7 +88,7 @@ def slice_unmatched_both(comparison: "Comparison") -> duckdb.DuckDBPyRelation:
         base_table = comparison._handles[table_name].name
         return f"""
         SELECT
-          {h.sql_literal(table_name)} AS table,
+          {h.sql_literal(table_name)} AS table_name,
           {select_cols}
         FROM
           {h.ident(base_table)} AS base
@@ -101,7 +101,7 @@ def slice_unmatched_both(comparison: "Comparison") -> duckdb.DuckDBPyRelation:
         base = h.select_zero_from_table(comparison, comparison.table_id[0], out_cols)
         sql = f"""
         SELECT
-          {h.sql_literal(comparison.table_id[0])} AS table,
+          {h.sql_literal(comparison.table_id[0])} AS table_name,
           {h.select_cols(out_cols)}
         FROM
           base
