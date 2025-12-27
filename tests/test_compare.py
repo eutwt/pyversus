@@ -482,6 +482,18 @@ def test_unmatched_rows_empty_structure():
     comp.close()
 
 
+def test_unmatched_rows_order_matches_table_id():
+    comp = comparison_from_sql(
+        "SELECT * FROM (VALUES (1, 10), (2, 20)) AS t(id, value)",
+        "SELECT * FROM (VALUES (2, 20), (3, 30)) AS t(id, value)",
+        by=["id"],
+        table_id=("right", "left"),
+    )
+    rows = rel_dicts(comp.unmatched_rows)
+    assert [row["table"] for row in rows] == ["right", "left"]
+    comp.close()
+
+
 def test_comparison_repr_snapshot():
     con = duckdb.connect()
     con.execute(

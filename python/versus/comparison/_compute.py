@@ -285,6 +285,12 @@ def compute_unmatched_rows_summary(
     GROUP BY
       {table_col}
     """
+    order_case = (
+        f"CASE base.{table_col} "
+        f"WHEN {h.sql_literal(table_id[0])} THEN 0 "
+        f"WHEN {h.sql_literal(table_id[1])} THEN 1 "
+        "ELSE 2 END"
+    )
     sql = f"""
     SELECT
       base.{table_col} AS {table_col},
@@ -294,6 +300,6 @@ def compute_unmatched_rows_summary(
       LEFT JOIN ({counts_sql}) AS counts
         ON base.{table_col} = counts.{table_col}
     ORDER BY
-      base.{table_col}
+      {order_case}
     """
     return h.finalize_relation(conn, sql, materialize)
