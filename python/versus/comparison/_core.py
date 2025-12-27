@@ -75,9 +75,7 @@ class Comparison:
         self.common_columns = common_columns
         self.table_columns = table_columns
         if materialize_mode == "all" and diff_keys is None:
-            raise h.ComparisonError(
-                "Diff keys are required when materialize='all'."
-            )
+            raise h.ComparisonError("Diff keys are required when materialize='all'.")
         self.diff_keys = diff_keys
         self._closed = False
 

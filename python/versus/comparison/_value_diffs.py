@@ -159,9 +159,7 @@ def _empty_value_diffs_stacked(
         ]
         for by_col in by_columns:
             by_type = handle_a.types[by_col]
-            select_parts.append(
-                f"CAST(NULL AS {by_type}) AS {h.ident(by_col)}"
-            )
+            select_parts.append(f"CAST(NULL AS {by_type}) AS {h.ident(by_col)}")
         selects.append(f"SELECT {', '.join(select_parts)} LIMIT 0")
     sql = " UNION ALL ".join(selects)
     return h.run_sql(comparison.connection, sql)

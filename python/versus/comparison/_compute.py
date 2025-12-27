@@ -164,13 +164,9 @@ def _build_intersection_frame_inline(
         alias = f"n_diffs_{index}"
         count_aliases.append(alias)
         predicate = h.diff_predicate(column, allow_both_na, "a", "b")
-        count_exprs.append(
-            f"COUNT(*) FILTER (WHERE {predicate}) AS {h.ident(alias)}"
-        )
+        count_exprs.append(f"COUNT(*) FILTER (WHERE {predicate}) AS {h.ident(alias)}")
     count_columns = ",\n      ".join(count_exprs)
-    count_refs = ", ".join(
-        f"counts.{h.ident(alias)}" for alias in count_aliases
-    )
+    count_refs = ", ".join(f"counts.{h.ident(alias)}" for alias in count_aliases)
     column_literals = ", ".join(h.sql_literal(column) for column in value_columns)
     type_a_literals = ", ".join(
         h.sql_literal(handles[first].types[column]) for column in value_columns

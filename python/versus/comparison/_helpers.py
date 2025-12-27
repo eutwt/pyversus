@@ -14,6 +14,7 @@ from typing import (
     Sequence,
     Tuple,
     Union,
+    cast,
 )
 
 import duckdb
@@ -107,7 +108,7 @@ class SummaryRelation:
         return str(self._relation)
 
     def __iter__(self) -> Any:
-        return iter(self._relation)
+        return iter(cast(Any, self._relation))
 
 
 # --------------- Core-only helpers
@@ -472,7 +473,9 @@ def run_sql(
     return conn.sql(sql)
 
 
-def relation_is_empty(relation: duckdb.DuckDBPyRelation) -> bool:
+def relation_is_empty(
+    relation: Union[duckdb.DuckDBPyRelation, SummaryRelation],
+) -> bool:
     return relation.limit(1).fetchone() is None
 
 
@@ -527,8 +530,6 @@ def finalize_relation(
     table = materialize_temp_table(conn, sql)
     conn.versus.temp_tables.append(table)
     return conn.sql(f"SELECT * FROM {ident(table)}")
-
-
 
 
 def build_rows_relation(
