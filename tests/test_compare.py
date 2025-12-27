@@ -290,9 +290,9 @@ def test_compare_errors_on_string_inputs():
     con = duckdb.connect()
     rel = con.sql("SELECT 1 AS id")
     with pytest.raises(ComparisonError, match=r"connection\.sql"):
-        compare("SELECT 1 AS id", rel, by=["id"], connection=con)
+        compare(cast(Any, "SELECT 1 AS id"), rel, by=["id"], connection=con)
     with pytest.raises(ComparisonError, match=r"connection\.sql"):
-        compare(rel, "SELECT 1 AS id", by=["id"], connection=con)
+        compare(rel, cast(Any, "SELECT 1 AS id"), by=["id"], connection=con)
     con.close()
 
 
