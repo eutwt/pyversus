@@ -14,6 +14,11 @@ run uv run ruff check --select I --fix python tests scripts || {
   exit 1
 }
 
+run uv run ruff check python tests scripts || {
+  echo "[pre-push] Ruff linting failed" >&2
+  exit 1
+}
+
 run uv run ruff format python tests scripts || {
   echo "[pre-push] Ruff format failed" >&2
   exit 1
