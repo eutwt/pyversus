@@ -34,10 +34,7 @@ jobs:
           python -m pip install .[docs]
 
       - name: Build site
-        run: mkdocs build --strict
-
-      - name: Build API docs
-        run: sphinx-build -b html docs_api/source site/api
+        run: sphinx-build -b html docs_api/source site
 
       - name: Deploy to GitHub pages (main)
         if: github.event_name != 'pull_request'

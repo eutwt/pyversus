@@ -22,8 +22,10 @@ templates_path = ["_templates"]
 exclude_patterns = ["Thumbs.db", ".DS_Store"]
 
 default_role = "code"
-autosummary_generate = False
+autosummary_generate = True
 numpydoc_show_class_members = False
+maximum_signature_line_length = 88
+python_maximum_signature_line_length = 88
 
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True

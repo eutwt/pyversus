@@ -21,9 +21,6 @@ Documentation = "https://eutwt.github.io/pyversus/"
 
 [project.optional-dependencies]
 docs = [
-  "mkdocs>=1.5; python_version >= \"3.9\"",
-  "mkdocs-material>=9.5; python_version >= \"3.9\"",
-  "markdown-exec[ansi]==1.10.0; python_version >= \"3.9\"",
   "sphinx>=7.2; python_version >= \"3.9\"",
   "pydata-sphinx-theme>=0.15.4; python_version >= \"3.9\"",
   "numpydoc>=1.6; python_version >= \"3.9\"",
