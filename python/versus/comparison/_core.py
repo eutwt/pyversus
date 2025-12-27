@@ -488,10 +488,10 @@ class Comparison:
 
 def compare(
     table_a: Union[
-        duckdb.DuckDBPyRelation, str, "pandas.DataFrame", "polars.DataFrame"
+        duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"
     ],
     table_b: Union[
-        duckdb.DuckDBPyRelation, str, "pandas.DataFrame", "polars.DataFrame"
+        duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"
     ],
     *,
     by: Sequence[str],
@@ -501,12 +501,13 @@ def compare(
     connection: Optional[duckdb.DuckDBPyConnection] = None,
     materialize: Literal["all", "summary", "none"] = "all",
 ) -> Comparison:
-    """Compare two DuckDB relations (or SQL queries) by key columns.
+    """Compare two DuckDB relations by key columns.
 
     Parameters
     ----------
-    table_a, table_b : DuckDBPyRelation, str, pandas.DataFrame, or polars.DataFrame
-        DuckDB relations, SQL strings/views, or pandas/polars DataFrames to compare.
+    table_a, table_b : DuckDBPyRelation, pandas.DataFrame, or polars.DataFrame
+        DuckDB relations or pandas/polars DataFrames to compare. For SQL queries,
+        create a relation with `connection.sql(...)` first.
     by : sequence of str
         Column names that uniquely identify rows.
     allow_both_na : bool, default True

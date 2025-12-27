@@ -1,8 +1,8 @@
 Quick start
 ===========
 
-DuckDB-powered tools for comparing two relations (tables, views, or SQL queries)
-without materializing them in Python.
+DuckDB-powered tools for comparing two relations (tables or views) or
+pandas/polars DataFrames without materializing them in Python.
 
 .. admonition:: Alpha status
 

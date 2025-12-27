@@ -15,9 +15,11 @@ The only runtime dependency is DuckDB.
 Inputs
 ------
 
-`compare()` accepts DuckDB relations (tables, views, or SQL queries). If you
-provide relations created on a non-default connection, pass that connection into
-`compare()` so helper queries run in the same session.
+`compare()` accepts DuckDB relations (tables or views) or pandas/polars
+DataFrames. To compare a SQL query, create a relation with
+`connection.sql(...)` and pass it to `compare()`. If you provide relations
+created on a non-default connection, pass that connection into `compare()` so
+helper queries run in the same session.
 
 .. code-block:: pycon
 
