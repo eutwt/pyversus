@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -62,6 +63,51 @@ class VersusConn:
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._connection, name)
+
+
+class SummaryRelation:
+    def __init__(
+        self,
+        conn: VersusConn,
+        relation: duckdb.DuckDBPyRelation,
+        *,
+        materialized: bool,
+        on_materialize: Optional[Callable[[duckdb.DuckDBPyRelation], None]] = None,
+    ) -> None:
+        self._conn = conn
+        self._relation = relation
+        self.materialized = materialized
+        self._on_materialize = on_materialize
+        if self.materialized and self._on_materialize is not None:
+            self._on_materialize(self._relation)
+
+    def materialize(self) -> None:
+        if self.materialized:
+            return
+        self._relation = finalize_relation(
+            self._conn, self._relation.sql_query(), materialize=True
+        )
+        self.materialized = True
+        if self._on_materialize is not None:
+            self._on_materialize(self._relation)
+
+    @property
+    def relation(self) -> duckdb.DuckDBPyRelation:
+        return self._relation
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._relation, name)
+
+    def __repr__(self) -> str:
+        self.materialize()
+        return repr(self._relation)
+
+    def __str__(self) -> str:
+        self.materialize()
+        return str(self._relation)
+
+    def __iter__(self) -> Any:
+        return iter(self._relation)
 
 
 # --------------- Core-only helpers
@@ -129,11 +175,17 @@ def assert_unique_by(
 ) -> None:
     cols = select_cols(by_columns, alias="t")
     sql = f"""
-    SELECT {cols}, COUNT(*) AS n
-    FROM {ident(handle.name)} AS t
-    GROUP BY {cols}
-    HAVING COUNT(*) > 1
-    LIMIT 1
+    SELECT
+      {cols},
+      COUNT(*) AS n
+    FROM
+      {ident(handle.name)} AS t
+    GROUP BY
+      {cols}
+    HAVING
+      COUNT(*) > 1
+    LIMIT
+      1
     """
     rel = run_sql(conn, sql)
     rows = rel.fetchall()
@@ -249,14 +301,16 @@ def register_input_view(
     conn: VersusConn,
     source: Any,
     label: str,
+    *,
+    connection_supplied: bool,
 ) -> _TableHandle:
     name = f"__versus_{label}_{uuid.uuid4().hex}"
     display = "relation"
+    base_name = None
     if isinstance(source, duckdb.DuckDBPyRelation):
         base_name = f"{name}_base"
         source.to_view(base_name, replace=True)
         source_ref = ident(base_name)
-        conn.versus.views.append(base_name)
         display = getattr(source, "alias", "relation")
     elif isinstance(source, str):
         source_ref = f"({source})"
@@ -264,9 +318,28 @@ def register_input_view(
     else:
         raise ComparisonError("Inputs must be DuckDB relations or SQL queries/views.")
 
-    conn.execute(
-        f"CREATE OR REPLACE TEMP VIEW {ident(name)} AS SELECT * FROM {source_ref}"
-    )
+    try:
+        conn.execute(
+            f"CREATE OR REPLACE TEMP VIEW {ident(name)} AS SELECT * FROM {source_ref}"
+        )
+    except duckdb.Error as exc:
+        if base_name is not None and base_name in str(exc):
+            if connection_supplied:
+                hint = (
+                    "Input relation appears to be bound to a different DuckDB "
+                    "connection than the one passed to `compare()`. Pass the same "
+                    "connection that created the relations via `connection=...`."
+                )
+            else:
+                hint = (
+                    "Input relation appears to be bound to a non-default DuckDB "
+                    "connection. Pass that connection to `compare()` via "
+                    "`connection=...`."
+                )
+            raise ComparisonError(hint) from exc
+        raise
+    if base_name is not None:
+        conn.versus.views.append(base_name)
     conn.versus.views.append(name)
 
     columns, types = describe_view(conn, name)
@@ -321,8 +394,9 @@ def join_clause(
 ) -> str:
     join_condition_sql = join_condition(by_columns, "a", "b")
     return (
-        f"FROM {ident(handles[table_id[0]].name)} AS a "
-        f"INNER JOIN {ident(handles[table_id[1]].name)} AS b ON {join_condition_sql}"
+        f"{ident(handles[table_id[0]].name)} AS a\n"
+        f"  INNER JOIN {ident(handles[table_id[1]].name)} AS b\n"
+        f"    ON {join_condition_sql}"
     )
 
 
@@ -370,10 +444,12 @@ def fetch_rows_by_keys(
         select_cols_sql = select_cols(columns, alias="base")
     join_condition_sql = join_condition(comparison.by_columns, "keys", "base")
     sql = f"""
-    SELECT {select_cols_sql}
-    FROM ({key_sql}) AS keys
-    JOIN {ident(comparison._handles[table].name)} AS base
-      ON {join_condition_sql}
+    SELECT
+      {select_cols_sql}
+    FROM
+      ({key_sql}) AS keys
+      JOIN {ident(comparison._handles[table].name)} AS base
+        ON {join_condition_sql}
     """
     return run_sql(comparison.connection, sql)
 

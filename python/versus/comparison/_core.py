@@ -46,89 +46,60 @@ class Comparison:
         self.by_columns = by_columns
         self.allow_both_na = allow_both_na
         self._materialize_mode = materialize_mode
-        self.tables = tables
-        self.by = by
-        self._intersection = intersection
-        self.unmatched_cols = unmatched_cols
+        self._diff_lookup = diff_lookup
+        if self._diff_lookup is not None:
+            for column in common_columns:
+                self._diff_lookup.setdefault(column, 0)
+        self._unmatched_lookup: Optional[Dict[str, int]] = None
+        summary_materialized = materialize_mode in {"all", "summary"}
+        self.tables = h.SummaryRelation(
+            connection, tables, materialized=summary_materialized
+        )
+        self.by = h.SummaryRelation(connection, by, materialized=summary_materialized)
+        self._intersection = h.SummaryRelation(
+            connection,
+            intersection,
+            materialized=summary_materialized,
+            on_materialize=self._store_diff_lookup,
+        )
+        self.unmatched_cols = h.SummaryRelation(
+            connection, unmatched_cols, materialized=summary_materialized
+        )
         self.unmatched_keys = unmatched_keys
-        self.unmatched_rows = unmatched_rows
+        self.unmatched_rows = h.SummaryRelation(
+            connection,
+            unmatched_rows,
+            materialized=summary_materialized,
+            on_materialize=self._store_unmatched_lookup,
+        )
         self.common_columns = common_columns
         self.table_columns = table_columns
         self.diff_keys = diff_keys
-        self._diff_lookup = diff_lookup
-        self._tables_materialized = materialize_mode in {"all", "summary"}
-        self._by_materialized = materialize_mode in {"all", "summary"}
-        self._intersection_materialized = materialize_mode in {"all", "summary"}
-        self._unmatched_cols_materialized = materialize_mode in {"all", "summary"}
-        self._unmatched_rows_materialized = materialize_mode in {"all", "summary"}
-        self._unmatched_lookup: Optional[Dict[str, int]] = None
         self._closed = False
 
     @property
-    def intersection(self) -> duckdb.DuckDBPyRelation:
+    def intersection(self) -> h.SummaryRelation:
         return self._intersection
 
-    def _get_diff_lookup(self) -> Dict[str, int]:
-        if self._diff_lookup is None:
-            if not self._intersection_materialized:
-                return {}
-            self._diff_lookup = h.diff_lookup_from_intersection(self._intersection)
-        return self._diff_lookup
-
     def _filter_diff_columns(self, columns: Sequence[str]) -> List[str]:
-        if not self._intersection_materialized:
+        diff_lookup = self._diff_lookup
+        if diff_lookup is None:
             return list(columns)
-        diff_lookup = self._get_diff_lookup()
-        return [col for col in columns if diff_lookup.get(col, 0) > 0]
+        return [col for col in columns if diff_lookup[col] > 0]
 
-    def _get_unmatched_lookup(self) -> Dict[str, int]:
-        if not self._unmatched_rows_materialized:
-            return {}
+    def _store_diff_lookup(self, relation: duckdb.DuckDBPyRelation) -> None:
+        if self._diff_lookup is None:
+            diff_lookup = h.diff_lookup_from_intersection(relation)
+            for column in self.common_columns:
+                diff_lookup.setdefault(column, 0)
+            self._diff_lookup = diff_lookup
+
+    def _store_unmatched_lookup(self, relation: duckdb.DuckDBPyRelation) -> None:
         if self._unmatched_lookup is None:
-            self._unmatched_lookup = h.unmatched_lookup_from_rows(self.unmatched_rows)
-        return self._unmatched_lookup
-
-    def _ensure_tables_materialized(self) -> None:
-        if self._tables_materialized:
-            return
-        self.tables = h.finalize_relation(
-            self.connection, self.tables.sql_query(), materialize=True
-        )
-        self._tables_materialized = True
-
-    def _ensure_by_materialized(self) -> None:
-        if self._by_materialized:
-            return
-        self.by = h.finalize_relation(
-            self.connection, self.by.sql_query(), materialize=True
-        )
-        self._by_materialized = True
-
-    def _ensure_intersection_materialized(self) -> None:
-        if self._intersection_materialized:
-            return
-        self._intersection = h.finalize_relation(
-            self.connection, self._intersection.sql_query(), materialize=True
-        )
-        self._intersection_materialized = True
-        self._diff_lookup = h.diff_lookup_from_intersection(self._intersection)
-
-    def _ensure_unmatched_cols_materialized(self) -> None:
-        if self._unmatched_cols_materialized:
-            return
-        self.unmatched_cols = h.finalize_relation(
-            self.connection, self.unmatched_cols.sql_query(), materialize=True
-        )
-        self._unmatched_cols_materialized = True
-
-    def _ensure_unmatched_rows_materialized(self) -> None:
-        if self._unmatched_rows_materialized:
-            return
-        self.unmatched_rows = h.finalize_relation(
-            self.connection, self.unmatched_rows.sql_query(), materialize=True
-        )
-        self._unmatched_rows_materialized = True
-        self._unmatched_lookup = h.unmatched_lookup_from_rows(self.unmatched_rows)
+            unmatched_lookup = h.unmatched_lookup_from_rows(relation)
+            for table_name in self.table_id:
+                unmatched_lookup.setdefault(table_name, 0)
+            self._unmatched_lookup = unmatched_lookup
 
     def close(self) -> None:
         if self._closed:
@@ -152,11 +123,6 @@ class Comparison:
             pass
 
     def __repr__(self) -> str:
-        self._ensure_tables_materialized()
-        self._ensure_by_materialized()
-        self._ensure_intersection_materialized()
-        self._ensure_unmatched_cols_materialized()
-        self._ensure_unmatched_rows_materialized()
         return (
             "Comparison("
             f"tables=\n{self.tables}\n"
@@ -207,7 +173,9 @@ class Comparison:
             self.intersection.filter(f"{h.ident('n_diffs')} > 0")
         )
         unmatched_cols = not h.relation_is_empty(self.unmatched_cols)
-        unmatched_rows = not h.relation_is_empty(self.unmatched_rows)
+        unmatched_rows = not h.relation_is_empty(
+            self.unmatched_rows.filter(f"{h.ident('n_unmatched')} > 0")
+        )
         class_a_col = f"class_{self.table_id[0]}"
         class_b_col = f"class_{self.table_id[1]}"
         class_diffs = not h.relation_is_empty(
@@ -244,9 +212,14 @@ def compare(
     conn = h.resolve_connection(connection)
     clean_ids = h.validate_table_id(table_id)
     by_columns = h.normalize_column_list(by, "by", allow_empty=False)
+    connection_supplied = connection is not None
     handles = {
-        clean_ids[0]: h.register_input_view(conn, table_a, clean_ids[0]),
-        clean_ids[1]: h.register_input_view(conn, table_b, clean_ids[1]),
+        clean_ids[0]: h.register_input_view(
+            conn, table_a, clean_ids[0], connection_supplied=connection_supplied
+        ),
+        clean_ids[1]: h.register_input_view(
+            conn, table_b, clean_ids[1], connection_supplied=connection_supplied
+        ),
     }
     h.validate_columns_exist(by_columns, handles, clean_ids)
     if not coerce:
@@ -288,7 +261,7 @@ def compare(
         conn, handles, clean_ids, by_columns, materialize_keys
     )
     unmatched_rows_rel = c.compute_unmatched_rows_summary(
-        conn, unmatched_keys, materialize_summary
+        conn, unmatched_keys, clean_ids, materialize_summary
     )
 
     return Comparison(

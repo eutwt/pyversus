@@ -77,12 +77,14 @@ def _weave_diffs_wide_with_keys(
     join_a = h.join_condition(comparison.by_columns, "keys", "a")
     join_b = h.join_condition(comparison.by_columns, "keys", "b")
     sql = f"""
-    SELECT {', '.join(select_parts)}
-    FROM ({keys}) AS keys
-    JOIN {h.ident(comparison._handles[table_a].name)} AS a
-      ON {join_a}
-    JOIN {h.ident(comparison._handles[table_b].name)} AS b
-      ON {join_b}
+    SELECT
+      {', '.join(select_parts)}
+    FROM
+      ({keys}) AS keys
+      JOIN {h.ident(comparison._handles[table_a].name)} AS a
+        ON {join_a}
+      JOIN {h.ident(comparison._handles[table_b].name)} AS b
+        ON {join_b}
     """
     return h.run_sql(comparison.connection, sql)
 
@@ -114,9 +116,12 @@ def _weave_diffs_wide_inline(
         h.diff_predicate(col, comparison.allow_both_na, "a", "b") for col in diff_cols
     )
     sql = f"""
-    SELECT {', '.join(select_parts)}
-    {join_sql}
-    WHERE {predicate}
+    SELECT
+      {', '.join(select_parts)}
+    FROM
+      {join_sql}
+    WHERE
+      {predicate}
     """
     return h.run_sql(comparison.connection, sql)
 
@@ -134,20 +139,36 @@ def _weave_diffs_long_with_keys(
     join_b = h.join_condition(comparison.by_columns, "keys", "b")
     order_cols = h.select_cols(comparison.by_columns)
     sql = f"""
-    WITH diff_keys AS ({keys})
-    SELECT {table_column}, {h.select_cols(out_cols)}
-    FROM (
-        SELECT 0 AS __table_order, '{table_a}' AS {table_column}, {select_cols_a}
-        FROM diff_keys AS keys
-        JOIN {h.ident(comparison._handles[table_a].name)} AS a
-          ON {join_a}
+    WITH
+      diff_keys AS (
+        {keys}
+      )
+    SELECT
+      {table_column},
+      {h.select_cols(out_cols)}
+    FROM
+      (
+        SELECT
+          0 AS __table_order,
+          '{table_a}' AS {table_column},
+          {select_cols_a}
+        FROM
+          diff_keys AS keys
+          JOIN {h.ident(comparison._handles[table_a].name)} AS a
+            ON {join_a}
         UNION ALL
-        SELECT 1 AS __table_order, '{table_b}' AS {table_column}, {select_cols_b}
-        FROM diff_keys AS keys
-        JOIN {h.ident(comparison._handles[table_b].name)} AS b
-          ON {join_b}
-    ) AS stacked
-    ORDER BY {order_cols}, __table_order
+        SELECT
+          1 AS __table_order,
+          '{table_b}' AS {table_column},
+          {select_cols_b}
+        FROM
+          diff_keys AS keys
+          JOIN {h.ident(comparison._handles[table_b].name)} AS b
+            ON {join_b}
+      ) AS stacked
+    ORDER BY
+      {order_cols},
+      __table_order
     """
     return h.run_sql(comparison.connection, sql)
 
@@ -168,16 +189,31 @@ def _weave_diffs_long_inline(
     )
     order_cols = h.select_cols(comparison.by_columns)
     sql = f"""
-    SELECT {table_column}, {h.select_cols(out_cols)}
-    FROM (
-        SELECT 0 AS __table_order, '{table_a}' AS {table_column}, {select_cols_a}
-        {join_sql}
-        WHERE {predicate}
+    SELECT
+      {table_column},
+      {h.select_cols(out_cols)}
+    FROM
+      (
+        SELECT
+          0 AS __table_order,
+          '{table_a}' AS {table_column},
+          {select_cols_a}
+        FROM
+          {join_sql}
+        WHERE
+          {predicate}
         UNION ALL
-        SELECT 1 AS __table_order, '{table_b}' AS {table_column}, {select_cols_b}
-        {join_sql}
-        WHERE {predicate}
-    ) AS stacked
-    ORDER BY {order_cols}, __table_order
+        SELECT
+          1 AS __table_order,
+          '{table_b}' AS {table_column},
+          {select_cols_b}
+        FROM
+          {join_sql}
+        WHERE
+          {predicate}
+      ) AS stacked
+    ORDER BY
+      {order_cols},
+      __table_order
     """
     return h.run_sql(comparison.connection, sql)

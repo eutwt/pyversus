@@ -45,7 +45,14 @@ def _slice_diffs_inline(
     predicate = " OR ".join(
         h.diff_predicate(col, comparison.allow_both_na, "a", "b") for col in diff_cols
     )
-    sql = f"SELECT {base_alias}.* {join_sql} WHERE {predicate}"
+    sql = f"""
+    SELECT
+      {base_alias}.*
+    FROM
+      {join_sql}
+    WHERE
+      {predicate}
+    """
     return h.run_sql(comparison.connection, sql)
 
 
@@ -58,10 +65,9 @@ def unmatched_keys_sql(comparison: "Comparison", table_name: str) -> str:
 
 def slice_unmatched(comparison: "Comparison", table: str) -> duckdb.DuckDBPyRelation:
     table_name = h.normalize_table_arg(comparison, table)
-    if comparison._unmatched_rows_materialized:
-        unmatched_lookup = comparison._get_unmatched_lookup()
-        if unmatched_lookup.get(table_name, 0) == 0:
-            return h.select_zero_from_table(comparison, table_name)
+    unmatched_lookup = comparison._unmatched_lookup
+    if unmatched_lookup is not None and unmatched_lookup[table_name] == 0:
+        return h.select_zero_from_table(comparison, table_name)
     key_sql = unmatched_keys_sql(comparison, table_name)
     return h.fetch_rows_by_keys(comparison, table_name, key_sql)
 
@@ -71,22 +77,22 @@ def slice_unmatched_both(comparison: "Comparison") -> duckdb.DuckDBPyRelation:
     select_cols = h.select_cols(out_cols, alias="base")
     join_condition = h.join_condition(comparison.by_columns, "keys", "base")
     selects = []
-    if comparison._unmatched_rows_materialized:
-        unmatched_lookup = comparison._get_unmatched_lookup()
-    else:
-        unmatched_lookup = None
+    unmatched_lookup = comparison._unmatched_lookup
     for table_name in comparison.table_id:
-        if unmatched_lookup is not None and unmatched_lookup.get(table_name, 0) == 0:
+        if unmatched_lookup is not None and unmatched_lookup[table_name] == 0:
             continue
         keys_sql = unmatched_keys_sql(comparison, table_name)
         base_table = comparison._handles[table_name].name
         selects.append(
             f"""
-                SELECT {h.sql_literal(table_name)} AS table, {select_cols}
-                FROM {h.ident(base_table)} AS base
-                JOIN ({keys_sql}) AS keys
-                  ON {join_condition}
-                """
+            SELECT
+              {h.sql_literal(table_name)} AS table,
+              {select_cols}
+            FROM
+              {h.ident(base_table)} AS base
+              JOIN ({keys_sql}) AS keys
+                ON {join_condition}
+            """
         )
     if not selects:
         base = h.select_zero_from_table(comparison, comparison.table_id[0], out_cols)

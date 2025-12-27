@@ -102,7 +102,8 @@ def build_intersection_frame(
               COUNT(*) AS {h.ident('n_diffs')},
               {h.sql_literal(handles[first].types[column])} AS {h.ident(f'class_{first}')},
               {h.sql_literal(handles[second].types[column])} AS {h.ident(f'class_{second}')}
-            FROM ({relation_sql}) AS diff_keys
+            FROM
+              ({relation_sql}) AS diff_keys
             """
         )
     sql = " UNION ALL ".join(selects)
@@ -126,7 +127,14 @@ def compute_diff_keys(
     select_by = h.select_cols(by_columns, alias="a")
     for column in value_columns:
         predicate = h.diff_predicate(column, allow_both_na, "a", "b")
-        sql = f"SELECT {select_by} {join_sql} WHERE {predicate}"
+        sql = f"""
+        SELECT
+          {select_by}
+        FROM
+          {join_sql}
+        WHERE
+          {predicate}
+        """
         relation = h.finalize_relation(conn, sql, materialize)
         diff_keys[column] = relation
     return diff_keys
@@ -148,13 +156,20 @@ def compute_unmatched_keys(
         condition = h.join_condition(by_columns, "left_tbl", "right_tbl")
         keys_parts.append(
             f"""
-            SELECT {h.sql_literal(identifier)} AS table, {select_by}
-            FROM {h.ident(handle_left.name)} AS left_tbl
-            WHERE NOT EXISTS (
-                SELECT 1
-                FROM {h.ident(handle_right.name)} AS right_tbl
-                WHERE {condition}
-            )
+            SELECT
+              {h.sql_literal(identifier)} AS table,
+              {select_by}
+            FROM
+              {h.ident(handle_left.name)} AS left_tbl
+            WHERE
+              NOT EXISTS (
+                SELECT
+                  1
+                FROM
+                  {h.ident(handle_right.name)} AS right_tbl
+                WHERE
+                  {condition}
+              )
             """
         )
     keys_sql = " UNION ALL ".join(keys_parts)
@@ -164,15 +179,33 @@ def compute_unmatched_keys(
 def compute_unmatched_rows_summary(
     conn: h.VersusConn,
     unmatched_keys: duckdb.DuckDBPyRelation,
+    table_id: Tuple[str, str],
     materialize: bool,
 ) -> duckdb.DuckDBPyRelation:
     keys_sql = unmatched_keys.sql_query()
     table_col = h.ident("table")
     count_col = h.ident("n_unmatched")
+    base_sql = h.rows_relation_sql(
+        [(table_id[0],), (table_id[1],)], [("table", "VARCHAR")]
+    )
+    counts_sql = f"""
+    SELECT
+      {table_col},
+      COUNT(*) AS {count_col}
+    FROM
+      ({keys_sql}) AS keys
+    GROUP BY
+      {table_col}
+    """
     sql = f"""
-    SELECT {table_col}, COUNT(*) AS {count_col}
-    FROM ({keys_sql}) AS keys
-    GROUP BY {table_col}
-    ORDER BY {table_col}
+    SELECT
+      base.{table_col} AS {table_col},
+      COALESCE(counts.{count_col}, CAST(0 AS BIGINT)) AS {count_col}
+    FROM
+      ({base_sql}) AS base
+      LEFT JOIN ({counts_sql}) AS counts
+        ON base.{table_col} = counts.{table_col}
+    ORDER BY
+      base.{table_col}
     """
     return h.finalize_relation(conn, sql, materialize)

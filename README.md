@@ -199,6 +199,7 @@ comparison.summary()
 
 When you call `compare()`, Versus defines summary tables for the printed
 output (`tables`, `by`, `intersection`, `unmatched_cols`, `unmatched_rows`).
+These are relation-like wrappers that materialize themselves on print.
 Diff key relations are still defined, but they are only used when you choose
 full materialization. Everything stays as DuckDB relations until evaluated.
 
@@ -207,8 +208,9 @@ full materialization. Everything stays as DuckDB relations until evaluated.
 - `materialize="summary"`: store only the summary tables. Row-level helpers
   run inline predicates and return lazy relations.
 - `materialize="none"`: do not store anything up front. Printing the
-  comparison materializes the summary tables and enables diff-count
-  optimizations for later row-level helpers, but helper outputs stay lazy.
+  comparison materializes the summary tables and enables diff-count and
+  unmatched-row optimizations for later row-level helpers, but helper
+  outputs stay lazy.
 
 Row-level helper outputs are always returned as DuckDB relations and are
 never materialized automatically; materialize them explicitly if needed.

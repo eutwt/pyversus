@@ -32,22 +32,28 @@ def build_connection():
     con = duckdb.connect()
     rel_a = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (1, 10, 'x'),
-                (2, 20, 'y'),
-                (3, 30, 'z')
-        ) AS t(id, value, extra)
+              (1, 10, 'x'),
+              (2, 20, 'y'),
+              (3, 30, 'z')
+          ) AS t(id, value, extra)
         """
     )
     rel_b = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (2, 22, 'y'),
-                (3, 30, 'z'),
-                (4, 40, 'w')
-        ) AS t(id, value, extra)
+              (2, 22, 'y'),
+              (3, 30, 'z'),
+              (4, 40, 'w')
+          ) AS t(id, value, extra)
         """
     )
     return con, rel_a, rel_b
@@ -62,10 +68,14 @@ def comparison_from_sql(sql_a: str, sql_b: str, *, by, **kwargs):
 
 def identical_comparison():
     sql = """
-        SELECT * FROM (
-            VALUES (1, 10),
-                   (2, 20)
-        ) AS t(id, value)
+        SELECT
+          *
+        FROM
+          (
+            VALUES
+              (1, 10),
+              (2, 20)
+          ) AS t(id, value)
     """
     return comparison_from_sql(sql, sql, by=["id"])
 
@@ -116,20 +126,26 @@ def test_summary_reports_difference_categories():
     con = duckdb.connect()
     rel_a = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (1, 10, CAST(1.5 AS DOUBLE), 'only_a'),
-                (2, 20, CAST(2.5 AS DOUBLE), 'only_a')
-        ) AS t(id, value, note, extra)
+              (1, 10, CAST(1.5 AS DOUBLE), 'only_a'),
+              (2, 20, CAST(2.5 AS DOUBLE), 'only_a')
+          ) AS t(id, value, note, extra)
         """
     )
     rel_b = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (1, 99, 1),
-                (3, 30, 2)
-        ) AS t(id, value, note)
+              (1, 99, 1),
+              (3, 30, 2)
+          ) AS t(id, value, note)
         """
     )
     comp = compare(rel_a, rel_b, by=["id"], connection=con)
@@ -162,17 +178,25 @@ def test_duplicate_by_raises():
     con = duckdb.connect()
     rel_dup = con.sql(
         """
-        SELECT * FROM (
-            VALUES (1, 10),
-                   (1, 11)
-        ) AS t(id, value)
+        SELECT
+          *
+        FROM
+          (
+            VALUES
+              (1, 10),
+              (1, 11)
+          ) AS t(id, value)
         """
     )
     rel_other = con.sql(
         """
-        SELECT * FROM (
-            VALUES (1, 10)
-        ) AS t(id, value)
+        SELECT
+          *
+        FROM
+          (
+            VALUES
+              (1, 10)
+          ) AS t(id, value)
         """
     )
     with pytest.raises(ComparisonError):
@@ -198,6 +222,22 @@ def test_compare_errors_when_by_column_missing():
     rel_b = con.sql("SELECT 1 AS other_id, 10 AS value")
     with pytest.raises(ComparisonError):
         compare(rel_a, rel_b, by=["id"], connection=con)
+
+
+def test_compare_errors_on_relations_from_non_default_connection():
+    default_conn = duckdb.connect()
+    other_conn = duckdb.connect()
+    original_default = duckdb.default_connection
+    duckdb.default_connection = default_conn
+    try:
+        rel_a = other_conn.sql("SELECT 1 AS id, 10 AS value")
+        rel_b = other_conn.sql("SELECT 1 AS id, 11 AS value")
+        with pytest.raises(ComparisonError, match="non-default DuckDB connection"):
+            compare(rel_a, rel_b, by=["id"])
+    finally:
+        duckdb.default_connection = original_default
+        default_conn.close()
+        other_conn.close()
 
 
 def test_compare_errors_when_table_id_invalid_length():
@@ -240,10 +280,24 @@ def test_compare_coerce_false_detects_type_mismatch():
     with pytest.raises(ComparisonError):
         comparison_from_sql(
             """
-            SELECT * FROM (VALUES (1, 10), (2, 20)) AS t(id, value)
+            SELECT
+              *
+            FROM
+              (
+                VALUES
+                  (1, 10),
+                  (2, 20)
+              ) AS t(id, value)
             """,
             """
-            SELECT * FROM (VALUES (1, '10'), (2, '20')) AS t(id, value)
+            SELECT
+              *
+            FROM
+              (
+                VALUES
+                  (1, '10'),
+                  (2, '20')
+              ) AS t(id, value)
             """,
             by=["id"],
             coerce=False,
@@ -370,8 +424,12 @@ def test_unmatched_keys_empty_structure():
 
 def test_unmatched_rows_empty_structure():
     comp = identical_comparison()
-    assert rel_height(comp.unmatched_rows) == 0
+    assert rel_height(comp.unmatched_rows) == 2
     assert rel_dtypes(comp.unmatched_rows) == ["VARCHAR", "BIGINT"]
+    counts = {
+        (row["table"], row["n_unmatched"]) for row in rel_dicts(comp.unmatched_rows)
+    }
+    assert counts == {("a", 0), ("b", 0)}
     comp.close()
 
 

@@ -17,22 +17,28 @@ def comparison_with_diffs():
     con = duckdb.connect()
     rel_a = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (1, 10, 5, 'same'),
-                (2, 20, 6, 'same'),
-                (3, 30, 7, 'same')
-        ) AS t(id, value, wind, note)
+              (1, 10, 5, 'same'),
+              (2, 20, 6, 'same'),
+              (3, 30, 7, 'same')
+          ) AS t(id, value, wind, note)
         """
     )
     rel_b = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (1, 10, 5, 'same'),
-                (2, 25, 8, 'same'),
-                (3, 30, 7, 'same')
-        ) AS t(id, value, wind, note)
+              (1, 10, 5, 'same'),
+              (2, 25, 8, 'same'),
+              (3, 30, 7, 'same')
+          ) AS t(id, value, wind, note)
         """
     )
     comp = compare(rel_a, rel_b, by=["id"], connection=con)
