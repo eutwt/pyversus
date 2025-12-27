@@ -69,9 +69,9 @@ def resolve_materialize(materialize: str) -> Tuple[bool, bool]:
     if not isinstance(materialize, str) or materialize not in {
         "all",
         "summary",
-        "lazy",
+        "none",
     }:
-        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'lazy'")
+        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'none'")
     materialize_summary = materialize in {"all", "summary"}
     materialize_keys = materialize == "all"
     return materialize_summary, materialize_keys
@@ -390,6 +390,20 @@ def relation_is_empty(relation: duckdb.DuckDBPyRelation) -> bool:
     return relation.limit(1).fetchone() is None
 
 
+def diff_lookup_from_intersection(
+    relation: duckdb.DuckDBPyRelation,
+) -> Dict[str, int]:
+    rows = relation.fetchall()
+    return {row[0]: int(row[1]) for row in rows}
+
+
+def unmatched_lookup_from_rows(
+    relation: duckdb.DuckDBPyRelation,
+) -> Dict[str, int]:
+    rows = relation.fetchall()
+    return {row[0]: int(row[1]) for row in rows}
+
+
 def rows_relation_sql(
     rows: Sequence[Sequence[Any]], schema: Sequence[Tuple[str, str]]
 ) -> str:
@@ -429,6 +443,8 @@ def finalize_relation(
     return conn.sql(f"SELECT * FROM {ident(table)}")
 
 
+
+
 def build_rows_relation(
     conn: VersusConn,
     rows: Sequence[Sequence[Any]],
@@ -450,9 +466,12 @@ def select_zero_from_table(
     table: str,
     columns: Optional[Sequence[str]] = None,
 ) -> duckdb.DuckDBPyRelation:
+    handle = comparison._handles[table]
     if columns is None:
-        return comparison._handles[table].limit(0)
+        sql = f"SELECT * FROM {ident(handle.name)} LIMIT 0"
+        return run_sql(comparison.connection, sql)
     if not columns:
         raise ComparisonError("Column list must be non-empty")
     select_cols_sql = select_cols(columns)
-    return comparison._handles[table].project(select_cols_sql).limit(0)
+    sql = f"SELECT {select_cols_sql} FROM {ident(handle.name)} LIMIT 0"
+    return run_sql(comparison.connection, sql)

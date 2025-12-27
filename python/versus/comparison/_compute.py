@@ -80,7 +80,6 @@ def build_intersection_frame(
     diff_keys: Mapping[str, duckdb.DuckDBPyRelation],
     conn: h.VersusConn,
     materialize: bool,
-    compute_counts: bool,
 ) -> Tuple[duckdb.DuckDBPyRelation, Optional[Dict[str, int]]]:
     first, second = table_id
     schema = [
@@ -91,42 +90,26 @@ def build_intersection_frame(
     ]
     if not value_columns:
         relation = h.build_rows_relation(conn, [], schema, materialize)
-        return relation, {} if compute_counts else None
-    if not compute_counts:
-        selects = []
-        for column in value_columns:
-            relation = diff_keys[column]
-            relation_sql = relation.sql_query()
-            selects.append(
-                f"""
-                SELECT
-                  {h.sql_literal(column)} AS {h.ident('column')},
-                  COUNT(*) AS {h.ident('n_diffs')},
-                  {h.sql_literal(handles[first].types[column])} AS {h.ident(f'class_{first}')},
-                  {h.sql_literal(handles[second].types[column])} AS {h.ident(f'class_{second}')}
-                FROM ({relation_sql}) AS diff_keys
-                """
-            )
-        sql = " UNION ALL ".join(selects)
-        relation = h.finalize_relation(conn, sql, materialize)
-        return relation, None
-
-    rows = []
-    diff_lookup: Dict[str, int] = {}
+        return relation, {} if materialize else None
+    selects = []
     for column in value_columns:
         relation = diff_keys[column]
-        count = h.table_count(relation)
-        rows.append(
-            (
-                column,
-                count,
-                handles[first].types[column],
-                handles[second].types[column],
-            )
+        relation_sql = relation.sql_query()
+        selects.append(
+            f"""
+            SELECT
+              {h.sql_literal(column)} AS {h.ident('column')},
+              COUNT(*) AS {h.ident('n_diffs')},
+              {h.sql_literal(handles[first].types[column])} AS {h.ident(f'class_{first}')},
+              {h.sql_literal(handles[second].types[column])} AS {h.ident(f'class_{second}')}
+            FROM ({relation_sql}) AS diff_keys
+            """
         )
-        diff_lookup[column] = count
-    relation = h.build_rows_relation(conn, rows, schema, materialize)
-    return relation, diff_lookup
+    sql = " UNION ALL ".join(selects)
+    relation = h.finalize_relation(conn, sql, materialize)
+    if not materialize:
+        return relation, None
+    return relation, h.diff_lookup_from_intersection(relation)
 
 
 def compute_diff_keys(
