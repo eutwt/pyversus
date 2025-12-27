@@ -48,7 +48,7 @@ comparison
 # 
 # by=
 # ┌─────────┬─────────┬─────────┐
-# │ column  │ class_a │ class_b │
+# │ column  │ type_a  │ type_b  │
 # │ varchar │ varchar │ varchar │
 # ├─────────┼─────────┼─────────┤
 # │ car     │ VARCHAR │ VARCHAR │
@@ -56,7 +56,7 @@ comparison
 # 
 # intersection=
 # ┌─────────┬─────────┬──────────────┬──────────────┐
-# │ column  │ n_diffs │   class_a    │   class_b    │
+# │ column  │ n_diffs │    type_a    │    type_b    │
 # │ varchar │  int64  │   varchar    │   varchar    │
 # ├─────────┼─────────┼──────────────┼──────────────┤
 # │ mpg     │       2 │ DECIMAL(3,1) │ DECIMAL(3,1) │
@@ -70,7 +70,7 @@ comparison
 # 
 # unmatched_cols=
 # ┌─────────┬─────────┬─────────┐
-# │  table  │ column  │  class  │
+# │  table  │ column  │  type   │
 # │ varchar │ varchar │ varchar │
 # ├─────────┼─────────┼─────────┤
 # │ a       │ am      │ INTEGER │
@@ -169,7 +169,7 @@ comparison.summary()
 # │ value_diffs    │ true    │
 # │ unmatched_cols │ true    │
 # │ unmatched_rows │ true    │
-# │ class_diffs    │ false   │
+# │ type_diffs     │ false   │
 # └────────────────┴─────────┘
 ```
 
@@ -200,8 +200,9 @@ comparison.summary()
 When you call `compare()`, Versus defines summary tables for the printed
 output (`tables`, `by`, `intersection`, `unmatched_cols`, `unmatched_rows`).
 These are relation-like wrappers that materialize themselves on print.
-Diff key relations are still defined, but they are only used when you choose
-full materialization. Everything stays as DuckDB relations until evaluated.
+Diff key relations are only built when you choose full materialization;
+other modes compute diff counts inline. Everything stays as DuckDB relations
+until evaluated.
 
 - `materialize="all"`: store the summary tables and diff key tables as temp
   tables. This is fastest if you will call row-level helpers multiple times.

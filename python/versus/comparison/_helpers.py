@@ -153,7 +153,7 @@ def validate_columns_exist(
         )
 
 
-def validate_class_compatibility(
+def validate_type_compatibility(
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
 ) -> None:
@@ -163,7 +163,7 @@ def validate_class_compatibility(
         type_b = handles[table_id[1]].types.get(column)
         if type_a != type_b:
             raise ComparisonError(
-                f"`coerce=False` requires compatible classes. Column `{column}` has types `{type_a}` vs `{type_b}`."
+                f"`coerce=False` requires compatible types. Column `{column}` has types `{type_a}` vs `{type_b}`."
             )
 
 
@@ -422,10 +422,20 @@ def sql_literal(value: Any) -> str:
 
 
 # --------------- Comparison-specific SQL assembly
+def require_diff_keys(
+    comparison: "Comparison",
+) -> Mapping[str, duckdb.DuckDBPyRelation]:
+    diff_keys = comparison.diff_keys
+    if diff_keys is None:
+        raise ComparisonError("Diff keys are only available for materialize='all'.")
+    return diff_keys
+
+
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
+    diff_keys = require_diff_keys(comparison)
     selects = []
     for column in columns:
-        key_sql = comparison.diff_keys[column].sql_query()
+        key_sql = diff_keys[column].sql_query()
         selects.append(key_sql)
     return " UNION DISTINCT ".join(selects)
 

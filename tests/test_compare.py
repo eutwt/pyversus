@@ -154,7 +154,7 @@ def test_summary_reports_difference_categories():
         ("value_diffs", True),
         ("unmatched_cols", True),
         ("unmatched_rows", True),
-        ("class_diffs", True),
+        ("type_diffs", True),
     ]
     comp.close()
 
@@ -273,7 +273,7 @@ def test_intersection_empty_when_no_value_columns():
     comp = comparison_from_sql(sql, sql, by=["id", "value"])
     assert comp.common_columns == []
     assert rel_height(comp.intersection) == 0
-    assert comp.intersection.columns == ["column", "n_diffs", "class_a", "class_b"]
+    assert comp.intersection.columns == ["column", "n_diffs", "type_a", "type_b"]
 
 
 def test_compare_coerce_false_detects_type_mismatch():

@@ -34,7 +34,7 @@ class Comparison:
         unmatched_rows: duckdb.DuckDBPyRelation,
         common_columns: List[str],
         table_columns: Mapping[str, List[str]],
-        diff_keys: Mapping[str, duckdb.DuckDBPyRelation],
+        diff_keys: Optional[Mapping[str, duckdb.DuckDBPyRelation]],
         diff_lookup: Optional[Dict[str, int]],
     ) -> None:
         self.connection = connection
@@ -74,6 +74,10 @@ class Comparison:
         )
         self.common_columns = common_columns
         self.table_columns = table_columns
+        if materialize_mode == "all" and diff_keys is None:
+            raise h.ComparisonError(
+                "Diff keys are required when materialize='all'."
+            )
         self.diff_keys = diff_keys
         self._closed = False
 
@@ -176,18 +180,18 @@ class Comparison:
         unmatched_rows = not h.relation_is_empty(
             self.unmatched_rows.filter(f"{h.ident('n_unmatched')} > 0")
         )
-        class_a_col = f"class_{self.table_id[0]}"
-        class_b_col = f"class_{self.table_id[1]}"
-        class_diffs = not h.relation_is_empty(
+        type_a_col = f"type_{self.table_id[0]}"
+        type_b_col = f"type_{self.table_id[1]}"
+        type_diffs = not h.relation_is_empty(
             self.intersection.filter(
-                f"{h.ident(class_a_col)} IS DISTINCT FROM {h.ident(class_b_col)}"
+                f"{h.ident(type_a_col)} IS DISTINCT FROM {h.ident(type_b_col)}"
             )
         )
         rows = [
             ("value_diffs", value_diffs),
             ("unmatched_cols", unmatched_cols),
             ("unmatched_rows", unmatched_rows),
-            ("class_diffs", class_diffs),
+            ("type_diffs", type_diffs),
         ]
         schema = [("difference", "VARCHAR"), ("found", "BOOLEAN")]
         summary_rel = h.build_rows_relation(
@@ -223,7 +227,7 @@ def compare(
     }
     h.validate_columns_exist(by_columns, handles, clean_ids)
     if not coerce:
-        h.validate_class_compatibility(handles, clean_ids)
+        h.validate_type_compatibility(handles, clean_ids)
     for identifier in clean_ids:
         h.assert_unique_by(conn, handles[identifier], by_columns, identifier)
 
@@ -240,19 +244,22 @@ def compare(
     unmatched_cols = c.build_unmatched_cols(
         conn, handles, clean_ids, materialize_summary
     )
-    diff_keys = c.compute_diff_keys(
-        conn,
-        handles,
-        clean_ids,
-        by_columns,
-        value_columns,
-        allow_both_na,
-        materialize_keys,
-    )
+    diff_keys = None
+    if materialize_keys:
+        diff_keys = c.compute_diff_keys(
+            conn,
+            handles,
+            clean_ids,
+            by_columns,
+            value_columns,
+            allow_both_na,
+        )
     intersection, diff_lookup = c.build_intersection_frame(
         value_columns,
         handles,
         clean_ids,
+        by_columns,
+        allow_both_na,
         diff_keys,
         conn,
         materialize_summary,

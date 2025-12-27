@@ -28,8 +28,9 @@ def value_diffs_stacked(
     if not diff_cols:
         return _empty_value_diffs_stacked(comparison, selected)
     if comparison._materialize_mode == "all":
+        diff_keys = h.require_diff_keys(comparison)
         selects = [
-            stack_value_diffs_sql(comparison, column, comparison.diff_keys[column])
+            stack_value_diffs_sql(comparison, column, diff_keys[column])
             for column in diff_cols
         ]
         sql = " UNION ALL ".join(selects)
@@ -42,7 +43,8 @@ def value_diffs_stacked(
 def _value_diffs_with_keys(
     comparison: "Comparison", target_col: str
 ) -> duckdb.DuckDBPyRelation:
-    key_relation = comparison.diff_keys[target_col]
+    diff_keys = h.require_diff_keys(comparison)
+    key_relation = diff_keys[target_col]
     table_a, table_b = comparison.table_id
     select_cols = [
         f"{h.col('a', target_col)} AS {h.ident(f'{target_col}_{table_a}')}",
