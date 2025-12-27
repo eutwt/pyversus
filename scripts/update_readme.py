@@ -14,11 +14,7 @@ def _resolve_quarto() -> str:
     if candidate is not None:
         return candidate
     local_quarto = (
-        Path(__file__).resolve().parents[1]
-        / ".tools"
-        / "quarto"
-        / "bin"
-        / "quarto"
+        Path(__file__).resolve().parents[1] / ".tools" / "quarto" / "bin" / "quarto"
     )
     if local_quarto.exists():
         return str(local_quarto)
