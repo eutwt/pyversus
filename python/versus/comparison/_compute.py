@@ -122,10 +122,10 @@ def _build_intersection_frame_with_keys(
         relation_sql = diff_keys[column].sql_query()
         return f"""
         SELECT
-          {h.sql_literal(column)} AS {h.ident('column')},
-          COUNT(*) AS {h.ident('n_diffs')},
-          {h.sql_literal(handles[first].types[column])} AS {h.ident(f'type_{first}')},
-          {h.sql_literal(handles[second].types[column])} AS {h.ident(f'type_{second}')}
+          {h.sql_literal(column)} AS {h.ident("column")},
+          COUNT(*) AS {h.ident("n_diffs")},
+          {h.sql_literal(handles[first].types[column])} AS {h.ident(f"type_{first}")},
+          {h.sql_literal(handles[second].types[column])} AS {h.ident(f"type_{second}")}
         FROM
           ({relation_sql}) AS diff_keys
         """
@@ -185,10 +185,10 @@ def _build_intersection_frame_inline(
         {join_sql}
     )
     SELECT
-      item.{h.ident('column')} AS {h.ident('column')},
-      item.{h.ident('n_diffs')} AS {h.ident('n_diffs')},
-      item.{h.ident(f'type_{first}')} AS {h.ident(f'type_{first}')},
-      item.{h.ident(f'type_{second}')} AS {h.ident(f'type_{second}')}
+      item.{h.ident("column")} AS {h.ident("column")},
+      item.{h.ident("n_diffs")} AS {h.ident("n_diffs")},
+      item.{h.ident(f"type_{first}")} AS {h.ident(f"type_{first}")},
+      item.{h.ident(f"type_{second}")} AS {h.ident(f"type_{second}")}
     FROM
       counts,
       UNNEST(

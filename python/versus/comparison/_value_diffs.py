@@ -56,7 +56,7 @@ def _value_diffs_with_keys(
     key_sql = key_relation.sql_query()
     sql = f"""
     SELECT
-      {', '.join(select_cols)}
+      {", ".join(select_cols)}
     FROM
       ({key_sql}) AS keys
       JOIN {h.ident(comparison._handles[table_a].name)} AS a
@@ -82,7 +82,7 @@ def _value_diffs_inline(
     predicate = h.diff_predicate(target_col, comparison.allow_both_na, "a", "b")
     sql = f"""
     SELECT
-      {', '.join(select_cols)}
+      {", ".join(select_cols)}
     FROM
       {join_sql}
     WHERE
@@ -109,7 +109,7 @@ def stack_value_diffs_sql(
     key_sql = key_relation.sql_query()
     return f"""
     SELECT
-      {', '.join(select_parts)}
+      {", ".join(select_parts)}
     FROM
       ({key_sql}) AS keys
       JOIN {h.ident(comparison._handles[table_a].name)} AS a
@@ -133,7 +133,7 @@ def stack_value_diffs_inline_sql(comparison: "Comparison", column: str) -> str:
     predicate = h.diff_predicate(column, comparison.allow_both_na, "a", "b")
     return f"""
     SELECT
-      {', '.join(select_parts)}
+      {", ".join(select_parts)}
     FROM
       {join_sql}
     WHERE
