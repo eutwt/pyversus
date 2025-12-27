@@ -1,15 +1,18 @@
 ---
+engine: knitr
 format:
   gfm:
     standalone: false
 title: "pyversus"
 title-block: false
-execute:
-  echo: true
-  warning: false
-  message: false
-  error: false
-  eval: true
+knitr:
+  opts_chunk:
+    comment: "#"
+    echo: true
+    warning: false
+    message: false
+    error: false
+    eval: true
 ---
 `pyversus` (imported as `versus`) is a Python package that mirrors the the original R library while pushing
 all heavy work into DuckDB. Use it to compare two duckdb relations (tables, views,

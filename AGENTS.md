@@ -76,8 +76,9 @@ future contributors can work without hunting through old context.
   `.git/hooks/pre-push`) so Ruff formatting, `pytest`, and `ty check`
   finish successfully. The script aborts pushes if any step fails.
 - The `README.md` Quick Start tables are rendered from `README.qmd` via
-  Quarto (do not edit them by hand). Whenever a change affects any helper
-  output (or periodically to keep outputs current), run
+  Quarto's knitr engine (requires R plus the `knitr` and `reticulate`
+  packages; do not edit outputs by hand). Whenever a change affects any
+  helper output (or periodically to keep outputs current), run
   `quarto render README.qmd --to gfm` (or `uv run python scripts/update_readme.py`)
   and commit the result so the documentation shows real data.
 
