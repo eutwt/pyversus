@@ -1,8 +1,4 @@
 
-<!-- README.md now describes the Python package -->
-
-# versus (Python)
-
 `versus` is a Python package that mirrors the the original R library while pushing
 all heavy work into DuckDB. Use it to compare two duckdb relations (tables, views,
 or queries) without materializing them. The `compare()` function gives a `Comparison`
@@ -38,17 +34,17 @@ rel_b = examples.example_cars_b(con)
 comparison = compare(rel_a, rel_b, by="car", connection=con)
 comparison
 # Comparison(tables=
-# ┌─────────┬───────┬───────┐
-# │  table  │ nrow  │ ncol  │
-# │ varchar │ int64 │ int64 │
-# ├─────────┼───────┼───────┤
-# │ a       │     9 │     9 │
-# │ b       │    10 │     9 │
-# └─────────┴───────┴───────┘
+# ┌────────────┬───────┬───────┐
+# │ table_name │ nrow  │ ncol  │
+# │  varchar   │ int64 │ int64 │
+# ├────────────┼───────┼───────┤
+# │ a          │     9 │     9 │
+# │ b          │    10 │     9 │
+# └────────────┴───────┴───────┘
 # 
 # by=
 # ┌─────────┬─────────┬─────────┐
-# │ column  │ class_a │ class_b │
+# │ column  │ type_a  │ type_b  │
 # │ varchar │ varchar │ varchar │
 # ├─────────┼─────────┼─────────┤
 # │ car     │ VARCHAR │ VARCHAR │
@@ -56,7 +52,7 @@ comparison
 # 
 # intersection=
 # ┌─────────┬─────────┬──────────────┬──────────────┐
-# │ column  │ n_diffs │   class_a    │   class_b    │
+# │ column  │ n_diffs │    type_a    │    type_b    │
 # │ varchar │  int64  │   varchar    │   varchar    │
 # ├─────────┼─────────┼──────────────┼──────────────┤
 # │ mpg     │       2 │ DECIMAL(3,1) │ DECIMAL(3,1) │
@@ -69,22 +65,22 @@ comparison
 # └─────────┴─────────┴──────────────┴──────────────┘
 # 
 # unmatched_cols=
-# ┌─────────┬─────────┬─────────┐
-# │  table  │ column  │  class  │
-# │ varchar │ varchar │ varchar │
-# ├─────────┼─────────┼─────────┤
-# │ a       │ am      │ INTEGER │
-# │ b       │ carb    │ INTEGER │
-# └─────────┴─────────┴─────────┘
+# ┌────────────┬─────────┬─────────┐
+# │ table_name │ column  │  type   │
+# │  varchar   │ varchar │ varchar │
+# ├────────────┼─────────┼─────────┤
+# │ a          │ am      │ INTEGER │
+# │ b          │ carb    │ INTEGER │
+# └────────────┴─────────┴─────────┘
 # 
 # unmatched_rows=
-# ┌─────────┬─────────────┐
-# │  table  │ n_unmatched │
-# │ varchar │    int64    │
-# ├─────────┼─────────────┤
-# │ a       │           1 │
-# │ b       │           2 │
-# └─────────┴─────────────┘
+# ┌────────────┬─────────────┐
+# │ table_name │ n_unmatched │
+# │  varchar   │    int64    │
+# ├────────────┼─────────────┤
+# │ a          │           1 │
+# │ b          │           2 │
+# └────────────┴─────────────┘
 # 
 # )
 
@@ -120,15 +116,15 @@ comparison.weave_diffs_wide(["mpg", "disp"])
 # └────────────────┴──────────────┴──────────────┴───────┴────────┴────────┴───────┴──────────────┴──────────────┴───────┘
 
 comparison.weave_diffs_long("disp")
-# ┌─────────┬────────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
-# │  table  │      car       │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │
-# │ varchar │    varchar     │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
-# ├─────────┼────────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤
-# │ a       │ Datsun 710     │         22.8 │  NULL │   109 │    93 │         3.85 │         2.32 │     1 │
-# │ b       │ Datsun 710     │         22.8 │  NULL │   108 │    93 │         3.85 │         2.32 │     1 │
-# │ a       │ Hornet 4 Drive │         21.4 │     6 │   259 │   110 │         3.08 │         3.22 │     1 │
-# │ b       │ Hornet 4 Drive │         21.4 │     6 │   258 │   110 │         3.08 │         3.22 │     1 │
-# └─────────┴────────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
+# ┌────────────┬────────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
+# │ table_name │      car       │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │
+# │  varchar   │    varchar     │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
+# ├────────────┼────────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤
+# │ a          │ Datsun 710     │         22.8 │  NULL │   109 │    93 │         3.85 │         2.32 │     1 │
+# │ b          │ Datsun 710     │         22.8 │  NULL │   108 │    93 │         3.85 │         2.32 │     1 │
+# │ a          │ Hornet 4 Drive │         21.4 │     6 │   259 │   110 │         3.08 │         3.22 │     1 │
+# │ b          │ Hornet 4 Drive │         21.4 │     6 │   258 │   110 │         3.08 │         3.22 │     1 │
+# └────────────┴────────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
 
 comparison.slice_diffs("a", "mpg")
 # ┌────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┬───────┐
@@ -152,14 +148,14 @@ comparison.slice_unmatched("b")
 # └────────────┴──────────────┴──────────────┴───────┴───────┴───────┴───────┴──────────────┴───────┘
 
 comparison.slice_unmatched_both()
-# ┌─────────┬────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
-# │  table  │    car     │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │
-# │ varchar │  varchar   │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
-# ├─────────┼────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤
-# │ a       │ Mazda RX4  │         21.0 │     6 │   160 │   110 │         3.90 │         2.62 │     0 │
-# │ b       │ Merc 280C  │         17.8 │     6 │   168 │   123 │         3.92 │         3.44 │     1 │
-# │ b       │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │
-# └─────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
+# ┌────────────┬────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
+# │ table_name │    car     │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │
+# │  varchar   │  varchar   │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
+# ├────────────┼────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤
+# │ a          │ Mazda RX4  │         21.0 │     6 │   160 │   110 │         3.90 │         2.62 │     0 │
+# │ b          │ Merc 280C  │         17.8 │     6 │   168 │   123 │         3.92 │         3.44 │     1 │
+# │ b          │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │
+# └────────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
 
 comparison.summary()
 # ┌────────────────┬─────────┐
@@ -169,7 +165,7 @@ comparison.summary()
 # │ value_diffs    │ true    │
 # │ unmatched_cols │ true    │
 # │ unmatched_rows │ true    │
-# │ class_diffs    │ false   │
+# │ type_diffs     │ false   │
 # └────────────────┴─────────┘
 ```
 
@@ -197,24 +193,30 @@ comparison.summary()
 
 ### Materialization
 
-When you call `compare()`, Versus defines a few summary tables for the
-printed output (`tables`, `by`, `intersection`, `unmatched_cols`,
-`unmatched_rows`). It also defines the key relations used to fetch row‑level
-data (diff keys and unmatched keys). These are DuckDB relations; they are
-computed when you evaluate them unless they were materialized.
+When you call `compare()`, Versus defines summary tables for the printed
+output (`tables`, `by`, `intersection`, `unmatched_cols`, `unmatched_rows`).
+These are relation-like wrappers that materialize themselves on print.
+The input tables are never materialized by Versus in any mode; they stay
+as DuckDB relations and are queried lazily.
 
-- `materialize="all"`: store both the printed summary tables and the diff
-  key tables as temp tables. This is fastest if you will call row-level
-  helpers multiple times.
-- `materialize="summary"`: store the lightweight summary tables (`tables`,
-  `by`, `intersection`, `unmatched_cols`, `unmatched_rows`). Counts are
-  computed during `compare()` but diff key tables stay lazy until you ask for
-  row-level data.
-- `materialize="lazy"`: do not store summary tables up front. The first time
-  you print the comparison, those summary tables are materialized and reused.
-  Diff key tables stay lazy until you ask for row-level data.
+In full materialization, Versus also builds diff key relations: per-column
+relations of `by` keys where values differ. Those precomputed keys let
+row-level helpers fetch the exact differing rows quickly via joins, which
+can be faster when you call multiple helpers.
+Other modes skip diff keys and compute diff counts inline.
+
+- `materialize="all"`: store the summary tables and diff key tables as temp
+  tables. This is fastest if you will call row-level helpers multiple times.
+- `materialize="summary"`: store only the summary tables. Row-level helpers
+  run inline predicates and return lazy relations.
+- `materialize="none"`: do not store anything up front. Printing the
+  comparison materializes the summary tables and enables diff-count and
+  unmatched-row optimizations for later row-level helpers, but helper
+  outputs stay lazy.
+
+Row-level helper outputs are always returned as DuckDB relations and are
+never materialized automatically; materialize them explicitly if needed.
 
 The package exposes the same high-level helpers as the R version
 (`value_diffs*`, `weave_diffs*`, `slice_*`), so if you already know the
 R API you can continue working the same way here.
-# pyversus

@@ -10,9 +10,9 @@ future contributors can work without hunting through old context.
 - `python/versus/`
   - `__init__.py` – exports `compare`, `Comparison`,
     `ComparisonError`, and the `examples` module.
-  - `comparison.py` – core implementation. Keeps DuckDB relations lazy
-    until the concise comparison representation is materialized, then
-    stores only metadata and key views in `Comparison`.
+  - `comparison/` – core implementation. `_core.py` defines `compare`
+    and `Comparison`, while helpers in `_helpers.py` keep DuckDB
+    relations lazy until materialization.
   - `examples.py` – exposes the original `example_cars_*` tables as
     DuckDB relations for demos/tests.
 - `tests/` – pytest suite mirroring the behavior covered by the R
@@ -29,19 +29,23 @@ future contributors can work without hunting through old context.
 - The `Comparison` object stores:
   - table metadata (`tables`, `by`, `unmatched_cols`, `intersection`)
   - internal handles to the temp views plus a mapping of column name to
-    diff-key relation (available via `Comparison.diff_rows` even though
-    the intersection table only shows counts) so helper methods can
-    fetch diff keys without recomputing predicates
+    diff-key relation that is used for `materialize="all"` row helpers;
+    other materialization modes run predicates inline instead
   - `Comparison.inputs`, a mapping from table id to the input relations
     for direct querying
-  - lookup tables for unmatched rows/diff counts
+  - lookup maps for unmatched rows/diff counts that are populated when
+    summary tables are materialized (via `materialize="all"`,
+    `materialize="summary"`, or printing). The intersection and diff
+    counts are always materialized together, and both lookups are
+    complete (with zeroes for no unmatched rows or diffs).
 - Helper methods (`value_diffs`, `slice_diffs`, `weave_diffs_*`,
   `slice_unmatched*`) push their work back into DuckDB and return
   `DuckDBPyRelation` objects, keeping the API fast and memory-light even
   for large tables. The summary relations shown in `Comparison.__repr__`
-  are materialized by default so printing is cheap; pass
-  `materialize=False` to `compare()` if you want them lazy instead.
-- Duplicate `by` keys are detected early (`ensure_unique_by`) and raise
+  are lazy wrappers around DuckDB relations; printing them materializes
+  on demand (unless already stored). Use `materialize="none"` to keep
+  those summary tables lazy until printed.
+- Duplicate `by` keys are detected early (`assert_unique_by`) and raise
   `ComparisonError` listing the conflicting key values.
 - Temporary tables/views are created via `CREATE TEMP ...` with unique
   names scoped to the connection, so they never leak outside the current
@@ -84,6 +88,18 @@ future contributors can work without hunting through old context.
 - Avoid materializing DuckDB relations into Python data structures
   unless absolutely necessary; keep as much work inside DuckDB as
   possible.
+- Prefer returning `DuckDBPyRelation` objects from internal helpers and
+  intermediate steps over passing table names or SQL strings around, so
+  we keep a consistent relation-first flow.
+- Never add untracked files to git unless the user explicitly confirms
+  they should be included.
+- Prefer functional-style list construction (comprehensions or generator
+  joins) over mutating lists in loops where feasible.
+- Avoid multi-line expressions directly after `return`; assign to a
+  local first for readability.
+- Format multi-line SQL strings using Mozilla SQL style (each clause on
+  its own line with indented bodies). Single-line SQL literals can stay
+  compact.
 - Ensure new helpers return relations ordered similarly to the R version
   (by columns first, then the requested fields).
 

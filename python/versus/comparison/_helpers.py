@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -13,6 +14,7 @@ from typing import (
     Sequence,
     Tuple,
     Union,
+    cast,
 )
 
 import duckdb
@@ -64,14 +66,59 @@ class VersusConn:
         return getattr(self._connection, name)
 
 
+class SummaryRelation:
+    def __init__(
+        self,
+        conn: VersusConn,
+        relation: duckdb.DuckDBPyRelation,
+        *,
+        materialized: bool,
+        on_materialize: Optional[Callable[[duckdb.DuckDBPyRelation], None]] = None,
+    ) -> None:
+        self._conn = conn
+        self._relation = relation
+        self.materialized = materialized
+        self._on_materialize = on_materialize
+        if self.materialized and self._on_materialize is not None:
+            self._on_materialize(self._relation)
+
+    def materialize(self) -> None:
+        if self.materialized:
+            return
+        self._relation = finalize_relation(
+            self._conn, self._relation.sql_query(), materialize=True
+        )
+        self.materialized = True
+        if self._on_materialize is not None:
+            self._on_materialize(self._relation)
+
+    @property
+    def relation(self) -> duckdb.DuckDBPyRelation:
+        return self._relation
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._relation, name)
+
+    def __repr__(self) -> str:
+        self.materialize()
+        return repr(self._relation)
+
+    def __str__(self) -> str:
+        self.materialize()
+        return str(self._relation)
+
+    def __iter__(self) -> Any:
+        return iter(cast(Any, self._relation))
+
+
 # --------------- Core-only helpers
 def resolve_materialize(materialize: str) -> Tuple[bool, bool]:
     if not isinstance(materialize, str) or materialize not in {
         "all",
         "summary",
-        "lazy",
+        "none",
     }:
-        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'lazy'")
+        raise ComparisonError("`materialize` must be one of: 'all', 'summary', 'none'")
     materialize_summary = materialize in {"all", "summary"}
     materialize_keys = materialize == "all"
     return materialize_summary, materialize_keys
@@ -107,7 +154,7 @@ def validate_columns_exist(
         )
 
 
-def validate_class_compatibility(
+def validate_type_compatibility(
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
 ) -> None:
@@ -117,7 +164,7 @@ def validate_class_compatibility(
         type_b = handles[table_id[1]].types.get(column)
         if type_a != type_b:
             raise ComparisonError(
-                f"`coerce=False` requires compatible classes. Column `{column}` has types `{type_a}` vs `{type_b}`."
+                f"`coerce=False` requires compatible types. Column `{column}` has types `{type_a}` vs `{type_b}`."
             )
 
 
@@ -129,11 +176,17 @@ def assert_unique_by(
 ) -> None:
     cols = select_cols(by_columns, alias="t")
     sql = f"""
-    SELECT {cols}, COUNT(*) AS n
-    FROM {ident(handle.name)} AS t
-    GROUP BY {cols}
-    HAVING COUNT(*) > 1
-    LIMIT 1
+    SELECT
+      {cols},
+      COUNT(*) AS n
+    FROM
+      {ident(handle.name)} AS t
+    GROUP BY
+      {cols}
+    HAVING
+      COUNT(*) > 1
+    LIMIT
+      1
     """
     rel = run_sql(conn, sql)
     rows = rel.fetchall()
@@ -249,14 +302,16 @@ def register_input_view(
     conn: VersusConn,
     source: Any,
     label: str,
+    *,
+    connection_supplied: bool,
 ) -> _TableHandle:
     name = f"__versus_{label}_{uuid.uuid4().hex}"
     display = "relation"
+    base_name = None
     if isinstance(source, duckdb.DuckDBPyRelation):
         base_name = f"{name}_base"
         source.to_view(base_name, replace=True)
         source_ref = ident(base_name)
-        conn.versus.views.append(base_name)
         display = getattr(source, "alias", "relation")
     elif isinstance(source, str):
         source_ref = f"({source})"
@@ -264,9 +319,29 @@ def register_input_view(
     else:
         raise ComparisonError("Inputs must be DuckDB relations or SQL queries/views.")
 
-    conn.execute(
-        f"CREATE OR REPLACE TEMP VIEW {ident(name)} AS SELECT * FROM {source_ref}"
-    )
+    try:
+        conn.execute(
+            f"CREATE OR REPLACE TEMP VIEW {ident(name)} AS SELECT * FROM {source_ref}"
+        )
+    except duckdb.Error as exc:
+        if base_name is not None and base_name in str(exc):
+            arg_name = f"table_{label}"
+            if connection_supplied:
+                hint = (
+                    f"`{arg_name}` appears to be bound to a different DuckDB "
+                    "connection than the one passed to `compare()`. Pass the same "
+                    "connection that created the relations via `connection=...`."
+                )
+            else:
+                hint = (
+                    f"`{arg_name}` appears to be bound to a non-default DuckDB "
+                    "connection. Pass that connection to `compare()` via "
+                    "`connection=...`."
+                )
+            raise ComparisonError(hint) from exc
+        raise
+    if base_name is not None:
+        conn.versus.views.append(base_name)
     conn.versus.views.append(name)
 
     columns, types = describe_view(conn, name)
@@ -321,8 +396,9 @@ def join_clause(
 ) -> str:
     join_condition_sql = join_condition(by_columns, "a", "b")
     return (
-        f"FROM {ident(handles[table_id[0]].name)} AS a "
-        f"INNER JOIN {ident(handles[table_id[1]].name)} AS b ON {join_condition_sql}"
+        f"{ident(handles[table_id[0]].name)} AS a\n"
+        f"  INNER JOIN {ident(handles[table_id[1]].name)} AS b\n"
+        f"    ON {join_condition_sql}"
     )
 
 
@@ -348,12 +424,18 @@ def sql_literal(value: Any) -> str:
 
 
 # --------------- Comparison-specific SQL assembly
+def require_diff_keys(
+    comparison: "Comparison",
+) -> Mapping[str, duckdb.DuckDBPyRelation]:
+    diff_keys = comparison.diff_keys
+    if diff_keys is None:
+        raise ComparisonError("Diff keys are only available for materialize='all'.")
+    return diff_keys
+
+
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
-    selects = []
-    for column in columns:
-        key_sql = comparison.diff_keys[column].sql_query()
-        selects.append(key_sql)
-    return " UNION DISTINCT ".join(selects)
+    diff_keys = require_diff_keys(comparison)
+    return " UNION DISTINCT ".join(diff_keys[column].sql_query() for column in columns)
 
 
 def fetch_rows_by_keys(
@@ -370,10 +452,12 @@ def fetch_rows_by_keys(
         select_cols_sql = select_cols(columns, alias="base")
     join_condition_sql = join_condition(comparison.by_columns, "keys", "base")
     sql = f"""
-    SELECT {select_cols_sql}
-    FROM ({key_sql}) AS keys
-    JOIN {ident(comparison._handles[table].name)} AS base
-      ON {join_condition_sql}
+    SELECT
+      {select_cols_sql}
+    FROM
+      ({key_sql}) AS keys
+      JOIN {ident(comparison._handles[table].name)} AS base
+        ON {join_condition_sql}
     """
     return run_sql(comparison.connection, sql)
 
@@ -386,8 +470,24 @@ def run_sql(
     return conn.sql(sql)
 
 
-def relation_is_empty(relation: duckdb.DuckDBPyRelation) -> bool:
+def relation_is_empty(
+    relation: Union[duckdb.DuckDBPyRelation, SummaryRelation],
+) -> bool:
     return relation.limit(1).fetchone() is None
+
+
+def diff_lookup_from_intersection(
+    relation: duckdb.DuckDBPyRelation,
+) -> Dict[str, int]:
+    rows = relation.fetchall()
+    return {row[0]: int(row[1]) for row in rows}
+
+
+def unmatched_lookup_from_rows(
+    relation: duckdb.DuckDBPyRelation,
+) -> Dict[str, int]:
+    rows = relation.fetchall()
+    return {row[0]: int(row[1]) for row in rows}
 
 
 def rows_relation_sql(
@@ -398,9 +498,9 @@ def rows_relation_sql(
             f"CAST(NULL AS {dtype}) AS {ident(name)}" for name, dtype in schema
         )
         return f"SELECT {select_list} LIMIT 0"
-    value_rows = []
-    for row in rows:
-        value_rows.append("(" + ", ".join(sql_literal(value) for value in row) + ")")
+    value_rows = [
+        "(" + ", ".join(sql_literal(value) for value in row) + ")" for row in rows
+    ]
     alias_cols = ", ".join(f"col{i}" for i in range(len(schema)))
     select_list = ", ".join(
         f"CAST(col{i} AS {dtype}) AS {ident(name)}"
@@ -450,9 +550,12 @@ def select_zero_from_table(
     table: str,
     columns: Optional[Sequence[str]] = None,
 ) -> duckdb.DuckDBPyRelation:
+    handle = comparison._handles[table]
     if columns is None:
-        return comparison._handles[table].limit(0)
+        sql = f"SELECT * FROM {ident(handle.name)} LIMIT 0"
+        return run_sql(comparison.connection, sql)
     if not columns:
         raise ComparisonError("Column list must be non-empty")
     select_cols_sql = select_cols(columns)
-    return comparison._handles[table].project(select_cols_sql).limit(0)
+    sql = f"SELECT {select_cols_sql} FROM {ident(handle.name)} LIMIT 0"
+    return run_sql(comparison.connection, sql)

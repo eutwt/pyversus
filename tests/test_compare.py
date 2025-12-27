@@ -32,22 +32,28 @@ def build_connection():
     con = duckdb.connect()
     rel_a = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (1, 10, 'x'),
-                (2, 20, 'y'),
-                (3, 30, 'z')
-        ) AS t(id, value, extra)
+              (1, 10, 'x'),
+              (2, 20, 'y'),
+              (3, 30, 'z')
+          ) AS t(id, value, extra)
         """
     )
     rel_b = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (2, 22, 'y'),
-                (3, 30, 'z'),
-                (4, 40, 'w')
-        ) AS t(id, value, extra)
+              (2, 22, 'y'),
+              (3, 30, 'z'),
+              (4, 40, 'w')
+          ) AS t(id, value, extra)
         """
     )
     return con, rel_a, rel_b
@@ -62,10 +68,14 @@ def comparison_from_sql(sql_a: str, sql_b: str, *, by, **kwargs):
 
 def identical_comparison():
     sql = """
-        SELECT * FROM (
-            VALUES (1, 10),
-                   (2, 20)
-        ) AS t(id, value)
+        SELECT
+          *
+        FROM
+          (
+            VALUES
+              (1, 10),
+              (2, 20)
+          ) AS t(id, value)
     """
     return comparison_from_sql(sql, sql, by=["id"])
 
@@ -112,24 +122,79 @@ def test_slice_unmatched():
     comp.close()
 
 
+@pytest.mark.parametrize("materialize", ["all", "summary", "none"])
+def test_materialize_modes_helpers(materialize):
+    con, rel_a, rel_b = build_connection()
+    comp = compare(rel_a, rel_b, by=["id"], connection=con, materialize=materialize)
+    assert rel_values(comp.tables, "nrow") == [3, 3]
+    diffs_row = rel_dicts(comp.intersection.filter("\"column\" = 'value'"))[0]
+    assert diffs_row["n_diffs"] == 1
+    diffs = comp.value_diffs("value")
+    assert rel_first(diffs, "id") == 2
+    stacked = comp.value_diffs_stacked(["value"])
+    assert rel_first(stacked, "column") == "value"
+    rows = comp.slice_diffs("a", ["value"])
+    assert rel_first(rows, "id") == 2
+    wide = comp.weave_diffs_wide(["value"])
+    assert "value_a" in wide.columns and "value_b" in wide.columns
+    long = comp.weave_diffs_long(["value"])
+    assert "value" in long.columns
+    unmatched = comp.slice_unmatched("a")
+    assert rel_first(unmatched, "id") == 1
+    unmatched_both = comp.slice_unmatched_both()
+    assert "table_name" in unmatched_both.columns
+    comp.close()
+    con.close()
+
+
+@pytest.mark.parametrize(
+    "materialize, summary_materialized, has_diff_keys",
+    [
+        ("all", True, True),
+        ("summary", True, False),
+        ("none", False, False),
+    ],
+)
+def test_materialize_modes_state(materialize, summary_materialized, has_diff_keys):
+    con, rel_a, rel_b = build_connection()
+    comp = compare(rel_a, rel_b, by=["id"], connection=con, materialize=materialize)
+    assert comp.intersection.materialized is summary_materialized
+    assert comp.unmatched_rows.materialized is summary_materialized
+    assert (comp.diff_keys is not None) is has_diff_keys
+    if materialize == "none":
+        assert comp._diff_lookup is None
+        assert comp._unmatched_lookup is None
+        _ = str(comp)
+        assert comp._diff_lookup is not None
+        assert comp._unmatched_lookup is not None
+    comp.close()
+    con.close()
+
+
 def test_summary_reports_difference_categories():
     con = duckdb.connect()
     rel_a = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (1, 10, CAST(1.5 AS DOUBLE), 'only_a'),
-                (2, 20, CAST(2.5 AS DOUBLE), 'only_a')
-        ) AS t(id, value, note, extra)
+              (1, 10, CAST(1.5 AS DOUBLE), 'only_a'),
+              (2, 20, CAST(2.5 AS DOUBLE), 'only_a')
+          ) AS t(id, value, note, extra)
         """
     )
     rel_b = con.sql(
         """
-        SELECT * FROM (
+        SELECT
+          *
+        FROM
+          (
             VALUES
-                (1, 99, 1),
-                (3, 30, 2)
-        ) AS t(id, value, note)
+              (1, 99, 1),
+              (3, 30, 2)
+          ) AS t(id, value, note)
         """
     )
     comp = compare(rel_a, rel_b, by=["id"], connection=con)
@@ -138,7 +203,7 @@ def test_summary_reports_difference_categories():
         ("value_diffs", True),
         ("unmatched_cols", True),
         ("unmatched_rows", True),
-        ("class_diffs", True),
+        ("type_diffs", True),
     ]
     comp.close()
 
@@ -162,17 +227,25 @@ def test_duplicate_by_raises():
     con = duckdb.connect()
     rel_dup = con.sql(
         """
-        SELECT * FROM (
-            VALUES (1, 10),
-                   (1, 11)
-        ) AS t(id, value)
+        SELECT
+          *
+        FROM
+          (
+            VALUES
+              (1, 10),
+              (1, 11)
+          ) AS t(id, value)
         """
     )
     rel_other = con.sql(
         """
-        SELECT * FROM (
-            VALUES (1, 10)
-        ) AS t(id, value)
+        SELECT
+          *
+        FROM
+          (
+            VALUES
+              (1, 10)
+          ) AS t(id, value)
         """
     )
     with pytest.raises(ComparisonError):
@@ -198,6 +271,22 @@ def test_compare_errors_when_by_column_missing():
     rel_b = con.sql("SELECT 1 AS other_id, 10 AS value")
     with pytest.raises(ComparisonError):
         compare(rel_a, rel_b, by=["id"], connection=con)
+
+
+def test_compare_errors_on_relations_from_non_default_connection():
+    default_conn = duckdb.connect()
+    other_conn = duckdb.connect()
+    original_default = duckdb.default_connection
+    setattr(duckdb, "default_connection", default_conn)
+    try:
+        rel_a = other_conn.sql("SELECT 1 AS id, 10 AS value")
+        rel_b = other_conn.sql("SELECT 1 AS id, 11 AS value")
+        with pytest.raises(ComparisonError, match="table_a"):
+            compare(rel_a, rel_b, by=["id"])
+    finally:
+        setattr(duckdb, "default_connection", original_default)
+        default_conn.close()
+        other_conn.close()
 
 
 def test_compare_errors_when_table_id_invalid_length():
@@ -233,17 +322,31 @@ def test_intersection_empty_when_no_value_columns():
     comp = comparison_from_sql(sql, sql, by=["id", "value"])
     assert comp.common_columns == []
     assert rel_height(comp.intersection) == 0
-    assert comp.intersection.columns == ["column", "n_diffs", "class_a", "class_b"]
+    assert comp.intersection.columns == ["column", "n_diffs", "type_a", "type_b"]
 
 
 def test_compare_coerce_false_detects_type_mismatch():
     with pytest.raises(ComparisonError):
         comparison_from_sql(
             """
-            SELECT * FROM (VALUES (1, 10), (2, 20)) AS t(id, value)
+            SELECT
+              *
+            FROM
+              (
+                VALUES
+                  (1, 10),
+                  (2, 20)
+              ) AS t(id, value)
             """,
             """
-            SELECT * FROM (VALUES (1, '10'), (2, '20')) AS t(id, value)
+            SELECT
+              *
+            FROM
+              (
+                VALUES
+                  (1, '10'),
+                  (2, '20')
+              ) AS t(id, value)
             """,
             by=["id"],
             coerce=False,
@@ -270,7 +373,8 @@ def test_compare_handles_no_common_rows():
     assert rel_values(comp.intersection, "n_diffs") == [0]
     assert rel_height(comp.unmatched_keys) == 4
     counts = {
-        (row["table"], row["n_unmatched"]) for row in rel_dicts(comp.unmatched_rows)
+        (row["table_name"], row["n_unmatched"])
+        for row in rel_dicts(comp.unmatched_rows)
     }
     assert counts == {("a", 2), ("b", 2)}
     comp.close()
@@ -282,7 +386,9 @@ def test_compare_reports_unmatched_columns():
         "SELECT * FROM (VALUES (1, 1, 88), (2, 3, 88)) AS t(id, value, extra_b)",
         by=["id"],
     )
-    cols = {(row["table"], row["column"]) for row in rel_dicts(comp.unmatched_cols)}
+    cols = {
+        (row["table_name"], row["column"]) for row in rel_dicts(comp.unmatched_cols)
+    }
     assert cols == {("a", "extra_a"), ("b", "extra_b")}
     comp.close()
 
@@ -332,7 +438,7 @@ def test_weave_long_empty_structure():
     comp = identical_comparison()
     rel = comp.weave_diffs_long(["value"])
     assert rel_height(rel) == 0
-    assert rel.columns == ["table", "id", "value"]
+    assert rel.columns == ["table_name", "id", "value"]
     assert rel_dtypes(rel) == ["VARCHAR", "INTEGER", "INTEGER"]
     comp.close()
 
@@ -350,7 +456,7 @@ def test_slice_unmatched_both_empty_structure():
     comp = identical_comparison()
     rel = comp.slice_unmatched_both()
     assert rel_height(rel) == 0
-    assert rel.columns == ["table", "id", "value"]
+    assert rel.columns == ["table_name", "id", "value"]
     assert rel_dtypes(rel) == ["VARCHAR", "INTEGER", "INTEGER"]
     comp.close()
 
@@ -370,8 +476,25 @@ def test_unmatched_keys_empty_structure():
 
 def test_unmatched_rows_empty_structure():
     comp = identical_comparison()
-    assert rel_height(comp.unmatched_rows) == 0
+    assert rel_height(comp.unmatched_rows) == 2
     assert rel_dtypes(comp.unmatched_rows) == ["VARCHAR", "BIGINT"]
+    counts = {
+        (row["table_name"], row["n_unmatched"])
+        for row in rel_dicts(comp.unmatched_rows)
+    }
+    assert counts == {("a", 0), ("b", 0)}
+    comp.close()
+
+
+def test_unmatched_rows_order_matches_table_id():
+    comp = comparison_from_sql(
+        "SELECT * FROM (VALUES (1, 10), (2, 20)) AS t(id, value)",
+        "SELECT * FROM (VALUES (2, 20), (3, 30)) AS t(id, value)",
+        by=["id"],
+        table_id=("right", "left"),
+    )
+    rows = rel_dicts(comp.unmatched_rows)
+    assert [row["table_name"] for row in rows] == ["right", "left"]
     comp.close()
 
 
