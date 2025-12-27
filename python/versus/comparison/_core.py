@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from typing import (
-    Any,
+    TYPE_CHECKING,
     Dict,
     List,
     Mapping,
     Optional,
     Sequence,
     Tuple,
-    TYPE_CHECKING,
     Union,
 )
 
