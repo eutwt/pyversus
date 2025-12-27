@@ -1,6 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 try:
     from typing import Literal
@@ -13,6 +23,9 @@ from . import _compute as c
 from . import _helpers as h
 from . import _slices, _value_diffs, _weave
 
+if TYPE_CHECKING:  # pragma: no cover
+    import pandas
+    import polars
 
 class Comparison:
     """In-memory description of how two relations differ.
@@ -474,8 +487,12 @@ class Comparison:
 
 
 def compare(
-    table_a: Any,
-    table_b: Any,
+    table_a: Union[
+        duckdb.DuckDBPyRelation, str, "pandas.DataFrame", "polars.DataFrame"
+    ],
+    table_b: Union[
+        duckdb.DuckDBPyRelation, str, "pandas.DataFrame", "polars.DataFrame"
+    ],
     *,
     by: Sequence[str],
     allow_both_na: bool = True,
@@ -488,8 +505,8 @@ def compare(
 
     Parameters
     ----------
-    table_a, table_b : Any
-        DuckDB relations or SQL strings to compare.
+    table_a, table_b : DuckDBPyRelation, str, pandas.DataFrame, or polars.DataFrame
+        DuckDB relations, SQL strings/views, or pandas/polars DataFrames to compare.
     by : sequence of str
         Column names that uniquely identify rows.
     allow_both_na : bool, default True
