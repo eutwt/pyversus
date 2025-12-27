@@ -166,22 +166,17 @@ def _build_intersection_frame_inline(
         predicate = h.diff_predicate(column, allow_both_na, "a", "b")
         count_exprs.append(f"COUNT(*) FILTER (WHERE {predicate}) AS {h.ident(alias)}")
     count_columns = ",\n      ".join(count_exprs)
-    count_refs = ", ".join(f"counts.{h.ident(alias)}" for alias in count_aliases)
-    column_literals = ", ".join(h.sql_literal(column) for column in value_columns)
-    type_a_literals = ", ".join(
-        h.sql_literal(handles[first].types[column]) for column in value_columns
-    )
-    type_b_literals = ", ".join(
-        h.sql_literal(handles[second].types[column]) for column in value_columns
-    )
-    alias_list = ", ".join(
-        [
-            h.ident("column"),
-            h.ident("n_diffs"),
-            h.ident(f"type_{first}"),
-            h.ident(f"type_{second}"),
-        ]
-    )
+    struct_rows = []
+    for index, column in enumerate(value_columns):
+        struct_rows.append(
+            f"struct_pack("
+            f"{h.ident('column')} := {h.sql_literal(column)}, "
+            f"{h.ident('n_diffs')} := counts.{h.ident(count_aliases[index])}, "
+            f"{h.ident(f'type_{first}')} := {h.sql_literal(handles[first].types[column])}, "
+            f"{h.ident(f'type_{second}')} := {h.sql_literal(handles[second].types[column])}"
+            f")"
+        )
+    struct_list = ",\n        ".join(struct_rows)
     sql = f"""
     WITH counts AS (
       SELECT
@@ -190,18 +185,17 @@ def _build_intersection_frame_inline(
         {join_sql}
     )
     SELECT
-      unnest.{h.ident('column')} AS {h.ident('column')},
-      unnest.{h.ident('n_diffs')} AS {h.ident('n_diffs')},
-      unnest.{h.ident(f'type_{first}')} AS {h.ident(f'type_{first}')},
-      unnest.{h.ident(f'type_{second}')} AS {h.ident(f'type_{second}')}
+      item.{h.ident('column')} AS {h.ident('column')},
+      item.{h.ident('n_diffs')} AS {h.ident('n_diffs')},
+      item.{h.ident(f'type_{first}')} AS {h.ident(f'type_{first}')},
+      item.{h.ident(f'type_{second}')} AS {h.ident(f'type_{second}')}
     FROM
       counts,
       UNNEST(
-        [{column_literals}],
-        [{count_refs}],
-        [{type_a_literals}],
-        [{type_b_literals}]
-      ) AS unnest({alias_list})
+        [
+          {struct_list}
+        ]
+      ) AS unnest(item)
     """
     relation = h.finalize_relation(conn, sql, materialize)
     if not materialize:

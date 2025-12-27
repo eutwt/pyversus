@@ -122,6 +122,55 @@ def test_slice_unmatched():
     comp.close()
 
 
+@pytest.mark.parametrize("materialize", ["all", "summary", "none"])
+def test_materialize_modes_helpers(materialize):
+    con, rel_a, rel_b = build_connection()
+    comp = compare(rel_a, rel_b, by=["id"], connection=con, materialize=materialize)
+    assert rel_values(comp.tables, "nrow") == [3, 3]
+    diffs_row = rel_dicts(comp.intersection.filter("\"column\" = 'value'"))[0]
+    assert diffs_row["n_diffs"] == 1
+    diffs = comp.value_diffs("value")
+    assert rel_first(diffs, "id") == 2
+    stacked = comp.value_diffs_stacked(["value"])
+    assert rel_first(stacked, "column") == "value"
+    rows = comp.slice_diffs("a", ["value"])
+    assert rel_first(rows, "id") == 2
+    wide = comp.weave_diffs_wide(["value"])
+    assert "value_a" in wide.columns and "value_b" in wide.columns
+    long = comp.weave_diffs_long(["value"])
+    assert "value" in long.columns
+    unmatched = comp.slice_unmatched("a")
+    assert rel_first(unmatched, "id") == 1
+    unmatched_both = comp.slice_unmatched_both()
+    assert "table" in unmatched_both.columns
+    comp.close()
+    con.close()
+
+
+@pytest.mark.parametrize(
+    "materialize, summary_materialized, has_diff_keys",
+    [
+        ("all", True, True),
+        ("summary", True, False),
+        ("none", False, False),
+    ],
+)
+def test_materialize_modes_state(materialize, summary_materialized, has_diff_keys):
+    con, rel_a, rel_b = build_connection()
+    comp = compare(rel_a, rel_b, by=["id"], connection=con, materialize=materialize)
+    assert comp.intersection.materialized is summary_materialized
+    assert comp.unmatched_rows.materialized is summary_materialized
+    assert (comp.diff_keys is not None) is has_diff_keys
+    if materialize == "none":
+        assert comp._diff_lookup is None
+        assert comp._unmatched_lookup is None
+        _ = str(comp)
+        assert comp._diff_lookup is not None
+        assert comp._unmatched_lookup is not None
+    comp.close()
+    con.close()
+
+
 def test_summary_reports_difference_categories():
     con = duckdb.connect()
     rel_a = con.sql(
