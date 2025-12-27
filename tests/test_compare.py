@@ -122,6 +122,19 @@ def test_slice_unmatched():
     comp.close()
 
 
+@pytest.mark.parametrize("module_name", ["pandas", "polars"])
+def test_compare_accepts_dataframes(module_name):
+    module = pytest.importorskip(module_name)
+    df_a = module.DataFrame({"id": [1, 2, 3], "value": [10, 20, 30]})
+    df_b = module.DataFrame({"id": [2, 3, 4], "value": [22, 30, 40]})
+    con = duckdb.connect()
+    comp = compare(df_a, df_b, by=["id"], connection=con)
+    diffs = comp.value_diffs("value")
+    assert rel_first(diffs, "id") == 2
+    comp.close()
+    con.close()
+
+
 @pytest.mark.parametrize("materialize", ["all", "summary", "none"])
 def test_materialize_modes_helpers(materialize):
     con, rel_a, rel_b = build_connection()

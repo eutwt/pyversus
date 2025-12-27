@@ -308,7 +308,9 @@ def register_input_view(
     name = f"__versus_{label}_{uuid.uuid4().hex}"
     display = "relation"
     base_name = None
+    relation_source = False
     if isinstance(source, duckdb.DuckDBPyRelation):
+        relation_source = True
         base_name = f"{name}_base"
         source.to_view(base_name, replace=True)
         source_ref = ident(base_name)
@@ -317,14 +319,23 @@ def register_input_view(
         source_ref = f"({source})"
         display = source
     else:
-        raise ComparisonError("Inputs must be DuckDB relations or SQL queries/views.")
+        base_name = f"{name}_base"
+        try:
+            conn.register(base_name, source)
+        except Exception as exc:
+            raise ComparisonError(
+                "Inputs must be DuckDB relations, SQL queries/views, or pandas/polars "
+                "DataFrames."
+            ) from exc
+        source_ref = ident(base_name)
+        display = type(source).__name__
 
     try:
         conn.execute(
             f"CREATE OR REPLACE TEMP VIEW {ident(name)} AS SELECT * FROM {source_ref}"
         )
     except duckdb.Error as exc:
-        if base_name is not None and base_name in str(exc):
+        if relation_source and base_name is not None and base_name in str(exc):
             arg_name = f"table_{label}"
             if connection_supplied:
                 hint = (
