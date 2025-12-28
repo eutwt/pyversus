@@ -59,10 +59,7 @@ future contributors can work without hunting through old context.
   1. `uv venv .venv`
   2. `uv pip install -e . pytest`
   3. `uv run pytest`
-- There are no extra runtime dependencies beyond DuckDB. For local
-  benchmarks you can author separate scripts (outside the package) that
-  import `versus.compare`; the repo no longer includes R assets or
-  benchmark harnesses.
+- There are no extra runtime dependencies beyond DuckDB.
 - Keep the code base Python 3.7-compatible (no pattern matching,
   `str.removeprefix`, `typing.Annotated`, etc.).
 - GitHub Actions runs the test suite on Python 3.7. Keep that workflow
