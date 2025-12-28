@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from collections import Counter
 from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
@@ -160,18 +161,11 @@ def validate_type_compatibility(
             )
 
 
-def _duplicate_columns(columns: Sequence[str]) -> List[str]:
-    seen = set()
-    duplicates: List[str] = []
-    for column in columns:
-        if column in seen and column not in duplicates:
-            duplicates.append(column)
-        seen.add(column)
-    return duplicates
-
-
-def _validate_unique_columns(columns: Sequence[str], label: str) -> None:
-    duplicates = _duplicate_columns([str(column) for column in columns])
+def validate_columns(columns: Sequence[str], label: str) -> None:
+    if not all(isinstance(column, str) for column in columns):
+        raise ComparisonError(f"`{label}` must have string column names")
+    counts = Counter(columns)
+    duplicates = [name for name, count in counts.items() if count > 1]
     if duplicates:
         dupes = ", ".join(duplicates)
         raise ComparisonError(f"`{label}` has duplicate column names: {dupes}")
@@ -187,7 +181,7 @@ def validate_tables(
 ) -> None:
     validate_columns_exist(by_columns, handles, table_id)
     for identifier in table_id:
-        _validate_unique_columns(handles[identifier].columns, identifier)
+        validate_columns(handles[identifier].columns, identifier)
     if not coerce:
         validate_type_compatibility(handles, table_id)
     for identifier in table_id:
@@ -320,7 +314,7 @@ def register_input_view(
     if isinstance(source, duckdb.DuckDBPyRelation):
         relation_source = True
         base_name = f"{name}_base"
-        _validate_unique_columns(source.columns, label)
+        validate_columns(source.columns, label)
         source.to_view(base_name, replace=True)
         source_ref = ident(base_name)
         display = getattr(source, "alias", "relation")
@@ -333,7 +327,7 @@ def register_input_view(
         base_name = f"{name}_base"
         source_columns = getattr(source, "columns", None)
         if source_columns is not None:
-            _validate_unique_columns(list(source_columns), label)
+            validate_columns(list(source_columns), label)
         try:
             conn.register(base_name, source)
         except Exception as exc:
