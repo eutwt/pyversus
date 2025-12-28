@@ -175,7 +175,7 @@ def _build_intersection_frame_inline(
     if not value_columns:
         return _build_empty_intersection_relation(conn, table_id, materialize)
     first, second = table_id
-    join_sql = h.join_clause(handles, table_id, by_columns)
+    join_sql = h.inputs_join_sql(handles, table_id, by_columns)
 
     def diff_alias(column: str) -> str:
         return f"n_diffs_{column}"
@@ -223,7 +223,7 @@ def compute_diff_table(
     if not value_columns:
         schema = [(column, handles[table_id[0]].types[column]) for column in by_columns]
         return h.build_rows_relation(conn, [], schema, materialize=True)
-    join_sql = h.join_clause(handles, table_id, by_columns)
+    join_sql = h.inputs_join_sql(handles, table_id, by_columns)
     select_by = h.select_cols(by_columns, alias="a")
     diff_expressions = [
         (column, h.diff_predicate(column, allow_both_na, "a", "b"))
@@ -278,7 +278,7 @@ def compute_unmatched_rows_summary(
     unmatched_keys: duckdb.DuckDBPyRelation,
     table_id: Tuple[str, str],
     materialize: bool,
-) -> duckdb.DuckDBPyRelation:
+) -> Tuple[duckdb.DuckDBPyRelation, Optional[Dict[str, int]]]:
     keys_sql = unmatched_keys.sql_query()
     table_col = h.ident("table_name")
     count_col = h.ident("n_unmatched")
@@ -311,4 +311,7 @@ def compute_unmatched_rows_summary(
     ORDER BY
       {order_case}
     """
-    return h.finalize_relation(conn, sql, materialize)
+    relation = h.finalize_relation(conn, sql, materialize)
+    if not materialize:
+        return relation, None
+    return relation, h.unmatched_lookup_from_rows(relation)

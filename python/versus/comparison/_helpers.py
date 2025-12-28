@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from collections import Counter
 from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
@@ -52,18 +53,14 @@ class VersusConn:
         temp_tables: Optional[List[str]] = None,
         views: Optional[List[str]] = None,
     ) -> None:
-        self._connection = connection
+        self.raw_connection = connection
         self.versus = VersusState(
             temp_tables if temp_tables is not None else [],
             views if views is not None else [],
         )
 
-    @property
-    def raw_connection(self) -> duckdb.DuckDBPyConnection:
-        return self._connection
-
     def __getattr__(self, name: str) -> Any:
-        return getattr(self._connection, name)
+        return getattr(self.raw_connection, name)
 
 
 class SummaryRelation:
@@ -76,39 +73,35 @@ class SummaryRelation:
         on_materialize: Optional[Callable[[duckdb.DuckDBPyRelation], None]] = None,
     ) -> None:
         self._conn = conn
-        self._relation = relation
+        self.relation = relation
         self.materialized = materialized
         self._on_materialize = on_materialize
         if self.materialized and self._on_materialize is not None:
-            self._on_materialize(self._relation)
+            self._on_materialize(self.relation)
 
     def materialize(self) -> None:
         if self.materialized:
             return
-        self._relation = finalize_relation(
-            self._conn, self._relation.sql_query(), materialize=True
+        self.relation = finalize_relation(
+            self._conn, self.relation.sql_query(), materialize=True
         )
         self.materialized = True
         if self._on_materialize is not None:
-            self._on_materialize(self._relation)
-
-    @property
-    def relation(self) -> duckdb.DuckDBPyRelation:
-        return self._relation
+            self._on_materialize(self.relation)
 
     def __getattr__(self, name: str) -> Any:
-        return getattr(self._relation, name)
+        return getattr(self.relation, name)
 
     def __repr__(self) -> str:
         self.materialize()
-        return repr(self._relation)
+        return repr(self.relation)
 
     def __str__(self) -> str:
         self.materialize()
-        return str(self._relation)
+        return str(self.relation)
 
     def __iter__(self) -> Any:
-        return iter(cast(Any, self._relation))
+        return iter(cast(Any, self.relation))
 
 
 # --------------- Core-only helpers
@@ -166,6 +159,33 @@ def validate_type_compatibility(
             raise ComparisonError(
                 f"`coerce=False` requires compatible types. Column `{column}` has types `{type_a}` vs `{type_b}`."
             )
+
+
+def validate_columns(columns: Sequence[str], label: str) -> None:
+    if not all(isinstance(column, str) for column in columns):
+        raise ComparisonError(f"`{label}` must have string column names")
+    counts = Counter(columns)
+    duplicates = [name for name, count in counts.items() if count > 1]
+    if duplicates:
+        dupes = ", ".join(duplicates)
+        raise ComparisonError(f"`{label}` has duplicate column names: {dupes}")
+
+
+def validate_tables(
+    conn: VersusConn,
+    handles: Mapping[str, _TableHandle],
+    table_id: Tuple[str, str],
+    by_columns: List[str],
+    *,
+    coerce: bool,
+) -> None:
+    validate_columns_exist(by_columns, handles, table_id)
+    for identifier in table_id:
+        validate_columns(handles[identifier].columns, identifier)
+    if not coerce:
+        validate_type_compatibility(handles, table_id)
+    for identifier in table_id:
+        assert_unique_by(conn, handles[identifier], by_columns, identifier)
 
 
 def assert_unique_by(
@@ -279,24 +299,6 @@ def assert_column_allowed(comparison: "Comparison", column: str, func: str) -> N
         )
 
 
-def resolve_suffix(
-    suffix: Optional[Tuple[str, str]], table_id: Tuple[str, str]
-) -> Tuple[str, str]:
-    if suffix is None:
-        return (f"_{table_id[0]}", f"_{table_id[1]}")
-    if (
-        not isinstance(suffix, (tuple, list))
-        or len(suffix) != 2
-        or not all(isinstance(item, str) for item in suffix)
-    ):
-        raise ComparisonError("`suffix` must be a tuple of two strings or None")
-    if suffix[0] == suffix[1]:
-        raise ComparisonError("Entries of `suffix` must be distinct")
-    if any(item == "" for item in suffix):
-        raise ComparisonError("Entries of `suffix` must be non-empty")
-    return (suffix[0], suffix[1])
-
-
 # --------------- Input registration and metadata
 def register_input_view(
     conn: VersusConn,
@@ -312,23 +314,25 @@ def register_input_view(
     if isinstance(source, duckdb.DuckDBPyRelation):
         relation_source = True
         base_name = f"{name}_base"
+        validate_columns(source.columns, label)
         source.to_view(base_name, replace=True)
         source_ref = ident(base_name)
         display = getattr(source, "alias", "relation")
     elif isinstance(source, str):
         raise ComparisonError(
             "String inputs are not supported. Pass a DuckDB relation or pandas/polars "
-            "DataFrame. For SQL queries, use `connection.sql(...)` to create a "
-            "relation."
+            "DataFrame."
         )
     else:
         base_name = f"{name}_base"
+        source_columns = getattr(source, "columns", None)
+        if source_columns is not None:
+            validate_columns(list(source_columns), label)
         try:
             conn.register(base_name, source)
         except Exception as exc:
             raise ComparisonError(
-                "Inputs must be DuckDB relations or pandas/polars DataFrames. For "
-                "SQL queries, use `connection.sql(...)` to create a relation."
+                "Inputs must be DuckDB relations or pandas/polars DataFrames."
             ) from exc
         source_ref = ident(base_name)
         display = type(source).__name__
@@ -403,7 +407,7 @@ def join_condition(by_columns: List[str], left_alias: str, right_alias: str) -> 
     return " AND ".join(comparisons) if comparisons else "TRUE"
 
 
-def join_clause(
+def inputs_join_sql(
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
     by_columns: List[str],

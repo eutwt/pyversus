@@ -53,6 +53,7 @@ class Comparison:
         table_columns: Mapping[str, List[str]],
         diff_table: Optional[duckdb.DuckDBPyRelation],
         diff_lookup: Optional[Dict[str, int]],
+        unmatched_lookup: Optional[Dict[str, int]],
     ) -> None:
         self.connection = connection
         self._handles = dict(handles)
@@ -64,16 +65,13 @@ class Comparison:
         self.allow_both_na = allow_both_na
         self._materialize_mode = materialize_mode
         self._diff_lookup = diff_lookup
-        if self._diff_lookup is not None:
-            for column in common_columns:
-                self._diff_lookup.setdefault(column, 0)
-        self._unmatched_lookup: Optional[Dict[str, int]] = None
+        self._unmatched_lookup = unmatched_lookup
         summary_materialized = materialize_mode in {"all", "summary"}
         self.tables = h.SummaryRelation(
             connection, tables, materialized=summary_materialized
         )
         self.by = h.SummaryRelation(connection, by, materialized=summary_materialized)
-        self._intersection = h.SummaryRelation(
+        self.intersection = h.SummaryRelation(
             connection,
             intersection,
             materialized=summary_materialized,
@@ -96,10 +94,6 @@ class Comparison:
         self.diff_table = diff_table
         self._closed = False
 
-    @property
-    def intersection(self) -> h.SummaryRelation:
-        return self._intersection
-
     def _filter_diff_columns(self, columns: Sequence[str]) -> List[str]:
         diff_lookup = self._diff_lookup
         if diff_lookup is None:
@@ -108,17 +102,11 @@ class Comparison:
 
     def _store_diff_lookup(self, relation: duckdb.DuckDBPyRelation) -> None:
         if self._diff_lookup is None:
-            diff_lookup = h.diff_lookup_from_intersection(relation)
-            for column in self.common_columns:
-                diff_lookup.setdefault(column, 0)
-            self._diff_lookup = diff_lookup
+            self._diff_lookup = h.diff_lookup_from_intersection(relation)
 
     def _store_unmatched_lookup(self, relation: duckdb.DuckDBPyRelation) -> None:
         if self._unmatched_lookup is None:
-            unmatched_lookup = h.unmatched_lookup_from_rows(relation)
-            for table_name in self.table_id:
-                unmatched_lookup.setdefault(table_name, 0)
-            self._unmatched_lookup = unmatched_lookup
+            self._unmatched_lookup = h.unmatched_lookup_from_rows(relation)
 
     def close(self) -> None:
         """Release any temporary views or tables created for the comparison.
@@ -475,8 +463,7 @@ def compare(
     Parameters
     ----------
     table_a, table_b : DuckDBPyRelation, pandas.DataFrame, or polars.DataFrame
-        DuckDB relations or pandas/polars DataFrames to compare. For SQL queries,
-        create a relation with `connection.sql(...)` first.
+        DuckDB relations or pandas/polars DataFrames to compare.
     by : sequence of str
         Column names that uniquely identify rows.
     allow_both_na : bool, default True
@@ -529,11 +516,7 @@ def compare(
             conn, table_b, clean_ids[1], connection_supplied=connection_supplied
         ),
     }
-    h.validate_columns_exist(by_columns, handles, clean_ids)
-    if not coerce:
-        h.validate_type_compatibility(handles, clean_ids)
-    for identifier in clean_ids:
-        h.assert_unique_by(conn, handles[identifier], by_columns, identifier)
+    h.validate_tables(conn, handles, clean_ids, by_columns, coerce=coerce)
 
     tables_frame = c.build_tables_frame(conn, handles, clean_ids, materialize_summary)
     by_frame = c.build_by_frame(
@@ -571,7 +554,7 @@ def compare(
     unmatched_keys = c.compute_unmatched_keys(
         conn, handles, clean_ids, by_columns, materialize_keys
     )
-    unmatched_rows_rel = c.compute_unmatched_rows_summary(
+    unmatched_rows_rel, unmatched_lookup = c.compute_unmatched_rows_summary(
         conn, unmatched_keys, clean_ids, materialize_summary
     )
 
@@ -594,4 +577,5 @@ def compare(
         },
         diff_table=diff_table,
         diff_lookup=diff_lookup,
+        unmatched_lookup=unmatched_lookup,
     )

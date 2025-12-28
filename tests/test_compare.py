@@ -302,10 +302,20 @@ def test_compare_errors_when_by_column_missing():
 def test_compare_errors_on_string_inputs():
     con = duckdb.connect()
     rel = con.sql("SELECT 1 AS id")
-    with pytest.raises(ComparisonError, match=r"connection\.sql"):
+    with pytest.raises(ComparisonError, match=r"String inputs are not supported"):
         compare(cast(Any, "SELECT 1 AS id"), rel, by=["id"], connection=con)
-    with pytest.raises(ComparisonError, match=r"connection\.sql"):
+    with pytest.raises(ComparisonError, match=r"String inputs are not supported"):
         compare(rel, cast(Any, "SELECT 1 AS id"), by=["id"], connection=con)
+    con.close()
+
+
+def test_compare_errors_on_duplicate_column_names():
+    pandas = pytest.importorskip("pandas")
+    df_a = pandas.DataFrame([[1, 2]], columns=["id", "id"])
+    df_b = pandas.DataFrame([[1, 2]], columns=["id", "value"])
+    con = duckdb.connect()
+    with pytest.raises(ComparisonError, match=r"duplicate column names"):
+        compare(df_a, df_b, by=["id"], connection=con)
     con.close()
 
 

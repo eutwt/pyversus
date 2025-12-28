@@ -82,7 +82,7 @@ def _weave_diffs_wide_with_keys(
     suffix: Optional[Tuple[str, str]],
 ) -> duckdb.DuckDBPyRelation:
     table_a, table_b = comparison.table_id
-    suffix = h.resolve_suffix(suffix, comparison.table_id)
+    suffix = resolve_suffix(suffix, comparison.table_id)
     keys = h.collect_diff_keys(comparison, diff_cols)
     select_parts = _weave_select_parts(comparison, diff_cols, suffix)
     join_a = h.join_condition(comparison.by_columns, "keys", "a")
@@ -106,9 +106,9 @@ def _weave_diffs_wide_inline(
     suffix: Optional[Tuple[str, str]],
 ) -> duckdb.DuckDBPyRelation:
     table_a, table_b = comparison.table_id
-    suffix = h.resolve_suffix(suffix, comparison.table_id)
+    suffix = resolve_suffix(suffix, comparison.table_id)
     select_parts = _weave_select_parts(comparison, diff_cols, suffix)
-    join_sql = h.join_clause(
+    join_sql = h.inputs_join_sql(
         comparison._handles, comparison.table_id, comparison.by_columns
     )
     predicate = " OR ".join(
@@ -180,7 +180,7 @@ def _weave_diffs_long_inline(
     table_column = h.ident("table_name")
     select_cols_a = h.select_cols(out_cols, alias="a")
     select_cols_b = h.select_cols(out_cols, alias="b")
-    join_sql = h.join_clause(
+    join_sql = h.inputs_join_sql(
         comparison._handles, comparison.table_id, comparison.by_columns
     )
     predicate = " OR ".join(
@@ -216,3 +216,20 @@ def _weave_diffs_long_inline(
       __table_order
     """
     return h.run_sql(comparison.connection, sql)
+
+
+# ------- helpers
+def resolve_suffix(
+    suffix: Optional[Tuple[str, str]], table_id: Tuple[str, str]
+) -> Tuple[str, str]:
+    if suffix is None:
+        return (f"_{table_id[0]}", f"_{table_id[1]}")
+    if (
+        not isinstance(suffix, (tuple, list))
+        or len(suffix) != 2
+        or not all(isinstance(item, str) for item in suffix)
+    ):
+        raise h.ComparisonError("`suffix` must be a tuple of two strings or None")
+    if suffix[0] == suffix[1]:
+        raise h.ComparisonError("Entries of `suffix` must be distinct")
+    return (suffix[0], suffix[1])

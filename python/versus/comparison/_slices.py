@@ -39,7 +39,7 @@ def _slice_diffs_inline(
 ) -> duckdb.DuckDBPyRelation:
     table_a, table_b = comparison.table_id
     base_alias = "a" if table_name == table_a else "b"
-    join_sql = h.join_clause(
+    join_sql = h.inputs_join_sql(
         comparison._handles, comparison.table_id, comparison.by_columns
     )
     predicate = " OR ".join(
