@@ -230,8 +230,7 @@ def compute_diff_table(
         for column in value_columns
     ]
     diff_flags = ",\n      ".join(
-        f"{expression} AS {h.ident(column)}"
-        for column, expression in diff_expressions
+        f"{expression} AS {h.ident(column)}" for column, expression in diff_expressions
     )
     predicate = " OR ".join(expression for _, expression in diff_expressions)
     sql = f"""
