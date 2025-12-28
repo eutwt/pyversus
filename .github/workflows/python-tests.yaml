@@ -57,6 +57,9 @@ jobs:
           python -m pip install pytest
         env:
           DUCKDB_PIN: ${{ matrix.duckdb-version }}
+      - name: Install pandas/polars
+        if: matrix.python-version != '3.7'
+        run: python -m pip install pandas polars
       - name: Install ty
         if: matrix.python-version != '3.7'
         run: python -m pip install ty
