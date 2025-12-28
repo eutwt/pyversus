@@ -9,6 +9,18 @@ run() {
   "$@"
 }
 
+run env UV_CACHE_DIR="${UV_CACHE_DIR:-.uv_cache}" uv run python scripts/update_readme.py || {
+  echo "[pre-push] README render failed" >&2
+  exit 1
+}
+
+if ! git diff --quiet --exit-code README.md; then
+  cat <<'MSG'
+[pre-push] README.md is out of date. Stage the regenerated file and re-run push.
+MSG
+  exit 1
+fi
+
 run uv run ruff check --select I --fix python tests scripts || {
   echo "[pre-push] Ruff import sorting failed" >&2
   exit 1

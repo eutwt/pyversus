@@ -121,9 +121,9 @@ comparison.weave_diffs_wide(["mpg", "disp"])
     │      car       │    mpg_a     │    mpg_b     │  cyl  │ disp_a │ disp_b │  hp   │     drat     │      wt      │  vs   │
     │    varchar     │ decimal(3,1) │ decimal(3,1) │ int32 │ int32  │ int32  │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
     ├────────────────┼──────────────┼──────────────┼───────┼────────┼────────┼───────┼──────────────┼──────────────┼───────┤
+    │ Merc 240D      │         24.4 │         26.4 │     4 │    147 │    147 │    62 │         3.69 │         3.19 │     1 │
     │ Duster 360     │         14.3 │         16.3 │     8 │    360 │    360 │   245 │         3.21 │         3.57 │     0 │
     │ Datsun 710     │         22.8 │         22.8 │  NULL │    109 │    108 │    93 │         3.85 │         2.32 │     1 │
-    │ Merc 240D      │         24.4 │         26.4 │     4 │    147 │    147 │    62 │         3.69 │         3.19 │     1 │
     │ Hornet 4 Drive │         21.4 │         21.4 │     6 │    259 │    258 │   110 │         3.08 │         3.22 │     1 │
     └────────────────┴──────────────┴──────────────┴───────┴────────┴────────┴───────┴──────────────┴──────────────┴───────┘
 
@@ -230,11 +230,11 @@ in any mode; they stay as DuckDB relations and are queried lazily.
 
 In full materialization, Pyversus also builds a diff table: a single
 relation with the `by` keys plus one boolean flag per value column
-indicating a difference (the flag columns use the original value column
-names). The table only includes rows with at least one difference. Those
-precomputed flags let row-level helpers fetch the exact differing rows
-quickly via joins, which can be faster when you call multiple helpers.
-Other modes skip the diff table and compute diff counts inline.
+indicating a difference. The table only includes rows with at least one
+difference. Those precomputed flags let row-level helpers fetch the
+exact differing rows quickly via joins, which can be faster when you
+call multiple helpers. Other modes skip the diff table and detect
+differences inline.
 
 - `materialize="all"`: store the summary tables and the diff table as
   temp tables. This is fastest if you will call row-level helpers
