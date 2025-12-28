@@ -99,12 +99,9 @@ def build_intersection_frame(
     )
 
 
-def _build_intersection_frame_with_keys(
-    value_columns: List[str],
-    handles: Mapping[str, h._TableHandle],
-    table_id: Tuple[str, str],
-    diff_keys: Mapping[str, duckdb.DuckDBPyRelation],
+def _build_empty_intersection_relation(
     conn: h.VersusConn,
+    table_id: Tuple[str, str],
     materialize: bool,
 ) -> Tuple[duckdb.DuckDBPyRelation, Optional[Dict[str, int]]]:
     first, second = table_id
@@ -114,9 +111,21 @@ def _build_intersection_frame_with_keys(
         (f"type_{first}", "VARCHAR"),
         (f"type_{second}", "VARCHAR"),
     ]
+    relation = h.build_rows_relation(conn, [], schema, materialize)
+    return relation, {} if materialize else None
+
+
+def _build_intersection_frame_with_keys(
+    value_columns: List[str],
+    handles: Mapping[str, h._TableHandle],
+    table_id: Tuple[str, str],
+    diff_keys: Mapping[str, duckdb.DuckDBPyRelation],
+    conn: h.VersusConn,
+    materialize: bool,
+) -> Tuple[duckdb.DuckDBPyRelation, Optional[Dict[str, int]]]:
+    first, second = table_id
     if not value_columns:
-        relation = h.build_rows_relation(conn, [], schema, materialize)
-        return relation, {} if materialize else None
+        return _build_empty_intersection_relation(conn, table_id, materialize)
 
     def select_for(column: str) -> str:
         relation_sql = diff_keys[column].sql_query()
@@ -146,16 +155,9 @@ def _build_intersection_frame_inline(
     conn: h.VersusConn,
     materialize: bool,
 ) -> Tuple[duckdb.DuckDBPyRelation, Optional[Dict[str, int]]]:
-    first, second = table_id
-    schema = [
-        ("column", "VARCHAR"),
-        ("n_diffs", "BIGINT"),
-        (f"type_{first}", "VARCHAR"),
-        (f"type_{second}", "VARCHAR"),
-    ]
     if not value_columns:
-        relation = h.build_rows_relation(conn, [], schema, materialize)
-        return relation, {} if materialize else None
+        return _build_empty_intersection_relation(conn, table_id, materialize)
+    first, second = table_id
     join_sql = h.join_clause(handles, table_id, by_columns)
 
     def diff_alias(column: str) -> str:
