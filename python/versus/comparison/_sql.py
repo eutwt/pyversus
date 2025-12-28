@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, List, Mapping, Optional, Sequence, Tuple,
 import duckdb
 
 from ._exceptions import ComparisonError
-from ._types import _TableHandle, VersusConn
+from ._types import VersusConn, _TableHandle
 
 if TYPE_CHECKING:  # pragma: no cover
     from .comparison import Comparison
