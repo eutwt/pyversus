@@ -1,0 +1,6 @@
+﻿versus.Comparison.close
+=======================
+
+.. currentmodule:: versus
+
+.. automethod:: Comparison.close
