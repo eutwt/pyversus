@@ -7,7 +7,7 @@ import duckdb
 from . import _helpers as h
 
 if TYPE_CHECKING:  # pragma: no cover
-    from ._core import Comparison
+    from .comparison import Comparison
 
 
 def value_diffs(comparison: "Comparison", column: str) -> duckdb.DuckDBPyRelation:
