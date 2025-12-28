@@ -53,6 +53,7 @@ class Comparison:
         table_columns: Mapping[str, List[str]],
         diff_table: Optional[duckdb.DuckDBPyRelation],
         diff_lookup: Optional[Dict[str, int]],
+        unmatched_lookup: Optional[Dict[str, int]],
     ) -> None:
         self.connection = connection
         self._handles = dict(handles)
@@ -64,7 +65,7 @@ class Comparison:
         self.allow_both_na = allow_both_na
         self._materialize_mode = materialize_mode
         self._diff_lookup = diff_lookup
-        self._unmatched_lookup: Optional[Dict[str, int]] = None
+        self._unmatched_lookup = unmatched_lookup
         summary_materialized = materialize_mode in {"all", "summary"}
         self.tables = h.SummaryRelation(
             connection, tables, materialized=summary_materialized
@@ -109,10 +110,7 @@ class Comparison:
 
     def _store_unmatched_lookup(self, relation: duckdb.DuckDBPyRelation) -> None:
         if self._unmatched_lookup is None:
-            unmatched_lookup = h.unmatched_lookup_from_rows(relation)
-            for table_name in self.table_id:
-                unmatched_lookup.setdefault(table_name, 0)
-            self._unmatched_lookup = unmatched_lookup
+            self._unmatched_lookup = h.unmatched_lookup_from_rows(relation)
 
     def close(self) -> None:
         """Release any temporary views or tables created for the comparison.
@@ -565,7 +563,7 @@ def compare(
     unmatched_keys = c.compute_unmatched_keys(
         conn, handles, clean_ids, by_columns, materialize_keys
     )
-    unmatched_rows_rel = c.compute_unmatched_rows_summary(
+    unmatched_rows_rel, unmatched_lookup = c.compute_unmatched_rows_summary(
         conn, unmatched_keys, clean_ids, materialize_summary
     )
 
@@ -588,4 +586,5 @@ def compare(
         },
         diff_table=diff_table,
         diff_lookup=diff_lookup,
+        unmatched_lookup=unmatched_lookup,
     )
