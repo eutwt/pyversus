@@ -36,7 +36,7 @@ class _TableHandle:
     types: Dict[str, str]
     source_sql: str
     source_is_identifier: bool
-    row_count: Optional[int]
+    row_count: int
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self.relation, name)
@@ -321,6 +321,7 @@ def register_input_view(
             columns, types = describe_source(conn, source_sql, is_identifier=False)
         except duckdb.Error as exc:
             raise_relation_connection_error(label, connection_supplied, exc)
+        row_count = resolve_row_count(conn, source, source_sql, is_identifier=False)
         relation = conn.sql(source_sql)
         return _TableHandle(
             name=name,
@@ -330,7 +331,7 @@ def register_input_view(
             types=types,
             source_sql=source_sql,
             source_is_identifier=False,
-            row_count=None,
+            row_count=row_count,
         )
     if isinstance(source, str):
         raise ComparisonError(
@@ -340,7 +341,6 @@ def register_input_view(
     source_columns = getattr(source, "columns", None)
     if source_columns is not None:
         validate_columns(list(source_columns), label)
-    row_count = infer_row_count(source)
     try:
         conn.register(name, source)
     except Exception as exc:
@@ -350,6 +350,7 @@ def register_input_view(
     conn.versus.views.append(name)
     source_sql = name
     columns, types = describe_source(conn, source_sql, is_identifier=True)
+    row_count = resolve_row_count(conn, source, source_sql, is_identifier=True)
     relation = conn.table(name)
     return _TableHandle(
         name=name,
@@ -369,7 +370,7 @@ def describe_source(
     *,
     is_identifier: bool,
 ) -> Tuple[List[str], Dict[str, str]]:
-    source_ref = ident(source_sql) if is_identifier else f"({source_sql})"
+    source_ref = source_ref_for_sql(source_sql, is_identifier)
     rel = run_sql(conn, f"DESCRIBE SELECT * FROM {source_ref}")
     rows = rel.fetchall()
     columns = [row[0] for row in rows]
@@ -377,13 +378,32 @@ def describe_source(
     return columns, types
 
 
-def infer_row_count(source: Any) -> Optional[int]:
-    shape = getattr(source, "shape", None)
-    if isinstance(shape, tuple) and shape and isinstance(shape[0], int):
-        return shape[0]
-    height = getattr(source, "height", None)
-    if isinstance(height, int):
-        return height
+def source_ref_for_sql(source_sql: str, is_identifier: bool) -> str:
+    return ident(source_sql) if is_identifier else f"({source_sql})"
+
+
+def resolve_row_count(
+    conn: VersusConn,
+    source: Any,
+    source_sql: str,
+    *,
+    is_identifier: bool,
+) -> int:
+    frame_row_count = row_count_from_frame(source)
+    if frame_row_count is not None:
+        return frame_row_count
+    source_ref = source_ref_for_sql(source_sql, is_identifier)
+    row = run_sql(conn, f"SELECT COUNT(*) FROM {source_ref}").fetchone()
+    assert row is not None and isinstance(row[0], int)
+    return row[0]
+
+
+def row_count_from_frame(source: Any) -> Optional[int]:
+    module = type(source).__module__
+    if module.startswith("pandas"):
+        return int(source.shape[0])
+    if module.startswith("polars"):
+        return int(source.height)
     return None
 
 
@@ -616,7 +636,7 @@ def build_rows_relation(
 
 
 def table_count(relation: Union[duckdb.DuckDBPyRelation, _TableHandle]) -> int:
-    if isinstance(relation, _TableHandle) and relation.row_count is not None:
+    if isinstance(relation, _TableHandle):
         return relation.row_count
     row = relation.count("*").fetchall()[0]
     assert isinstance(row[0], int)
