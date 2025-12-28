@@ -4,12 +4,12 @@ from typing import Dict, Union
 
 import duckdb
 
-from ._summary import SummaryRelation
-from ._types import _TableHandle
+from . import _summary as s
+from . import _types as t
 
 
 def relation_is_empty(
-    relation: Union[duckdb.DuckDBPyRelation, SummaryRelation],
+    relation: Union[duckdb.DuckDBPyRelation, s.SummaryRelation],
 ) -> bool:
     return relation.limit(1).fetchone() is None
 
@@ -28,8 +28,8 @@ def unmatched_lookup_from_rows(
     return {row[0]: int(row[1]) for row in rows}
 
 
-def table_count(relation: Union[duckdb.DuckDBPyRelation, _TableHandle]) -> int:
-    if isinstance(relation, _TableHandle):
+def table_count(relation: Union[duckdb.DuckDBPyRelation, t._TableHandle]) -> int:
+    if isinstance(relation, t._TableHandle):
         return relation.row_count
     row = relation.count("*").fetchall()[0]
     assert isinstance(row[0], int)

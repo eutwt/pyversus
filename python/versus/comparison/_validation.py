@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Iterable, List, Mapping, Optional, Sequence, T
 import duckdb
 
 from ._exceptions import ComparisonError
-from ._sql import run_sql, select_cols, table_ref
+from . import _sql as q
 from ._types import _TableHandle, VersusConn
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -102,13 +102,13 @@ def assert_unique_by(
     by_columns: List[str],
     identifier: str,
 ) -> None:
-    cols = select_cols(by_columns, alias="t")
+    cols = q.select_cols(by_columns, alias="t")
     sql = f"""
     SELECT
       {cols},
       COUNT(*) AS n
     FROM
-      {table_ref(handle)} AS t
+      {q.table_ref(handle)} AS t
     GROUP BY
       {cols}
     HAVING
@@ -116,7 +116,7 @@ def assert_unique_by(
     LIMIT
       1
     """
-    rel = run_sql(conn, sql)
+    rel = q.run_sql(conn, sql)
     rows = rel.fetchall()
     if rows:
         first = rows[0]

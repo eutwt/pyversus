@@ -5,7 +5,7 @@ from typing import Any, Callable, Optional, Sequence, Tuple, cast
 
 import duckdb
 
-from ._sql import ident, sql_literal
+from . import _sql as q
 from ._types import VersusConn
 
 
@@ -55,15 +55,15 @@ def rows_relation_sql(
 ) -> str:
     if not rows:
         select_list = ", ".join(
-            f"CAST(NULL AS {dtype}) AS {ident(name)}" for name, dtype in schema
+            f"CAST(NULL AS {dtype}) AS {q.ident(name)}" for name, dtype in schema
         )
         return f"SELECT {select_list} LIMIT 0"
     value_rows = [
-        "(" + ", ".join(sql_literal(value) for value in row) + ")" for row in rows
+        "(" + ", ".join(q.sql_literal(value) for value in row) + ")" for row in rows
     ]
     alias_cols = ", ".join(f"col{i}" for i in range(len(schema)))
     select_list = ", ".join(
-        f"CAST(col{i} AS {dtype}) AS {ident(name)}"
+        f"CAST(col{i} AS {dtype}) AS {q.ident(name)}"
         for i, (name, dtype) in enumerate(schema)
     )
     return (
@@ -73,7 +73,7 @@ def rows_relation_sql(
 
 def materialize_temp_table(conn: VersusConn, sql: str) -> str:
     name = f"__versus_table_{uuid.uuid4().hex}"
-    conn.execute(f"CREATE OR REPLACE TEMP TABLE {ident(name)} AS {sql}")
+    conn.execute(f"CREATE OR REPLACE TEMP TABLE {q.ident(name)} AS {sql}")
     return name
 
 
@@ -86,7 +86,7 @@ def finalize_relation(
         return conn.sql(sql)
     table = materialize_temp_table(conn, sql)
     conn.versus.temp_tables.append(table)
-    return conn.sql(f"SELECT * FROM {ident(table)}")
+    return conn.sql(f"SELECT * FROM {q.ident(table)}")
 
 
 def build_rows_relation(
