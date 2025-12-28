@@ -406,9 +406,9 @@ def row_count_from_frame(
 ) -> Optional[int]:
     module = type(source).__module__
     if module.startswith("pandas"):
-        return int(source.shape[0])
+        return int(cast("pandas.DataFrame", source).shape[0])
     if module.startswith("polars"):
-        return int(source.height)
+        return int(cast("polars.DataFrame", source).height)
     return None
 
 
