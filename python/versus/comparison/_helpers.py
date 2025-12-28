@@ -453,14 +453,14 @@ def require_diff_table(
 
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
     diff_table = require_diff_table(comparison)
-    diff_sql = diff_table.sql_query()
+    diff_table_sql = diff_table.sql_query()
     by_cols = select_cols(comparison.by_columns, alias="diffs")
     predicate = " OR ".join(f"diffs.{ident(column)}" for column in columns)
     return f"""
     SELECT
       {by_cols}
     FROM
-      ({diff_sql}) AS diffs
+      ({diff_table_sql}) AS diffs
     WHERE
       {predicate}
     """

@@ -147,13 +147,13 @@ def _build_intersection_frame_with_table(
           counts
         """
 
-    relation_sql = diff_table.sql_query()
+    diff_table_sql = diff_table.sql_query()
     sql = f"""
     WITH counts AS (
       SELECT
         {count_columns}
       FROM
-        ({relation_sql}) AS diffs
+        ({diff_table_sql}) AS diffs
     )
     {" UNION ALL ".join(select_for(column) for column in value_columns)}
     """
@@ -269,8 +269,8 @@ def compute_unmatched_keys(
         """
 
     keys_parts = [key_part(identifier) for identifier in table_id]
-    keys_sql = " UNION ALL ".join(keys_parts)
-    return h.finalize_relation(conn, keys_sql, materialize)
+    unmatched_keys_sql = " UNION ALL ".join(keys_parts)
+    return h.finalize_relation(conn, unmatched_keys_sql, materialize)
 
 
 def compute_unmatched_rows_summary(
@@ -279,7 +279,7 @@ def compute_unmatched_rows_summary(
     table_id: Tuple[str, str],
     materialize: bool,
 ) -> Tuple[duckdb.DuckDBPyRelation, Optional[Dict[str, int]]]:
-    keys_sql = unmatched_keys.sql_query()
+    unmatched_keys_sql = unmatched_keys.sql_query()
     table_col = h.ident("table_name")
     count_col = h.ident("n_unmatched")
     base_sql = h.rows_relation_sql(
@@ -290,7 +290,7 @@ def compute_unmatched_rows_summary(
       {table_col},
       COUNT(*) AS {count_col}
     FROM
-      ({keys_sql}) AS keys
+      ({unmatched_keys_sql}) AS keys
     GROUP BY
       {table_col}
     """
