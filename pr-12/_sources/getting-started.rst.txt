@@ -25,10 +25,9 @@ helper queries run in the same session.
 
    >>> import duckdb
    >>> from versus import compare
-   >>> con = duckdb.connect()
-   >>> rel_a = con.sql("SELECT 1 AS id, 10 AS value")
-   >>> rel_b = con.sql("SELECT 1 AS id, 12 AS value")
-   >>> comparison = compare(rel_a, rel_b, by=["id"], connection=con)
+   >>> rel_a = duckdb.sql("SELECT 1 AS id, 10 AS value")
+   >>> rel_b = duckdb.sql("SELECT 1 AS id, 12 AS value")
+   >>> comparison = compare(rel_a, rel_b, by=["id"])
    >>> comparison.summary()
    ┌────────────────┬─────────┐
    │   difference   │  found  │
