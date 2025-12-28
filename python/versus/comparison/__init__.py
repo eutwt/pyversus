@@ -1,5 +1,6 @@
-from ._core import Comparison, compare
 from ._exceptions import ComparisonError
+from .api import compare
+from .comparison import Comparison
 
 __all__ = [
     "Comparison",

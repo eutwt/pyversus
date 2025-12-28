@@ -1,164 +1,17 @@
 from __future__ import annotations
 
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
-
-try:
-    from typing import Literal
-except ImportError:  # pragma: no cover - Python < 3.8
-    from typing_extensions import Literal
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 import duckdb
 
-from . import _compute as c
-from . import _helpers as h
-from . import _slices, _value_diffs, _weave
-
-if TYPE_CHECKING:  # pragma: no cover
-    import pandas
-    import polars
-
-
-def compare(
-    table_a: Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"],
-    table_b: Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"],
-    *,
-    by: Sequence[str],
-    allow_both_na: bool = True,
-    coerce: bool = True,
-    table_id: Tuple[str, str] = ("a", "b"),
-    connection: Optional[duckdb.DuckDBPyConnection] = None,
-    materialize: Literal["all", "summary", "none"] = "all",
-) -> Comparison:
-    """Compare two DuckDB relations by key columns.
-
-    Parameters
-    ----------
-    table_a, table_b : DuckDBPyRelation, pandas.DataFrame, or polars.DataFrame
-        DuckDB relations or pandas/polars DataFrames to compare.
-    by : sequence of str
-        Column names that uniquely identify rows.
-    allow_both_na : bool, default True
-        Whether to treat NULL/NA values as equal when both sides are missing.
-    coerce : bool, default True
-        If True, allow DuckDB to coerce compatible types. If False, require
-        exact type matches for shared columns.
-    table_id : tuple[str, str], default ("a", "b")
-        Labels used in outputs for the two tables.
-    connection : duckdb.DuckDBPyConnection, optional
-        DuckDB connection used to register the inputs and run queries.
-    materialize : {"all", "summary", "none"}, default "all"
-        Controls which helper tables are materialized upfront.
-
-    Returns
-    -------
-    Comparison
-        Comparison object with summary relations and diff helpers.
-
-    Examples
-    --------
-    >>> from versus import compare, examples
-    >>> comparison = compare(
-    ...     examples.example_cars_a(),
-    ...     examples.example_cars_b(),
-    ...     by=["car"],
-    ... )
-    >>> comparison.summary()
-    ┌────────────────┬─────────┐
-    │   difference   │  found  │
-    │    varchar     │ boolean │
-    ├────────────────┼─────────┤
-    │ value_diffs    │ true    │
-    │ unmatched_cols │ true    │
-    │ unmatched_rows │ true    │
-    │ type_diffs     │ false   │
-    └────────────────┴─────────┘
-    """
-    materialize_summary, materialize_keys = h.resolve_materialize(materialize)
-
-    conn = h.resolve_connection(connection)
-    clean_ids = h.validate_table_id(table_id)
-    by_columns = h.normalize_column_list(by, "by", allow_empty=False)
-    connection_supplied = connection is not None
-    handles = {
-        clean_ids[0]: h.build_table_handle(
-            conn, table_a, clean_ids[0], connection_supplied=connection_supplied
-        ),
-        clean_ids[1]: h.build_table_handle(
-            conn, table_b, clean_ids[1], connection_supplied=connection_supplied
-        ),
-    }
-    h.validate_tables(conn, handles, clean_ids, by_columns, coerce=coerce)
-
-    tables_frame = c.build_tables_frame(conn, handles, clean_ids, materialize_summary)
-    by_frame = c.build_by_frame(
-        conn, by_columns, handles, clean_ids, materialize_summary
-    )
-    common_all = [
-        col
-        for col in handles[clean_ids[0]].columns
-        if col in handles[clean_ids[1]].columns
-    ]
-    value_columns = [col for col in common_all if col not in by_columns]
-    unmatched_cols = c.build_unmatched_cols(
-        conn, handles, clean_ids, materialize_summary
-    )
-    diff_table = None
-    if materialize_keys:
-        diff_table = c.compute_diff_table(
-            conn,
-            handles,
-            clean_ids,
-            by_columns,
-            value_columns,
-            allow_both_na,
-        )
-    intersection, diff_lookup = c.build_intersection_frame(
-        value_columns,
-        handles,
-        clean_ids,
-        by_columns,
-        allow_both_na,
-        diff_table,
-        conn,
-        materialize_summary,
-    )
-    unmatched_keys = c.compute_unmatched_keys(
-        conn, handles, clean_ids, by_columns, materialize_keys
-    )
-    unmatched_rows_rel, unmatched_lookup = c.compute_unmatched_rows_summary(
-        conn, unmatched_keys, clean_ids, materialize_summary
-    )
-
-    return Comparison(
-        connection=conn,
-        handles=handles,
-        table_id=clean_ids,
-        by_columns=by_columns,
-        allow_both_na=allow_both_na,
-        materialize_mode=materialize,
-        tables=tables_frame,
-        by=by_frame,
-        intersection=intersection,
-        unmatched_cols=unmatched_cols,
-        unmatched_keys=unmatched_keys,
-        unmatched_rows=unmatched_rows_rel,
-        common_columns=value_columns,
-        table_columns={
-            identifier: handle.columns[:] for identifier, handle in handles.items()
-        },
-        diff_table=diff_table,
-        diff_lookup=diff_lookup,
-        unmatched_lookup=unmatched_lookup,
-    )
+from . import _exceptions as e
+from . import _relations as r
+from . import _slices as l
+from . import _sql as q
+from . import _summary as s
+from . import _types as t
+from . import _value_diffs as d
+from . import _weave as w
 
 
 class Comparison:
@@ -171,8 +24,8 @@ class Comparison:
     def __init__(
         self,
         *,
-        connection: h.VersusConn,
-        handles: Mapping[str, h._TableHandle],
+        connection: t.VersusConn,
+        handles: Mapping[str, t._TableHandle],
         table_id: Tuple[str, str],
         by_columns: List[str],
         allow_both_na: bool,
@@ -201,21 +54,21 @@ class Comparison:
         self._diff_lookup = diff_lookup
         self._unmatched_lookup = unmatched_lookup
         summary_materialized = materialize_mode in {"all", "summary"}
-        self.tables = h.SummaryRelation(
+        self.tables = s.SummaryRelation(
             connection, tables, materialized=summary_materialized
         )
-        self.by = h.SummaryRelation(connection, by, materialized=summary_materialized)
-        self.intersection = h.SummaryRelation(
+        self.by = s.SummaryRelation(connection, by, materialized=summary_materialized)
+        self.intersection = s.SummaryRelation(
             connection,
             intersection,
             materialized=summary_materialized,
             on_materialize=self._store_diff_lookup,
         )
-        self.unmatched_cols = h.SummaryRelation(
+        self.unmatched_cols = s.SummaryRelation(
             connection, unmatched_cols, materialized=summary_materialized
         )
         self.unmatched_keys = unmatched_keys
-        self.unmatched_rows = h.SummaryRelation(
+        self.unmatched_rows = s.SummaryRelation(
             connection,
             unmatched_rows,
             materialized=summary_materialized,
@@ -224,7 +77,7 @@ class Comparison:
         self.common_columns = common_columns
         self.table_columns = table_columns
         if materialize_mode == "all" and diff_table is None:
-            raise h.ComparisonError("Diff table is required when materialize='all'.")
+            raise e.ComparisonError("Diff table is required when materialize='all'.")
         self.diff_table = diff_table
         self._closed = False
 
@@ -236,11 +89,11 @@ class Comparison:
 
     def _store_diff_lookup(self, relation: duckdb.DuckDBPyRelation) -> None:
         if self._diff_lookup is None:
-            self._diff_lookup = h.diff_lookup_from_intersection(relation)
+            self._diff_lookup = r.diff_lookup_from_intersection(relation)
 
     def _store_unmatched_lookup(self, relation: duckdb.DuckDBPyRelation) -> None:
         if self._unmatched_lookup is None:
-            self._unmatched_lookup = h.unmatched_lookup_from_rows(relation)
+            self._unmatched_lookup = r.unmatched_lookup_from_rows(relation)
 
     def close(self) -> None:
         """Release any temporary views or tables created for the comparison.
@@ -259,12 +112,12 @@ class Comparison:
             return
         for view in reversed(self.connection.versus.views):
             try:
-                self.connection.execute(f"DROP VIEW IF EXISTS {h.ident(view)}")
+                self.connection.execute(f"DROP VIEW IF EXISTS {q.ident(view)}")
             except duckdb.Error:
                 pass
         for view in self.connection.versus.temp_tables:
             try:
-                self.connection.execute(f"DROP TABLE IF EXISTS {h.ident(view)}")
+                self.connection.execute(f"DROP TABLE IF EXISTS {q.ident(view)}")
             except duckdb.Error:
                 pass
         self._closed = True
@@ -316,7 +169,7 @@ class Comparison:
         │    259 │    258 │ Hornet 4 Drive │
         └────────┴────────┴────────────────┘
         """
-        return _value_diffs.value_diffs(self, column)
+        return d.value_diffs(self, column)
 
     def value_diffs_stacked(
         self, columns: Optional[Sequence[str]] = None
@@ -352,7 +205,7 @@ class Comparison:
         │ disp    │         259.0 │         258.0 │ Hornet 4 Drive │
         └─────────┴───────────────┴───────────────┴────────────────┘
         """
-        return _value_diffs.value_diffs_stacked(self, columns)
+        return d.value_diffs_stacked(self, columns)
 
     def slice_diffs(
         self,
@@ -390,7 +243,7 @@ class Comparison:
         │ Merc 240D  │         24.4 │     4 │   147 │    62 │         3.69 │         3.19 │     1 │     0 │
         └────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┴───────┘
         """
-        return _slices.slice_diffs(self, table, columns)
+        return l.slice_diffs(self, table, columns)
 
     def slice_unmatched(self, table: str) -> duckdb.DuckDBPyRelation:
         """Return rows from one table whose keys are missing in the other.
@@ -421,7 +274,7 @@ class Comparison:
         │ Mazda RX4 │         21.0 │     6 │   160 │   110 │         3.90 │         2.62 │     0 │     1 │
         └───────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┴───────┘
         """
-        return _slices.slice_unmatched(self, table)
+        return l.slice_unmatched(self, table)
 
     def slice_unmatched_both(self) -> duckdb.DuckDBPyRelation:
         """Return unmatched rows from both tables.
@@ -449,7 +302,7 @@ class Comparison:
         │ b          │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │
         └────────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
         """
-        return _slices.slice_unmatched_both(self)
+        return l.slice_unmatched_both(self)
 
     def weave_diffs_wide(
         self,
@@ -488,7 +341,7 @@ class Comparison:
         │ Hornet 4 Drive │         21.4 │     6 │    259 │    258 │   110 │         3.08 │         3.22 │     1 │
         └────────────────┴──────────────┴───────┴────────┴────────┴───────┴──────────────┴──────────────┴───────┘
         """
-        return _weave.weave_diffs_wide(self, columns, suffix)
+        return w.weave_diffs_wide(self, columns, suffix)
 
     def weave_diffs_long(
         self,
@@ -525,7 +378,7 @@ class Comparison:
         │ b          │ Hornet 4 Drive │         21.4 │     6 │   258 │   110 │         3.08 │         3.22 │     1 │
         └────────────┴────────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
         """
-        return _weave.weave_diffs_long(self, columns)
+        return w.weave_diffs_long(self, columns)
 
     def summary(self) -> duckdb.DuckDBPyRelation:
         """Summarize which difference categories are present.
@@ -554,18 +407,18 @@ class Comparison:
         │ type_diffs     │ false   │
         └────────────────┴─────────┘
         """
-        value_diffs = not h.relation_is_empty(
-            self.intersection.filter(f"{h.ident('n_diffs')} > 0")
+        value_diffs = not r.relation_is_empty(
+            self.intersection.filter(f"{q.ident('n_diffs')} > 0")
         )
-        unmatched_cols = not h.relation_is_empty(self.unmatched_cols)
-        unmatched_rows = not h.relation_is_empty(
-            self.unmatched_rows.filter(f"{h.ident('n_unmatched')} > 0")
+        unmatched_cols = not r.relation_is_empty(self.unmatched_cols)
+        unmatched_rows = not r.relation_is_empty(
+            self.unmatched_rows.filter(f"{q.ident('n_unmatched')} > 0")
         )
         type_a_col = f"type_{self.table_id[0]}"
         type_b_col = f"type_{self.table_id[1]}"
-        type_diffs = not h.relation_is_empty(
+        type_diffs = not r.relation_is_empty(
             self.intersection.filter(
-                f"{h.ident(type_a_col)} IS DISTINCT FROM {h.ident(type_b_col)}"
+                f"{q.ident(type_a_col)} IS DISTINCT FROM {q.ident(type_b_col)}"
             )
         )
         rows = [
@@ -575,7 +428,7 @@ class Comparison:
             ("type_diffs", type_diffs),
         ]
         schema = [("difference", "VARCHAR"), ("found", "BOOLEAN")]
-        summary_rel = h.build_rows_relation(
+        summary_rel = s.build_rows_relation(
             self.connection, rows, schema, materialize=False
         )
         return summary_rel
