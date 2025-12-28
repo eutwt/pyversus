@@ -71,7 +71,7 @@ class Comparison:
             connection, tables, materialized=summary_materialized
         )
         self.by = h.SummaryRelation(connection, by, materialized=summary_materialized)
-        self._intersection = h.SummaryRelation(
+        self.intersection = h.SummaryRelation(
             connection,
             intersection,
             materialized=summary_materialized,
@@ -93,10 +93,6 @@ class Comparison:
             raise h.ComparisonError("Diff table is required when materialize='all'.")
         self.diff_table = diff_table
         self._closed = False
-
-    @property
-    def intersection(self) -> h.SummaryRelation:
-        return self._intersection
 
     def _filter_diff_columns(self, columns: Sequence[str]) -> List[str]:
         diff_lookup = self._diff_lookup

@@ -52,18 +52,14 @@ class VersusConn:
         temp_tables: Optional[List[str]] = None,
         views: Optional[List[str]] = None,
     ) -> None:
-        self._connection = connection
+        self.raw_connection = connection
         self.versus = VersusState(
             temp_tables if temp_tables is not None else [],
             views if views is not None else [],
         )
 
-    @property
-    def raw_connection(self) -> duckdb.DuckDBPyConnection:
-        return self._connection
-
     def __getattr__(self, name: str) -> Any:
-        return getattr(self._connection, name)
+        return getattr(self.raw_connection, name)
 
 
 class SummaryRelation:
@@ -76,39 +72,35 @@ class SummaryRelation:
         on_materialize: Optional[Callable[[duckdb.DuckDBPyRelation], None]] = None,
     ) -> None:
         self._conn = conn
-        self._relation = relation
+        self.relation = relation
         self.materialized = materialized
         self._on_materialize = on_materialize
         if self.materialized and self._on_materialize is not None:
-            self._on_materialize(self._relation)
+            self._on_materialize(self.relation)
 
     def materialize(self) -> None:
         if self.materialized:
             return
-        self._relation = finalize_relation(
-            self._conn, self._relation.sql_query(), materialize=True
+        self.relation = finalize_relation(
+            self._conn, self.relation.sql_query(), materialize=True
         )
         self.materialized = True
         if self._on_materialize is not None:
-            self._on_materialize(self._relation)
-
-    @property
-    def relation(self) -> duckdb.DuckDBPyRelation:
-        return self._relation
+            self._on_materialize(self.relation)
 
     def __getattr__(self, name: str) -> Any:
-        return getattr(self._relation, name)
+        return getattr(self.relation, name)
 
     def __repr__(self) -> str:
         self.materialize()
-        return repr(self._relation)
+        return repr(self.relation)
 
     def __str__(self) -> str:
         self.materialize()
-        return str(self._relation)
+        return str(self.relation)
 
     def __iter__(self) -> Any:
-        return iter(cast(Any, self._relation))
+        return iter(cast(Any, self.relation))
 
 
 # --------------- Core-only helpers
