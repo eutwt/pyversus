@@ -168,17 +168,17 @@ def _build_intersection_frame_inline(
         f"AS {h.ident(diff_alias(column))}"
         for column in value_columns
     )
-    struct_list = ",\n        ".join(
-        (
-            "struct_pack("
-            f"{h.ident('column')} := {h.sql_literal(column)}, "
-            f"{h.ident('n_diffs')} := counts.{h.ident(diff_alias(column))}, "
-            f"{h.ident(f'type_{first}')} := {h.sql_literal(handles[first].types[column])}, "
-            f"{h.ident(f'type_{second}')} := {h.sql_literal(handles[second].types[column])}"
-            ")"
-        )
-        for column in value_columns
-    )
+
+    def select_for(column: str) -> str:
+        return f"""
+        SELECT
+          {h.sql_literal(column)} AS {h.ident("column")},
+          counts.{h.ident(diff_alias(column))} AS {h.ident("n_diffs")},
+          {h.sql_literal(handles[first].types[column])} AS {h.ident(f"type_{first}")},
+          {h.sql_literal(handles[second].types[column])} AS {h.ident(f"type_{second}")}
+        FROM
+          counts
+        """
     sql = f"""
     WITH counts AS (
       SELECT
@@ -186,18 +186,7 @@ def _build_intersection_frame_inline(
       FROM
         {join_sql}
     )
-    SELECT
-      item.{h.ident("column")} AS {h.ident("column")},
-      item.{h.ident("n_diffs")} AS {h.ident("n_diffs")},
-      item.{h.ident(f"type_{first}")} AS {h.ident(f"type_{first}")},
-      item.{h.ident(f"type_{second}")} AS {h.ident(f"type_{second}")}
-    FROM
-      counts,
-      UNNEST(
-        [
-          {struct_list}
-        ]
-      ) AS unnest(item)
+    {" UNION ALL ".join(select_for(column) for column in value_columns)}
     """
     relation = h.finalize_relation(conn, sql, materialize)
     if not materialize:
