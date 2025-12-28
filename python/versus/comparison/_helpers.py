@@ -303,9 +303,11 @@ def assert_column_allowed(comparison: "Comparison", column: str, func: str) -> N
 
 
 # --------------- Input registration and metadata
-def register_input_view(
+def build_table_handle(
     conn: VersusConn,
-    source: Any,
+    source: Union[
+        duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"
+    ],
     label: str,
     *,
     connection_supplied: bool,
@@ -384,7 +386,9 @@ def source_ref_for_sql(source_sql: str, is_identifier: bool) -> str:
 
 def resolve_row_count(
     conn: VersusConn,
-    source: Any,
+    source: Union[
+        duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"
+    ],
     source_sql: str,
     *,
     is_identifier: bool,
@@ -398,7 +402,11 @@ def resolve_row_count(
     return row[0]
 
 
-def row_count_from_frame(source: Any) -> Optional[int]:
+def row_count_from_frame(
+    source: Union[
+        duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"
+    ],
+) -> Optional[int]:
     module = type(source).__module__
     if module.startswith("pandas"):
         return int(source.shape[0])

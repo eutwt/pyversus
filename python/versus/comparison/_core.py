@@ -509,10 +509,10 @@ def compare(
     by_columns = h.normalize_column_list(by, "by", allow_empty=False)
     connection_supplied = connection is not None
     handles = {
-        clean_ids[0]: h.register_input_view(
+        clean_ids[0]: h.build_table_handle(
             conn, table_a, clean_ids[0], connection_supplied=connection_supplied
         ),
-        clean_ids[1]: h.register_input_view(
+        clean_ids[1]: h.build_table_handle(
             conn, table_b, clean_ids[1], connection_supplied=connection_supplied
         ),
     }
