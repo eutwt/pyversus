@@ -1,4 +1,5 @@
-from ._core import Comparison, compare
+from .api import compare
+from .comparison import Comparison
 from ._exceptions import ComparisonError
 
 __all__ = [
