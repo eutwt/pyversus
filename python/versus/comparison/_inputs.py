@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, cast
 import duckdb
 
 from ._exceptions import ComparisonError
-from ._sql import ident, run_sql
+from . import _sql as q
+from . import _validation as v
 from ._types import _Input, _TableHandle, VersusConn
-from ._validation import validate_columns
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
@@ -47,7 +47,7 @@ def build_table_handle_from_relation(
     name: str,
     connection_supplied: bool,
 ) -> _TableHandle:
-    validate_columns(source.columns, label)
+    v.validate_columns(source.columns, label)
     source_sql = source.sql_query()
     display = getattr(source, "alias", "relation")
     assert_relation_connection(conn, source, label, connection_supplied)
@@ -78,7 +78,7 @@ def build_table_handle_from_frame(
 ) -> _TableHandle:
     source_columns = getattr(source, "columns", None)
     if source_columns is not None:
-        validate_columns(list(source_columns), label)
+        v.validate_columns(list(source_columns), label)
     try:
         conn.register(name, source)
     except Exception as exc:
@@ -109,7 +109,7 @@ def describe_source(
     is_identifier: bool,
 ) -> Tuple[List[str], Dict[str, str]]:
     source_ref = source_ref_for_sql(source_sql, is_identifier)
-    rel = run_sql(conn, f"DESCRIBE SELECT * FROM {source_ref}")
+    rel = q.run_sql(conn, f"DESCRIBE SELECT * FROM {source_ref}")
     rows = rel.fetchall()
     columns = [row[0] for row in rows]
     types = {row[0]: row[1] for row in rows}
@@ -117,7 +117,7 @@ def describe_source(
 
 
 def source_ref_for_sql(source_sql: str, is_identifier: bool) -> str:
-    return ident(source_sql) if is_identifier else f"({source_sql})"
+    return q.ident(source_sql) if is_identifier else f"({source_sql})"
 
 
 def resolve_row_count(
@@ -131,7 +131,7 @@ def resolve_row_count(
     if frame_row_count is not None:
         return frame_row_count
     source_ref = source_ref_for_sql(source_sql, is_identifier)
-    row = run_sql(conn, f"SELECT COUNT(*) FROM {source_ref}").fetchone()
+    row = q.run_sql(conn, f"SELECT COUNT(*) FROM {source_ref}").fetchone()
     assert row is not None and isinstance(row[0], int)
     return row[0]
 

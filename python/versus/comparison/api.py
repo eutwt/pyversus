@@ -18,8 +18,9 @@ except ImportError:  # pragma: no cover - Python < 3.8
 
 import duckdb
 
-from . import _frames as c
-from . import _helpers as h
+from . import _frames as f
+from . import _inputs as i
+from . import _validation as v
 from .comparison import Comparison
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -82,24 +83,24 @@ def compare(
     │ type_diffs     │ false   │
     └────────────────┴─────────┘
     """
-    materialize_summary, materialize_keys = h.resolve_materialize(materialize)
+    materialize_summary, materialize_keys = v.resolve_materialize(materialize)
 
-    conn = h.resolve_connection(connection)
-    clean_ids = h.validate_table_id(table_id)
-    by_columns = h.normalize_column_list(by, "by", allow_empty=False)
+    conn = v.resolve_connection(connection)
+    clean_ids = v.validate_table_id(table_id)
+    by_columns = v.normalize_column_list(by, "by", allow_empty=False)
     connection_supplied = connection is not None
     handles = {
-        clean_ids[0]: h.build_table_handle(
+        clean_ids[0]: i.build_table_handle(
             conn, table_a, clean_ids[0], connection_supplied=connection_supplied
         ),
-        clean_ids[1]: h.build_table_handle(
+        clean_ids[1]: i.build_table_handle(
             conn, table_b, clean_ids[1], connection_supplied=connection_supplied
         ),
     }
-    h.validate_tables(conn, handles, clean_ids, by_columns, coerce=coerce)
+    v.validate_tables(conn, handles, clean_ids, by_columns, coerce=coerce)
 
-    tables_frame = c.build_tables_frame(conn, handles, clean_ids, materialize_summary)
-    by_frame = c.build_by_frame(
+    tables_frame = f.build_tables_frame(conn, handles, clean_ids, materialize_summary)
+    by_frame = f.build_by_frame(
         conn, by_columns, handles, clean_ids, materialize_summary
     )
     common_all = [
@@ -108,12 +109,12 @@ def compare(
         if col in handles[clean_ids[1]].columns
     ]
     value_columns = [col for col in common_all if col not in by_columns]
-    unmatched_cols = c.build_unmatched_cols(
+    unmatched_cols = f.build_unmatched_cols(
         conn, handles, clean_ids, materialize_summary
     )
     diff_table = None
     if materialize_keys:
-        diff_table = c.compute_diff_table(
+        diff_table = f.compute_diff_table(
             conn,
             handles,
             clean_ids,
@@ -121,7 +122,7 @@ def compare(
             value_columns,
             allow_both_na,
         )
-    intersection, diff_lookup = c.build_intersection_frame(
+    intersection, diff_lookup = f.build_intersection_frame(
         value_columns,
         handles,
         clean_ids,
@@ -131,10 +132,10 @@ def compare(
         conn,
         materialize_summary,
     )
-    unmatched_keys = c.compute_unmatched_keys(
+    unmatched_keys = f.compute_unmatched_keys(
         conn, handles, clean_ids, by_columns, materialize_keys
     )
-    unmatched_rows_rel, unmatched_lookup = c.compute_unmatched_rows_summary(
+    unmatched_rows_rel, unmatched_lookup = f.compute_unmatched_rows_summary(
         conn, unmatched_keys, clean_ids, materialize_summary
     )
 
