@@ -179,6 +179,7 @@ def _build_intersection_frame_inline(
         FROM
           counts
         """
+
     sql = f"""
     WITH counts AS (
       SELECT
