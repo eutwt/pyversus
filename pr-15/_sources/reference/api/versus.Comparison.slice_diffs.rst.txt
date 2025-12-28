@@ -1,6 +1,0 @@
-﻿versus.Comparison.slice\_diffs
-==============================
-
-.. currentmodule:: versus
-
-.. automethod:: Comparison.slice_diffs
