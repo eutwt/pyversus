@@ -85,13 +85,13 @@ def slice_unmatched_both(comparison: "Comparison") -> duckdb.DuckDBPyRelation:
 
     def select_for(table_name: str) -> str:
         unmatched_keys_sql = build_unmatched_keys_sql(comparison, table_name)
-        base_table = comparison._handles[table_name].name
+        base_table = comparison._handles[table_name]
         return f"""
         SELECT
           {h.sql_literal(table_name)} AS table_name,
           {select_cols}
         FROM
-          {h.ident(base_table)} AS base
+          {h.table_ref(base_table)} AS base
           JOIN ({unmatched_keys_sql}) AS keys
             ON {join_condition}
         """
