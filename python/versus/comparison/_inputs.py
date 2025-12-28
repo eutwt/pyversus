@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, cast
 
 import duckdb
 
-from ._exceptions import ComparisonError
 from . import _sql as q
 from . import _validation as v
-from ._types import _Input, _TableHandle, VersusConn
+from ._exceptions import ComparisonError
+from ._types import VersusConn, _Input, _TableHandle
 
 if TYPE_CHECKING:  # pragma: no cover
     import pandas
