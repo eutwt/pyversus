@@ -221,20 +221,15 @@ def compute_diff_table(
     allow_both_na: bool,
 ) -> duckdb.DuckDBPyRelation:
     if not value_columns:
-        schema = [
-            (column, handles[table_id[0]].types[column]) for column in by_columns
-        ]
+        schema = [(column, handles[table_id[0]].types[column]) for column in by_columns]
         return h.build_rows_relation(conn, [], schema, materialize=True)
     join_sql = h.join_clause(handles, table_id, by_columns)
     select_by = h.select_cols(by_columns, alias="a")
     diff_flags = ",\n      ".join(
-        f"{h.diff_predicate(column, allow_both_na, 'a', 'b')} "
-        f"AS {h.ident(column)}"
+        f"{h.diff_predicate(column, allow_both_na, 'a', 'b')} AS {h.ident(column)}"
         for column in value_columns
     )
-    predicate = " OR ".join(
-        f"diffs.{h.ident(column)}" for column in value_columns
-    )
+    predicate = " OR ".join(f"diffs.{h.ident(column)}" for column in value_columns)
     sql = f"""
     WITH diffs AS (
       SELECT

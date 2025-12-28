@@ -426,7 +426,6 @@ def diff_predicate(
     return f"(({left} IS NULL AND {right} IS NULL) OR {left} IS DISTINCT FROM {right})"
 
 
-
 def sql_literal(value: Any) -> str:
     if value is None:
         return "NULL"
