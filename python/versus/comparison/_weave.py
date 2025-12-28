@@ -23,7 +23,7 @@ def weave_diffs_wide(
     if not diff_cols:
         return h.select_zero_from_table(comparison, table_a, out_cols)
     if comparison._materialize_mode == "all":
-        relation = _weave_diffs_wide_with_keys(comparison, diff_cols, suffix)
+        relation = _weave_diffs_wide_with_diff_table(comparison, diff_cols, suffix)
     else:
         relation = _weave_diffs_wide_inline(comparison, diff_cols, suffix)
     return relation
@@ -48,7 +48,7 @@ def weave_diffs_long(
         )
         return relation
     if comparison._materialize_mode == "all":
-        relation = _weave_diffs_long_with_keys(comparison, diff_cols)
+        relation = _weave_diffs_long_with_diff_table(comparison, diff_cols)
     else:
         relation = _weave_diffs_long_inline(comparison, diff_cols)
     return relation
@@ -76,22 +76,31 @@ def _weave_select_parts(
     return by_parts + common_parts
 
 
-def _weave_diffs_wide_with_keys(
+def _weave_diffs_wide_with_diff_table(
     comparison: "Comparison",
     diff_cols: Sequence[str],
     suffix: Optional[Tuple[str, str]],
 ) -> duckdb.DuckDBPyRelation:
     table_a, table_b = comparison.table_id
     suffix = h.resolve_suffix(suffix, comparison.table_id)
-    keys = h.collect_diff_keys(comparison, diff_cols)
+    diff_sql = h.require_diff_table(comparison).sql_query()
+    predicate = h.diff_table_predicate(diff_cols, alias="diffs")
     select_parts = _weave_select_parts(comparison, diff_cols, suffix)
-    join_a = h.join_condition(comparison.by_columns, "keys", "a")
-    join_b = h.join_condition(comparison.by_columns, "keys", "b")
+    join_a = h.join_condition(comparison.by_columns, "diffs", "a")
+    join_b = h.join_condition(comparison.by_columns, "diffs", "b")
     sql = f"""
+    WITH diffs AS (
+      SELECT
+        *
+      FROM
+        ({diff_sql}) AS diffs
+      WHERE
+        {predicate}
+    )
     SELECT
       {", ".join(select_parts)}
     FROM
-      ({keys}) AS keys
+      diffs
       JOIN {h.ident(comparison._handles[table_a].name)} AS a
         ON {join_a}
       JOIN {h.ident(comparison._handles[table_b].name)} AS b
@@ -125,22 +134,28 @@ def _weave_diffs_wide_inline(
     return h.run_sql(comparison.connection, sql)
 
 
-def _weave_diffs_long_with_keys(
+def _weave_diffs_long_with_diff_table(
     comparison: "Comparison", diff_cols: Sequence[str]
 ) -> duckdb.DuckDBPyRelation:
     table_a, table_b = comparison.table_id
     out_cols = comparison.by_columns + comparison.common_columns
-    keys = h.collect_diff_keys(comparison, diff_cols)
+    diff_sql = h.require_diff_table(comparison).sql_query()
+    predicate = h.diff_table_predicate(diff_cols, alias="diffs")
     table_column = h.ident("table_name")
     select_cols_a = h.select_cols(out_cols, alias="a")
     select_cols_b = h.select_cols(out_cols, alias="b")
-    join_a = h.join_condition(comparison.by_columns, "keys", "a")
-    join_b = h.join_condition(comparison.by_columns, "keys", "b")
+    join_a = h.join_condition(comparison.by_columns, "diffs", "a")
+    join_b = h.join_condition(comparison.by_columns, "diffs", "b")
     order_cols = h.select_cols(comparison.by_columns)
     sql = f"""
     WITH
-      keys AS (
-        {keys}
+      diffs AS (
+        SELECT
+          *
+        FROM
+          ({diff_sql}) AS diffs
+        WHERE
+          {predicate}
       )
     SELECT
       {table_column},
@@ -152,7 +167,7 @@ def _weave_diffs_long_with_keys(
           '{table_a}' AS {table_column},
           {select_cols_a}
         FROM
-          keys
+          diffs
           JOIN {h.ident(comparison._handles[table_a].name)} AS a
             ON {join_a}
         UNION ALL
@@ -161,7 +176,7 @@ def _weave_diffs_long_with_keys(
           '{table_b}' AS {table_column},
           {select_cols_b}
         FROM
-          keys
+          diffs
           JOIN {h.ident(comparison._handles[table_b].name)} AS b
             ON {join_b}
       ) AS stacked

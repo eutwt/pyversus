@@ -21,17 +21,36 @@ def slice_diffs(
     if not diff_cols:
         return h.select_zero_from_table(comparison, table_name)
     if comparison._materialize_mode == "all":
-        relation = _slice_diffs_with_keys(comparison, table_name, diff_cols)
+        relation = _slice_diffs_with_diff_table(comparison, table_name, diff_cols)
     else:
         relation = _slice_diffs_inline(comparison, table_name, diff_cols)
     return relation
 
 
-def _slice_diffs_with_keys(
+def _slice_diffs_with_diff_table(
     comparison: "Comparison", table_name: str, diff_cols: Sequence[str]
 ) -> duckdb.DuckDBPyRelation:
-    key_sql = h.collect_diff_keys(comparison, diff_cols)
-    return h.fetch_rows_by_keys(comparison, table_name, key_sql)
+    diff_sql = h.require_diff_table(comparison).sql_query()
+    predicate = h.diff_table_predicate(diff_cols, alias="diffs")
+    join_condition = h.join_condition(comparison.by_columns, "diffs", "base")
+    base_table = comparison._handles[table_name].name
+    sql = f"""
+    WITH diffs AS (
+      SELECT
+        *
+      FROM
+        ({diff_sql}) AS diffs
+      WHERE
+        {predicate}
+    )
+    SELECT
+      base.*
+    FROM
+      diffs
+      JOIN {h.ident(base_table)} AS base
+        ON {join_condition}
+    """
+    return h.run_sql(comparison.connection, sql)
 
 
 def _slice_diffs_inline(

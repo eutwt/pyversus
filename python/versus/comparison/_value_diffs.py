@@ -28,13 +28,20 @@ def value_diffs_stacked(
     if not diff_cols:
         return _empty_value_diffs_stacked(comparison, selected)
     if comparison._materialize_mode == "all":
-        selects = [
-            stack_value_diffs_sql(
-                comparison, column, h.collect_diff_keys(comparison, [column])
-            )
-            for column in diff_cols
-        ]
-        sql = " UNION ALL ".join(selects)
+        diff_sql = h.require_diff_table(comparison).sql_query()
+        predicate = h.diff_table_predicate(diff_cols, alias="diffs")
+        selects = [stack_value_diffs_sql(comparison, column) for column in diff_cols]
+        sql = f"""
+        WITH diffs AS (
+          SELECT
+            *
+          FROM
+            ({diff_sql}) AS diffs
+          WHERE
+            {predicate}
+        )
+        {" UNION ALL ".join(selects)}
+        """
         return h.run_sql(comparison.connection, sql)
     selects = [stack_value_diffs_inline_sql(comparison, column) for column in diff_cols]
     sql = " UNION ALL ".join(selects)
@@ -44,20 +51,29 @@ def value_diffs_stacked(
 def _value_diffs_with_diff_table(
     comparison: "Comparison", target_col: str
 ) -> duckdb.DuckDBPyRelation:
-    key_sql = h.collect_diff_keys(comparison, [target_col])
+    diff_sql = h.require_diff_table(comparison).sql_query()
+    predicate = h.diff_table_predicate([target_col], alias="diffs")
     table_a, table_b = comparison.table_id
     select_cols = [
         f"{h.col('a', target_col)} AS {h.ident(f'{target_col}_{table_a}')}",
         f"{h.col('b', target_col)} AS {h.ident(f'{target_col}_{table_b}')}",
-        h.select_cols(comparison.by_columns, alias="keys"),
+        h.select_cols(comparison.by_columns, alias="diffs"),
     ]
-    join_a = h.join_condition(comparison.by_columns, "keys", "a")
-    join_b = h.join_condition(comparison.by_columns, "keys", "b")
+    join_a = h.join_condition(comparison.by_columns, "diffs", "a")
+    join_b = h.join_condition(comparison.by_columns, "diffs", "b")
     sql = f"""
+    WITH diffs AS (
+      SELECT
+        *
+      FROM
+        ({diff_sql}) AS diffs
+      WHERE
+        {predicate}
+    )
     SELECT
       {", ".join(select_cols)}
     FROM
-      ({key_sql}) AS keys
+      diffs
       JOIN {h.ident(comparison._handles[table_a].name)} AS a
         ON {join_a}
       JOIN {h.ident(comparison._handles[table_b].name)} AS b
@@ -93,7 +109,6 @@ def _value_diffs_inline(
 def stack_value_diffs_sql(
     comparison: "Comparison",
     column: str,
-    key_sql: str,
 ) -> str:
     table_a, table_b = comparison.table_id
     by_columns = comparison.by_columns
@@ -101,19 +116,21 @@ def stack_value_diffs_sql(
         f"{h.sql_literal(column)} AS {h.ident('column')}",
         f"{h.col('a', column)} AS {h.ident(f'val_{table_a}')}",
         f"{h.col('b', column)} AS {h.ident(f'val_{table_b}')}",
-        h.select_cols(by_columns, alias="keys"),
+        h.select_cols(by_columns, alias="diffs"),
     ]
-    join_a = h.join_condition(by_columns, "keys", "a")
-    join_b = h.join_condition(by_columns, "keys", "b")
+    join_a = h.join_condition(by_columns, "diffs", "a")
+    join_b = h.join_condition(by_columns, "diffs", "b")
     return f"""
     SELECT
       {", ".join(select_parts)}
     FROM
-      ({key_sql}) AS keys
+      diffs
       JOIN {h.ident(comparison._handles[table_a].name)} AS a
         ON {join_a}
       JOIN {h.ident(comparison._handles[table_b].name)} AS b
         ON {join_b}
+    WHERE
+      diffs.{h.ident(column)}
     """
 
 
