@@ -92,9 +92,9 @@ def _weave_diffs_wide_with_keys(
       {", ".join(select_parts)}
     FROM
       ({keys}) AS keys
-      JOIN {h.ident(comparison._handles[table_a].name)} AS a
+      JOIN {h.table_ref(comparison._handles[table_a])} AS a
         ON {join_a}
-      JOIN {h.ident(comparison._handles[table_b].name)} AS b
+      JOIN {h.table_ref(comparison._handles[table_b])} AS b
         ON {join_b}
     """
     return h.run_sql(comparison.connection, sql)
@@ -153,7 +153,7 @@ def _weave_diffs_long_with_keys(
           {select_cols_a}
         FROM
           keys
-          JOIN {h.ident(comparison._handles[table_a].name)} AS a
+          JOIN {h.table_ref(comparison._handles[table_a])} AS a
             ON {join_a}
         UNION ALL
         SELECT
@@ -162,7 +162,7 @@ def _weave_diffs_long_with_keys(
           {select_cols_b}
         FROM
           keys
-          JOIN {h.ident(comparison._handles[table_b].name)} AS b
+          JOIN {h.table_ref(comparison._handles[table_b])} AS b
             ON {join_b}
       ) AS stacked
     ORDER BY

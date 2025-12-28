@@ -263,8 +263,8 @@ def compute_unmatched_keys(
           {h.sql_literal(identifier)} AS table_name,
           {select_by}
         FROM
-          {h.ident(handle_left.name)} AS left_tbl
-          ANTI JOIN {h.ident(handle_right.name)} AS right_tbl
+          {h.table_ref(handle_left)} AS left_tbl
+          ANTI JOIN {h.table_ref(handle_right)} AS right_tbl
             ON {condition}
         """
 

@@ -60,9 +60,9 @@ def _value_diffs_with_diff_table(
       {", ".join(select_cols)}
     FROM
       ({key_sql}) AS keys
-      JOIN {h.ident(comparison._handles[table_a].name)} AS a
+      JOIN {h.table_ref(comparison._handles[table_a])} AS a
         ON {join_a}
-      JOIN {h.ident(comparison._handles[table_b].name)} AS b
+      JOIN {h.table_ref(comparison._handles[table_b])} AS b
         ON {join_b}
     """
     return h.run_sql(comparison.connection, sql)
@@ -112,9 +112,9 @@ def stack_value_diffs_sql(
       {", ".join(select_parts)}
     FROM
       ({key_sql}) AS keys
-      JOIN {h.ident(comparison._handles[table_a].name)} AS a
+      JOIN {h.table_ref(comparison._handles[table_a])} AS a
         ON {join_a}
-      JOIN {h.ident(comparison._handles[table_b].name)} AS b
+      JOIN {h.table_ref(comparison._handles[table_b])} AS b
         ON {join_b}
     """
 
