@@ -25,10 +25,9 @@ helper queries run in the same session.
 
    >>> import duckdb
    >>> from versus import compare
-   >>> con = duckdb.connect()
-   >>> rel_a = con.sql("SELECT 1 AS id, 10 AS value")
-   >>> rel_b = con.sql("SELECT 1 AS id, 12 AS value")
-   >>> comparison = compare(rel_a, rel_b, by=["id"], connection=con)
+   >>> rel_a = duckdb.sql("SELECT 1 AS id, 10 AS value")
+   >>> rel_b = duckdb.sql("SELECT 1 AS id, 12 AS value")
+   >>> comparison = compare(rel_a, rel_b, by=["id"])
    >>> comparison.summary()
    ┌────────────────┬─────────┐
    │   difference   │  found  │
@@ -49,13 +48,15 @@ printed output (`tables`, `by`, `intersection`, `unmatched_cols`,
 themselves on print. The input tables are never materialized by Pyversus
 in any mode; they stay as DuckDB relations and are queried lazily.
 
-In full materialization, Pyversus also builds diff key relations:
-per-column relations of `by` keys where values differ. Those precomputed
-keys let row-level helpers fetch the exact differing rows quickly via
-joins, which can be faster when you call multiple helpers. Other modes
-skip diff keys and compute diff counts inline.
+In full materialization, Pyversus also builds a diff table: a single
+relation with the `by` keys plus one boolean flag per value column
+indicating a difference. The table only includes rows with at least one
+difference. Those precomputed flags let row-level helpers fetch the exact
+differing rows quickly via joins, which can be faster when you call
+multiple helpers. Other modes skip the diff table and detect differences
+inline.
 
-- `materialize="all"`: store the summary tables and diff key tables as
+- `materialize="all"`: store the summary tables and the diff table as
   temp tables. This is fastest if you will call row-level helpers
   multiple times.
 - `materialize="summary"`: store only the summary tables. Row-level

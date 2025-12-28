@@ -87,6 +87,15 @@ comparison
 
     )
 
+A comparison includes:
+
+- `comparison.intersection`: columns in both tables and rows with
+  differing values
+- `comparison.unmatched_cols`: columns in only one table
+- `comparison.unmatched_rows`: rows in only one table
+
+Use `value_diffs()` to see the values that are different.
+
 ``` python
 comparison.value_diffs("disp")
 ```
@@ -98,6 +107,8 @@ comparison.value_diffs("disp")
     │    109 │    108 │ Datsun 710     │
     │    259 │    258 │ Hornet 4 Drive │
     └────────┴────────┴────────────────┘
+
+Use `value_diffs_stacked()` to compare multiple columns at once.
 
 ``` python
 comparison.value_diffs_stacked(["mpg", "disp"])
@@ -113,6 +124,8 @@ comparison.value_diffs_stacked(["mpg", "disp"])
     │ disp    │         259.0 │         258.0 │ Hornet 4 Drive │
     └─────────┴───────────────┴───────────────┴────────────────┘
 
+Use `weave_diffs_*()` to see the differing values in context.
+
 ``` python
 comparison.weave_diffs_wide(["mpg", "disp"])
 ```
@@ -121,9 +134,9 @@ comparison.weave_diffs_wide(["mpg", "disp"])
     │      car       │    mpg_a     │    mpg_b     │  cyl  │ disp_a │ disp_b │  hp   │     drat     │      wt      │  vs   │
     │    varchar     │ decimal(3,1) │ decimal(3,1) │ int32 │ int32  │ int32  │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
     ├────────────────┼──────────────┼──────────────┼───────┼────────┼────────┼───────┼──────────────┼──────────────┼───────┤
+    │ Merc 240D      │         24.4 │         26.4 │     4 │    147 │    147 │    62 │         3.69 │         3.19 │     1 │
     │ Duster 360     │         14.3 │         16.3 │     8 │    360 │    360 │   245 │         3.21 │         3.57 │     0 │
     │ Datsun 710     │         22.8 │         22.8 │  NULL │    109 │    108 │    93 │         3.85 │         2.32 │     1 │
-    │ Merc 240D      │         24.4 │         26.4 │     4 │    147 │    147 │    62 │         3.69 │         3.19 │     1 │
     │ Hornet 4 Drive │         21.4 │         21.4 │     6 │    259 │    258 │   110 │         3.08 │         3.22 │     1 │
     └────────────────┴──────────────┴──────────────┴───────┴────────┴────────┴───────┴──────────────┴──────────────┴───────┘
 
@@ -141,6 +154,9 @@ comparison.weave_diffs_long("disp")
     │ b          │ Hornet 4 Drive │         21.4 │     6 │   258 │   110 │         3.08 │         3.22 │     1 │
     └────────────┴────────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
 
+Use `slice_diffs()` to get the rows with differing values from one
+table.
+
 ``` python
 comparison.slice_diffs("a", "mpg")
 ```
@@ -157,6 +173,8 @@ comparison.slice_diffs("a", "mpg")
 > the returned relation always keeps the full schema of the requested
 > table.
 
+Use `slice_unmatched()` to get the unmatched rows from one table.
+
 ``` python
 comparison.slice_unmatched("b")
 ```
@@ -168,6 +186,8 @@ comparison.slice_unmatched("b")
     │ Merc 280C  │         3.44 │         17.8 │   123 │     6 │   168 │     4 │         3.92 │     1 │
     │ Merc 450SE │         4.07 │         16.4 │   180 │     8 │   276 │     3 │         3.07 │     0 │
     └────────────┴──────────────┴──────────────┴───────┴───────┴───────┴───────┴──────────────┴───────┘
+
+Use `slice_unmatched_both()` to get the unmatched rows from both tables.
 
 ``` python
 comparison.slice_unmatched_both()
@@ -181,6 +201,8 @@ comparison.slice_unmatched_both()
     │ b          │ Merc 280C  │         17.8 │     6 │   168 │   123 │         3.92 │         3.44 │     1 │
     │ b          │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │
     └────────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
+
+Use `summary()` to see what kind of differences were found.
 
 ``` python
 comparison.summary()
@@ -228,13 +250,15 @@ printed output (`tables`, `by`, `intersection`, `unmatched_cols`,
 themselves on print. The input tables are never materialized by Pyversus
 in any mode; they stay as DuckDB relations and are queried lazily.
 
-In full materialization, Pyversus also builds diff key relations:
-per-column relations of `by` keys where values differ. Those precomputed
-keys let row-level helpers fetch the exact differing rows quickly via
-joins, which can be faster when you call multiple helpers. Other modes
-skip diff keys and compute diff counts inline.
+In full materialization, Pyversus also builds a diff table: a single
+relation with the `by` keys plus one boolean flag per value column
+indicating a difference. The table only includes rows with at least one
+difference. Those precomputed flags let row-level helpers fetch the
+exact differing rows quickly via joins, which can be faster when you
+call multiple helpers. Other modes skip the diff table and detect
+differences inline.
 
-- `materialize="all"`: store the summary tables and diff key tables as
+- `materialize="all"`: store the summary tables and the diff table as
   temp tables. This is fastest if you will call row-level helpers
   multiple times.
 - `materialize="summary"`: store only the summary tables. Row-level

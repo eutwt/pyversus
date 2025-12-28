@@ -438,18 +438,28 @@ def sql_literal(value: Any) -> str:
 
 
 # --------------- Comparison-specific SQL assembly
-def require_diff_keys(
+def require_diff_table(
     comparison: "Comparison",
-) -> Mapping[str, duckdb.DuckDBPyRelation]:
-    diff_keys = comparison.diff_keys
-    if diff_keys is None:
-        raise ComparisonError("Diff keys are only available for materialize='all'.")
-    return diff_keys
+) -> duckdb.DuckDBPyRelation:
+    diff_table = comparison.diff_table
+    if diff_table is None:
+        raise ComparisonError("Diff table is only available for materialize='all'.")
+    return diff_table
 
 
 def collect_diff_keys(comparison: "Comparison", columns: Sequence[str]) -> str:
-    diff_keys = require_diff_keys(comparison)
-    return " UNION DISTINCT ".join(diff_keys[column].sql_query() for column in columns)
+    diff_table = require_diff_table(comparison)
+    diff_sql = diff_table.sql_query()
+    by_cols = select_cols(comparison.by_columns, alias="diffs")
+    predicate = " OR ".join(f"diffs.{ident(column)}" for column in columns)
+    return f"""
+    SELECT
+      {by_cols}
+    FROM
+      ({diff_sql}) AS diffs
+    WHERE
+      {predicate}
+    """
 
 
 def fetch_rows_by_keys(

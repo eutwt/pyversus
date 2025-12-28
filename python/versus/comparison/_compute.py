@@ -80,11 +80,11 @@ def build_intersection_frame(
     table_id: Tuple[str, str],
     by_columns: List[str],
     allow_both_na: bool,
-    diff_keys: Optional[Mapping[str, duckdb.DuckDBPyRelation]],
+    diff_table: Optional[duckdb.DuckDBPyRelation],
     conn: h.VersusConn,
     materialize: bool,
 ) -> Tuple[duckdb.DuckDBPyRelation, Optional[Dict[str, int]]]:
-    if diff_keys is None:
+    if diff_table is None:
         return _build_intersection_frame_inline(
             value_columns,
             handles,
@@ -94,8 +94,8 @@ def build_intersection_frame(
             conn,
             materialize,
         )
-    return _build_intersection_frame_with_keys(
-        value_columns, handles, table_id, diff_keys, conn, materialize
+    return _build_intersection_frame_with_table(
+        value_columns, handles, table_id, diff_table, conn, materialize
     )
 
 
@@ -115,11 +115,11 @@ def _build_empty_intersection_relation(
     return relation, {} if materialize else None
 
 
-def _build_intersection_frame_with_keys(
+def _build_intersection_frame_with_table(
     value_columns: List[str],
     handles: Mapping[str, h._TableHandle],
     table_id: Tuple[str, str],
-    diff_keys: Mapping[str, duckdb.DuckDBPyRelation],
+    diff_table: duckdb.DuckDBPyRelation,
     conn: h.VersusConn,
     materialize: bool,
 ) -> Tuple[duckdb.DuckDBPyRelation, Optional[Dict[str, int]]]:
@@ -127,19 +127,36 @@ def _build_intersection_frame_with_keys(
     if not value_columns:
         return _build_empty_intersection_relation(conn, table_id, materialize)
 
+    def diff_alias(column: str) -> str:
+        return f"n_diffs_{column}"
+
+    count_columns = ",\n      ".join(
+        f"COUNT(*) FILTER (WHERE diffs.{h.ident(column)}) "
+        f"AS {h.ident(diff_alias(column))}"
+        for column in value_columns
+    )
+
     def select_for(column: str) -> str:
-        relation_sql = diff_keys[column].sql_query()
         return f"""
         SELECT
           {h.sql_literal(column)} AS {h.ident("column")},
-          COUNT(*) AS {h.ident("n_diffs")},
+          counts.{h.ident(diff_alias(column))} AS {h.ident("n_diffs")},
           {h.sql_literal(handles[first].types[column])} AS {h.ident(f"type_{first}")},
           {h.sql_literal(handles[second].types[column])} AS {h.ident(f"type_{second}")}
         FROM
-          ({relation_sql}) AS diff_keys
+          counts
         """
 
-    sql = " UNION ALL ".join(select_for(column) for column in value_columns)
+    relation_sql = diff_table.sql_query()
+    sql = f"""
+    WITH counts AS (
+      SELECT
+        {count_columns}
+      FROM
+        ({relation_sql}) AS diffs
+    )
+    {" UNION ALL ".join(select_for(column) for column in value_columns)}
+    """
     relation = h.finalize_relation(conn, sql, materialize)
     if not materialize:
         return relation, None
@@ -195,30 +212,37 @@ def _build_intersection_frame_inline(
     return relation, h.diff_lookup_from_intersection(relation)
 
 
-def compute_diff_keys(
+def compute_diff_table(
     conn: h.VersusConn,
     handles: Mapping[str, h._TableHandle],
     table_id: Tuple[str, str],
     by_columns: List[str],
     value_columns: List[str],
     allow_both_na: bool,
-) -> Dict[str, duckdb.DuckDBPyRelation]:
-    diff_keys: Dict[str, duckdb.DuckDBPyRelation] = {}
+) -> duckdb.DuckDBPyRelation:
+    if not value_columns:
+        schema = [(column, handles[table_id[0]].types[column]) for column in by_columns]
+        return h.build_rows_relation(conn, [], schema, materialize=True)
     join_sql = h.join_clause(handles, table_id, by_columns)
     select_by = h.select_cols(by_columns, alias="a")
-    for column in value_columns:
-        predicate = h.diff_predicate(column, allow_both_na, "a", "b")
-        sql = f"""
-        SELECT
-          {select_by}
-        FROM
-          {join_sql}
-        WHERE
-          {predicate}
-        """
-        relation = h.finalize_relation(conn, sql, materialize=True)
-        diff_keys[column] = relation
-    return diff_keys
+    diff_expressions = [
+        (column, h.diff_predicate(column, allow_both_na, "a", "b"))
+        for column in value_columns
+    ]
+    diff_flags = ",\n      ".join(
+        f"{expression} AS {h.ident(column)}" for column, expression in diff_expressions
+    )
+    predicate = " OR ".join(expression for _, expression in diff_expressions)
+    sql = f"""
+    SELECT
+      {select_by},
+      {diff_flags}
+    FROM
+      {join_sql}
+    WHERE
+      {predicate}
+    """
+    return h.finalize_relation(conn, sql, materialize=True)
 
 
 def compute_unmatched_keys(
