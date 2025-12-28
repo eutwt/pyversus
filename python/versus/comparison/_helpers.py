@@ -33,7 +33,9 @@ try:
 except ImportError:  # pragma: no cover - Python < 3.10
     from typing_extensions import TypeAlias
 
-_Input: TypeAlias = Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"]
+_Input: TypeAlias = Union[
+    duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"
+]
 
 
 # --------------- Data structures
