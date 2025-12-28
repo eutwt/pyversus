@@ -230,11 +230,11 @@ in any mode; they stay as DuckDB relations and are queried lazily.
 
 In full materialization, Pyversus also builds a diff table: a single
 relation with the `by` keys plus one boolean flag per value column
-indicating a difference. The table only includes rows with at least one
-difference. Those precomputed flags let row-level helpers fetch the exact
-differing rows quickly via joins, which can be faster when you call
-multiple helpers. Other modes skip the diff table and compute diff counts
-inline.
+indicating a difference (the flag columns use the original value column
+names). The table only includes rows with at least one difference. Those
+precomputed flags let row-level helpers fetch the exact differing rows
+quickly via joins, which can be faster when you call multiple helpers.
+Other modes skip the diff table and compute diff counts inline.
 
 - `materialize="all"`: store the summary tables and the diff table as
   temp tables. This is fastest if you will call row-level helpers

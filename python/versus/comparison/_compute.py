@@ -131,7 +131,7 @@ def _build_intersection_frame_with_table(
         return f"n_diffs_{column}"
 
     count_columns = ",\n      ".join(
-        f"COUNT(*) FILTER (WHERE diffs.{h.ident(h.diff_flag(column))}) "
+        f"COUNT(*) FILTER (WHERE diffs.{h.ident(column)}) "
         f"AS {h.ident(diff_alias(column))}"
         for column in value_columns
     )
@@ -229,11 +229,11 @@ def compute_diff_table(
     select_by = h.select_cols(by_columns, alias="a")
     diff_flags = ",\n      ".join(
         f"{h.diff_predicate(column, allow_both_na, 'a', 'b')} "
-        f"AS {h.ident(h.diff_flag(column))}"
+        f"AS {h.ident(column)}"
         for column in value_columns
     )
     predicate = " OR ".join(
-        f"diffs.{h.ident(h.diff_flag(column))}" for column in value_columns
+        f"diffs.{h.ident(column)}" for column in value_columns
     )
     sql = f"""
     WITH diffs AS (
