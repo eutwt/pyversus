@@ -463,8 +463,7 @@ def compare(
     Parameters
     ----------
     table_a, table_b : DuckDBPyRelation, pandas.DataFrame, or polars.DataFrame
-        DuckDB relations or pandas/polars DataFrames to compare. For SQL queries,
-        create a relation with `connection.sql(...)` first.
+        DuckDB relations or pandas/polars DataFrames to compare.
     by : sequence of str
         Column names that uniquely identify rows.
     allow_both_na : bool, default True

@@ -310,8 +310,7 @@ def register_input_view(
     elif isinstance(source, str):
         raise ComparisonError(
             "String inputs are not supported. Pass a DuckDB relation or pandas/polars "
-            "DataFrame. For SQL queries, use `connection.sql(...)` to create a "
-            "relation."
+            "DataFrame."
         )
     else:
         base_name = f"{name}_base"
@@ -319,8 +318,7 @@ def register_input_view(
             conn.register(base_name, source)
         except Exception as exc:
             raise ComparisonError(
-                "Inputs must be DuckDB relations or pandas/polars DataFrames. For "
-                "SQL queries, use `connection.sql(...)` to create a relation."
+                "Inputs must be DuckDB relations or pandas/polars DataFrames."
             ) from exc
         source_ref = ident(base_name)
         display = type(source).__name__
