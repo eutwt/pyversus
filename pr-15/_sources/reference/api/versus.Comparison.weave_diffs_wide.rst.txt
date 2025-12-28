@@ -1,0 +1,6 @@
+﻿versus.Comparison.weave\_diffs\_wide
+====================================
+
+.. currentmodule:: versus
+
+.. automethod:: Comparison.weave_diffs_wide
