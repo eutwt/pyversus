@@ -108,7 +108,7 @@ def _weave_diffs_wide_inline(
     table_a, table_b = comparison.table_id
     suffix = h.resolve_suffix(suffix, comparison.table_id)
     select_parts = _weave_select_parts(comparison, diff_cols, suffix)
-    join_sql = h.join_clause(
+    join_sql = h.inputs_join_sql(
         comparison._handles, comparison.table_id, comparison.by_columns
     )
     predicate = " OR ".join(
@@ -180,7 +180,7 @@ def _weave_diffs_long_inline(
     table_column = h.ident("table_name")
     select_cols_a = h.select_cols(out_cols, alias="a")
     select_cols_b = h.select_cols(out_cols, alias="b")
-    join_sql = h.join_clause(
+    join_sql = h.inputs_join_sql(
         comparison._handles, comparison.table_id, comparison.by_columns
     )
     predicate = " OR ".join(

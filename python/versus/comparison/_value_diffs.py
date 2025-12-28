@@ -77,7 +77,7 @@ def _value_diffs_inline(
         f"{h.col('b', target_col)} AS {h.ident(f'{target_col}_{table_b}')}",
         h.select_cols(comparison.by_columns, alias="a"),
     ]
-    join_sql = h.join_clause(
+    join_sql = h.inputs_join_sql(
         comparison._handles, comparison.table_id, comparison.by_columns
     )
     predicate = h.diff_predicate(target_col, comparison.allow_both_na, "a", "b")
@@ -127,7 +127,7 @@ def stack_value_diffs_inline_sql(comparison: "Comparison", column: str) -> str:
         f"{h.col('b', column)} AS {h.ident(f'val_{table_b}')}",
         h.select_cols(comparison.by_columns, alias="a"),
     ]
-    join_sql = h.join_clause(
+    join_sql = h.inputs_join_sql(
         comparison._handles, comparison.table_id, comparison.by_columns
     )
     predicate = h.diff_predicate(column, comparison.allow_both_na, "a", "b")

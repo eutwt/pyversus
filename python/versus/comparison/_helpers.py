@@ -393,7 +393,7 @@ def join_condition(by_columns: List[str], left_alias: str, right_alias: str) -> 
     return " AND ".join(comparisons) if comparisons else "TRUE"
 
 
-def join_clause(
+def inputs_join_sql(
     handles: Mapping[str, _TableHandle],
     table_id: Tuple[str, str],
     by_columns: List[str],
