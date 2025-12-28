@@ -125,14 +125,11 @@ class Comparison:
 
         Examples
         --------
-        >>> import duckdb
         >>> from versus import compare, examples
-        >>> con = duckdb.connect()
         >>> comparison = compare(
-        ...     examples.example_cars_a(con),
-        ...     examples.example_cars_b(con),
+        ...     examples.example_cars_a(),
+        ...     examples.example_cars_b(),
         ...     by=["car"],
-        ...     connection=con,
         ... )
         >>> comparison.close()
         """
@@ -182,14 +179,11 @@ class Comparison:
 
         Examples
         --------
-        >>> import duckdb
         >>> from versus import compare, examples
-        >>> con = duckdb.connect()
         >>> comparison = compare(
-        ...     examples.example_cars_a(con),
-        ...     examples.example_cars_b(con),
+        ...     examples.example_cars_a(),
+        ...     examples.example_cars_b(),
         ...     by=["car"],
-        ...     connection=con,
         ... )
         >>> comparison.value_diffs("disp")
         ┌────────┬────────┬────────────────┐
@@ -219,14 +213,11 @@ class Comparison:
 
         Examples
         --------
-        >>> import duckdb
         >>> from versus import compare, examples
-        >>> con = duckdb.connect()
         >>> comparison = compare(
-        ...     examples.example_cars_a(con),
-        ...     examples.example_cars_b(con),
+        ...     examples.example_cars_a(),
+        ...     examples.example_cars_b(),
         ...     by=["car"],
-        ...     connection=con,
         ... )
         >>> comparison.value_diffs_stacked(["mpg", "disp"])
         ┌─────────┬───────────────┬───────────────┬────────────────┐
@@ -262,14 +253,11 @@ class Comparison:
 
         Examples
         --------
-        >>> import duckdb
         >>> from versus import compare, examples
-        >>> con = duckdb.connect()
         >>> comparison = compare(
-        ...     examples.example_cars_a(con),
-        ...     examples.example_cars_b(con),
+        ...     examples.example_cars_a(),
+        ...     examples.example_cars_b(),
         ...     by=["car"],
-        ...     connection=con,
         ... )
         >>> comparison.slice_diffs("a", ["mpg"])
         ┌────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┬───────┐
@@ -297,14 +285,11 @@ class Comparison:
 
         Examples
         --------
-        >>> import duckdb
         >>> from versus import compare, examples
-        >>> con = duckdb.connect()
         >>> comparison = compare(
-        ...     examples.example_cars_a(con),
-        ...     examples.example_cars_b(con),
+        ...     examples.example_cars_a(),
+        ...     examples.example_cars_b(),
         ...     by=["car"],
-        ...     connection=con,
         ... )
         >>> comparison.slice_unmatched("a")
         ┌───────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┬───────┐
@@ -326,14 +311,11 @@ class Comparison:
 
         Examples
         --------
-        >>> import duckdb
         >>> from versus import compare, examples
-        >>> con = duckdb.connect()
         >>> comparison = compare(
-        ...     examples.example_cars_a(con),
-        ...     examples.example_cars_b(con),
+        ...     examples.example_cars_a(),
+        ...     examples.example_cars_b(),
         ...     by=["car"],
-        ...     connection=con,
         ... )
         >>> comparison.slice_unmatched_both()
         ┌────────────┬────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
@@ -369,14 +351,11 @@ class Comparison:
 
         Examples
         --------
-        >>> import duckdb
         >>> from versus import compare, examples
-        >>> con = duckdb.connect()
         >>> comparison = compare(
-        ...     examples.example_cars_a(con),
-        ...     examples.example_cars_b(con),
+        ...     examples.example_cars_a(),
+        ...     examples.example_cars_b(),
         ...     by=["car"],
-        ...     connection=con,
         ... )
         >>> comparison.weave_diffs_wide(["disp"])
         ┌────────────────┬──────────────┬───────┬────────┬────────┬───────┬──────────────┬──────────────┬───────┐
@@ -407,14 +386,11 @@ class Comparison:
 
         Examples
         --------
-        >>> import duckdb
         >>> from versus import compare, examples
-        >>> con = duckdb.connect()
         >>> comparison = compare(
-        ...     examples.example_cars_a(con),
-        ...     examples.example_cars_b(con),
+        ...     examples.example_cars_a(),
+        ...     examples.example_cars_b(),
         ...     by=["car"],
-        ...     connection=con,
         ... )
         >>> comparison.weave_diffs_long(["disp"])
         ┌────────────┬────────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
@@ -439,14 +415,11 @@ class Comparison:
 
         Examples
         --------
-        >>> import duckdb
         >>> from versus import compare, examples
-        >>> con = duckdb.connect()
         >>> comparison = compare(
-        ...     examples.example_cars_a(con),
-        ...     examples.example_cars_b(con),
+        ...     examples.example_cars_a(),
+        ...     examples.example_cars_b(),
         ...     by=["car"],
-        ...     connection=con,
         ... )
         >>> comparison.summary()
         ┌────────────────┬─────────┐
@@ -525,14 +498,11 @@ def compare(
 
     Examples
     --------
-    >>> import duckdb
     >>> from versus import compare, examples
-    >>> con = duckdb.connect()
     >>> comparison = compare(
-    ...     examples.example_cars_a(con),
-    ...     examples.example_cars_b(con),
+    ...     examples.example_cars_a(),
+    ...     examples.example_cars_b(),
     ...     by=["car"],
-    ...     connection=con,
     ... )
     >>> comparison.summary()
     ┌────────────────┬─────────┐
