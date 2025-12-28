@@ -36,6 +36,21 @@ jobs:
       - name: Build site
         run: sphinx-build -b html docs_api/source site
 
+      - name: Ensure .nojekyll at gh-pages root (PR)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+        run: |
+          rm -rf .pages-root
+          mkdir -p .pages-root
+          touch .pages-root/.nojekyll
+
+      - name: Deploy .nojekyll to GitHub pages root (PR)
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        with:
+          branch: gh-pages
+          folder: .pages-root
+          clean: false
+
       - name: Deploy to GitHub pages (main)
         if: github.event_name != 'pull_request'
         uses: JamesIves/github-pages-deploy-action@v4.4.1
