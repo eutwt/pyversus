@@ -316,23 +316,11 @@ def register_input_view(
         validate_columns(source.columns, label)
         source_sql = source.sql_query()
         display = getattr(source, "alias", "relation")
+        assert_relation_connection(conn, source, label, connection_supplied)
         try:
             columns, types = describe_source(conn, source_sql, is_identifier=False)
         except duckdb.Error as exc:
-            arg_name = f"table_{label}"
-            if connection_supplied:
-                hint = (
-                    f"`{arg_name}` appears to be bound to a different DuckDB "
-                    "connection than the one passed to `compare()`. Pass the same "
-                    "connection that created the relations via `connection=...`."
-                )
-            else:
-                hint = (
-                    f"`{arg_name}` appears to be bound to a non-default DuckDB "
-                    "connection. Pass that connection to `compare()` via "
-                    "`connection=...`."
-                )
-            raise ComparisonError(hint) from exc
+            raise_relation_connection_error(label, connection_supplied, exc)
         relation = conn.sql(source_sql)
         return _TableHandle(
             name=name,
@@ -397,6 +385,42 @@ def infer_row_count(source: Any) -> Optional[int]:
     if isinstance(height, int):
         return height
     return None
+
+
+def raise_relation_connection_error(
+    label: str,
+    connection_supplied: bool,
+    exc: Exception,
+) -> None:
+    arg_name = f"table_{label}"
+    if connection_supplied:
+        hint = (
+            f"`{arg_name}` appears to be bound to a different DuckDB "
+            "connection than the one passed to `compare()`. Pass the same "
+            "connection that created the relations via `connection=...`."
+        )
+    else:
+        hint = (
+            f"`{arg_name}` appears to be bound to a non-default DuckDB "
+            "connection. Pass that connection to `compare()` via "
+            "`connection=...`."
+        )
+    raise ComparisonError(hint) from exc
+
+
+def assert_relation_connection(
+    conn: VersusConn,
+    relation: duckdb.DuckDBPyRelation,
+    label: str,
+    connection_supplied: bool,
+) -> None:
+    probe_name = f"__versus_probe_{uuid.uuid4().hex}"
+    try:
+        conn.register(probe_name, relation)
+    except Exception as exc:
+        raise_relation_connection_error(label, connection_supplied, exc)
+    else:
+        conn.unregister(probe_name)
 
 
 # --------------- SQL builder helpers
