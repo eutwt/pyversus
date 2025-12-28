@@ -87,6 +87,15 @@ comparison
 
     )
 
+A comparison includes:
+
+- `comparison.intersection`: columns in both tables and rows with
+  differing values
+- `comparison.unmatched_cols`: columns in only one table
+- `comparison.unmatched_rows`: rows in only one table
+
+Use `value_diffs()` to see the values that are different.
+
 ``` python
 comparison.value_diffs("disp")
 ```
@@ -98,6 +107,8 @@ comparison.value_diffs("disp")
     │    109 │    108 │ Datsun 710     │
     │    259 │    258 │ Hornet 4 Drive │
     └────────┴────────┴────────────────┘
+
+Use `value_diffs_stacked()` to compare multiple columns at once.
 
 ``` python
 comparison.value_diffs_stacked(["mpg", "disp"])
@@ -112,6 +123,8 @@ comparison.value_diffs_stacked(["mpg", "disp"])
     │ disp    │         109.0 │         108.0 │ Datsun 710     │
     │ disp    │         259.0 │         258.0 │ Hornet 4 Drive │
     └─────────┴───────────────┴───────────────┴────────────────┘
+
+Use `weave_diffs_*()` to see the differing values in context.
 
 ``` python
 comparison.weave_diffs_wide(["mpg", "disp"])
@@ -141,6 +154,9 @@ comparison.weave_diffs_long("disp")
     │ b          │ Hornet 4 Drive │         21.4 │     6 │   258 │   110 │         3.08 │         3.22 │     1 │
     └────────────┴────────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
 
+Use `slice_diffs()` to get the rows with differing values from one
+table.
+
 ``` python
 comparison.slice_diffs("a", "mpg")
 ```
@@ -157,6 +173,8 @@ comparison.slice_diffs("a", "mpg")
 > the returned relation always keeps the full schema of the requested
 > table.
 
+Use `slice_unmatched()` to get the unmatched rows from one table.
+
 ``` python
 comparison.slice_unmatched("b")
 ```
@@ -168,6 +186,8 @@ comparison.slice_unmatched("b")
     │ Merc 280C  │         3.44 │         17.8 │   123 │     6 │   168 │     4 │         3.92 │     1 │
     │ Merc 450SE │         4.07 │         16.4 │   180 │     8 │   276 │     3 │         3.07 │     0 │
     └────────────┴──────────────┴──────────────┴───────┴───────┴───────┴───────┴──────────────┴───────┘
+
+Use `slice_unmatched_both()` to get the unmatched rows from both tables.
 
 ``` python
 comparison.slice_unmatched_both()
@@ -181,6 +201,8 @@ comparison.slice_unmatched_both()
     │ b          │ Merc 280C  │         17.8 │     6 │   168 │   123 │         3.92 │         3.44 │     1 │
     │ b          │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │
     └────────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
+
+Use `summary()` to see what kind of differences were found.
 
 ``` python
 comparison.summary()

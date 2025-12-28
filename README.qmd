@@ -45,13 +45,25 @@ comparison = compare(rel_a, rel_b, by="car")
 comparison
 ```
 
+A comparison includes:
+
+- `comparison.intersection`: columns in both tables and rows with differing values
+- `comparison.unmatched_cols`: columns in only one table
+- `comparison.unmatched_rows`: rows in only one table
+
+Use `value_diffs()` to see the values that are different.
+
 ```{python}
 comparison.value_diffs("disp")
 ```
 
+Use `value_diffs_stacked()` to compare multiple columns at once.
+
 ```{python}
 comparison.value_diffs_stacked(["mpg", "disp"])
 ```
+
+Use `weave_diffs_*()` to see the differing values in context.
 
 ```{python}
 comparison.weave_diffs_wide(["mpg", "disp"])
@@ -61,6 +73,8 @@ comparison.weave_diffs_wide(["mpg", "disp"])
 comparison.weave_diffs_long("disp")
 ```
 
+Use `slice_diffs()` to get the rows with differing values from one table.
+
 ```{python}
 comparison.slice_diffs("a", "mpg")
 ```
@@ -68,13 +82,19 @@ comparison.slice_diffs("a", "mpg")
 > Note: The `column` argument only decides which diffs include a row; the returned relation
 > always keeps the full schema of the requested table.
 
+Use `slice_unmatched()` to get the unmatched rows from one table.
+
 ```{python}
 comparison.slice_unmatched("b")
 ```
 
+Use `slice_unmatched_both()` to get the unmatched rows from both tables.
+
 ```{python}
 comparison.slice_unmatched_both()
 ```
+
+Use `summary()` to see what kind of differences were found.
 
 ```{python}
 comparison.summary()
