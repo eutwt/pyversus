@@ -579,4 +579,3 @@ class Comparison:
             self.connection, rows, schema, materialize=False
         )
         return summary_rel
-
