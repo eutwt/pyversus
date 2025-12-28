@@ -14,7 +14,7 @@ def value_diffs(comparison: "Comparison", column: str) -> duckdb.DuckDBPyRelatio
     target_col = h.normalize_single_column(column)
     h.assert_column_allowed(comparison, target_col, "value_diffs")
     if comparison._materialize_mode == "all":
-        relation = _value_diffs_with_keys(comparison, target_col)
+        relation = _value_diffs_with_diff_table(comparison, target_col)
     else:
         relation = _value_diffs_inline(comparison, target_col)
     return relation
@@ -28,9 +28,10 @@ def value_diffs_stacked(
     if not diff_cols:
         return _empty_value_diffs_stacked(comparison, selected)
     if comparison._materialize_mode == "all":
-        diff_keys = h.require_diff_keys(comparison)
         selects = [
-            stack_value_diffs_sql(comparison, column, diff_keys[column])
+            stack_value_diffs_sql(
+                comparison, column, h.collect_diff_keys(comparison, [column])
+            )
             for column in diff_cols
         ]
         sql = " UNION ALL ".join(selects)
@@ -40,11 +41,10 @@ def value_diffs_stacked(
     return h.run_sql(comparison.connection, sql)
 
 
-def _value_diffs_with_keys(
+def _value_diffs_with_diff_table(
     comparison: "Comparison", target_col: str
 ) -> duckdb.DuckDBPyRelation:
-    diff_keys = h.require_diff_keys(comparison)
-    key_relation = diff_keys[target_col]
+    key_sql = h.collect_diff_keys(comparison, [target_col])
     table_a, table_b = comparison.table_id
     select_cols = [
         f"{h.col('a', target_col)} AS {h.ident(f'{target_col}_{table_a}')}",
@@ -53,7 +53,6 @@ def _value_diffs_with_keys(
     ]
     join_a = h.join_condition(comparison.by_columns, "keys", "a")
     join_b = h.join_condition(comparison.by_columns, "keys", "b")
-    key_sql = key_relation.sql_query()
     sql = f"""
     SELECT
       {", ".join(select_cols)}
@@ -94,7 +93,7 @@ def _value_diffs_inline(
 def stack_value_diffs_sql(
     comparison: "Comparison",
     column: str,
-    key_relation: duckdb.DuckDBPyRelation,
+    key_sql: str,
 ) -> str:
     table_a, table_b = comparison.table_id
     by_columns = comparison.by_columns
@@ -106,7 +105,6 @@ def stack_value_diffs_sql(
     ]
     join_a = h.join_condition(by_columns, "keys", "a")
     join_b = h.join_condition(by_columns, "keys", "b")
-    key_sql = key_relation.sql_query()
     return f"""
     SELECT
       {", ".join(select_parts)}

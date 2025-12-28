@@ -174,19 +174,19 @@ def test_materialize_modes_helpers(materialize):
 
 
 @pytest.mark.parametrize(
-    "materialize, summary_materialized, has_diff_keys",
+    "materialize, summary_materialized, has_diff_table",
     [
         ("all", True, True),
         ("summary", True, False),
         ("none", False, False),
     ],
 )
-def test_materialize_modes_state(materialize, summary_materialized, has_diff_keys):
+def test_materialize_modes_state(materialize, summary_materialized, has_diff_table):
     con, rel_a, rel_b = build_connection()
     comp = compare(rel_a, rel_b, by=["id"], connection=con, materialize=materialize)
     assert comp.intersection.materialized is summary_materialized
     assert comp.unmatched_rows.materialized is summary_materialized
-    assert (comp.diff_keys is not None) is has_diff_keys
+    assert (comp.diff_table is not None) is has_diff_table
     if materialize == "none":
         assert comp._diff_lookup is None
         assert comp._unmatched_lookup is None
