@@ -240,15 +240,8 @@ def compute_unmatched_keys(
           {select_by}
         FROM
           {h.ident(handle_left.name)} AS left_tbl
-        WHERE
-          NOT EXISTS (
-            SELECT
-              1
-            FROM
-              {h.ident(handle_right.name)} AS right_tbl
-            WHERE
-              {condition}
-          )
+          ANTI JOIN {h.ident(handle_right.name)} AS right_tbl
+            ON {condition}
         """
 
     keys_parts = [key_part(identifier) for identifier in table_id]
