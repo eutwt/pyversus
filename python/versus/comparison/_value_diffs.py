@@ -28,13 +28,16 @@ def value_diffs_stacked(
     if not diff_cols:
         return _empty_value_diffs_stacked(comparison, selected)
     if comparison._materialize_mode == "all":
+
         def stack_fn(column: str) -> str:
             return stack_value_diffs_sql(
                 comparison, column, h.collect_diff_keys(comparison, [column])
             )
     else:
+
         def stack_fn(column: str) -> str:
             return stack_value_diffs_inline_sql(comparison, column)
+
     selects = [stack_fn(column) for column in diff_cols]
     sql = " UNION ALL ".join(selects)
     return h.run_sql(comparison.connection, sql)
