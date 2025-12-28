@@ -12,11 +12,9 @@ The two relations below are used as an example to demonstrate functionality.
 
 .. code-block:: pycon
 
-   >>> import duckdb
    >>> from versus import compare, examples
-   >>> con = duckdb.connect()
-   >>> example_a = examples.example_cars_a(con)
-   >>> example_b = examples.example_cars_b(con)
+   >>> example_a = examples.example_cars_a()
+   >>> example_b = examples.example_cars_b()
 
 Use `compare()` to create a comparison of two tables.
 
@@ -28,7 +26,7 @@ A comparison contains:
 
 .. code-block:: pycon
 
-   >>> comparison = compare(example_a, example_b, by=["car"], connection=con)
+   >>> comparison = compare(example_a, example_b, by=["car"])
    >>> comparison
    Comparison(tables=
    ┌────────────┬───────┬───────┐

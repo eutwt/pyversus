@@ -27,14 +27,12 @@ That command installs DuckDB, the only runtime dependency.
 Here is a small interactive session you can paste into a Python REPL:
 
 ``` python
-import duckdb
 from versus import compare, examples
 
-con = duckdb.connect()
-rel_a = examples.example_cars_a(con)
-rel_b = examples.example_cars_b(con)
+rel_a = examples.example_cars_a()
+rel_b = examples.example_cars_b()
 
-comparison = compare(rel_a, rel_b, by="car", connection=con)
+comparison = compare(rel_a, rel_b, by="car")
 comparison
 ```
 
