@@ -325,11 +325,9 @@ pandas/polars DataFrames without materializing them in Python.</p>
 <p>This package is still evolving and may change between releases.</p>
 </div>
 <p>The two relations below are used as an example to demonstrate functionality.</p>
-<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">duckdb</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">versus</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span><span class="p">,</span> <span class="n">examples</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">con</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">example_a</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_a</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">example_b</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_b</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">versus</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span><span class="p">,</span> <span class="n">examples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">example_a</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_a</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">example_b</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_b</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Use <code class="code docutils literal notranslate"><span class="pre">compare()</span></code> to create a comparison of two tables.</p>
@@ -339,7 +337,7 @@ pandas/polars DataFrames without materializing them in Python.</p>
 <li><p><code class="code docutils literal notranslate"><span class="pre">comparison.unmatched_cols</span></code>: columns in only one table</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">comparison.unmatched_rows</span></code>: rows in only one table</p></li>
 </ul>
-<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span> <span class="o">=</span> <span class="n">compare</span><span class="p">(</span><span class="n">example_a</span><span class="p">,</span> <span class="n">example_b</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;car&quot;</span><span class="p">],</span> <span class="n">connection</span><span class="o">=</span><span class="n">con</span><span class="p">)</span>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span> <span class="o">=</span> <span class="n">compare</span><span class="p">(</span><span class="n">example_a</span><span class="p">,</span> <span class="n">example_b</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;car&quot;</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span>
 <span class="go">Comparison(tables=</span>
 <span class="go">┌────────────┬───────┬───────┐</span>
