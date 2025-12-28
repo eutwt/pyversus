@@ -89,7 +89,7 @@ def _weave_diffs_wide_with_keys(
     join_b = h.join_condition(comparison.by_columns, "keys", "b")
     sql = f"""
     SELECT
-      {', '.join(select_parts)}
+      {", ".join(select_parts)}
     FROM
       ({keys}) AS keys
       JOIN {h.ident(comparison._handles[table_a].name)} AS a
@@ -116,7 +116,7 @@ def _weave_diffs_wide_inline(
     )
     sql = f"""
     SELECT
-      {', '.join(select_parts)}
+      {", ".join(select_parts)}
     FROM
       {join_sql}
     WHERE

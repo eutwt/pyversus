@@ -13,4 +13,7 @@ coverage.xml
 build/
 dist/
 htmlcov/
+site/
+docs/api/
+docs_api/source/reference/api/
 .DS_Store

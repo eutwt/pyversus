@@ -3,10 +3,10 @@
 
 `pyversus` (imported as `versus`) is a Python package that mirrors the
 the original R library while pushing all heavy work into DuckDB. Use it
-to compare two duckdb relations (tables, views, or queries) without
-materializing them. The `compare()` function gives a `Comparison` object
-that shows where the tables disagree, with methods for displaying the
-differences.
+to compare two duckdb relations (tables or views) or pandas/polars
+DataFrames without materializing them. The `compare()` function gives a
+`Comparison` object that shows where the tables disagree, with methods
+for displaying the differences.
 
 > **Alpha status:** This package is in active development. Backward
 > compatibility is not guaranteed between releases yet.
@@ -200,10 +200,10 @@ comparison.summary()
 
 ## Usage
 
-- Call `compare()` with DuckDB relations, SQL strings/views, or
-  pandas/polars DataFrames. If your relations live on a custom DuckDB
-  connection, pass it via `connection=` so the comparison queries use
-  the same database.
+- Call `compare()` with DuckDB relations or pandas/polars DataFrames. To
+  compare a SQL query, build a relation with `connection.sql(...)`
+  first. If your relations live on a custom DuckDB connection, pass it
+  via `connection=` so the comparison queries use the same database.
 - The `by` columns must uniquely identify rows in each table. When they
   do not, `compare()` raises `ComparisonError` and tells you which key
   values repeat.
@@ -242,9 +242,7 @@ skip diff keys and compute diff counts inline.
 - `materialize="summary"`: store only the summary tables. Row-level
   helpers run inline predicates and return lazy relations.
 - `materialize="none"`: do not store anything up front. Printing the
-  comparison materializes the summary tables and enables diff-count and
-  unmatched-row optimizations for later row-level helpers, but helper
-  outputs stay lazy.
+  comparison materializes the summary tables.
 
 Row-level helper outputs are always returned as DuckDB relations and are
 never materialized automatically; materialize them explicitly if needed.

@@ -16,7 +16,16 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/eutwt/versus"
+Homepage = "https://github.com/eutwt/pyversus"
+Documentation = "https://eutwt.github.io/pyversus/"
+
+[project.optional-dependencies]
+docs = [
+  "sphinx>=7.2; python_version >= \"3.9\"",
+  "pydata-sphinx-theme>=0.15.4; python_version >= \"3.9\"",
+  "numpydoc>=1.6; python_version >= \"3.9\"",
+  "sphinx-copybutton>=0.5.2; python_version >= \"3.9\""
+]
 
 [tool.setuptools]
 package-dir = {"" = "python"}

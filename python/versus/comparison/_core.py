@@ -1,6 +1,15 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 try:
     from typing import Literal
@@ -13,9 +22,17 @@ from . import _compute as c
 from . import _helpers as h
 from . import _slices, _value_diffs, _weave
 
+if TYPE_CHECKING:  # pragma: no cover
+    import pandas
+    import polars
+
 
 class Comparison:
-    """In-memory description of how two relations differ."""
+    """In-memory description of how two relations differ.
+
+    Provides summary relations plus helper methods to retrieve the exact
+    differences without materializing the full input tables.
+    """
 
     def __init__(
         self,
@@ -104,6 +121,21 @@ class Comparison:
             self._unmatched_lookup = unmatched_lookup
 
     def close(self) -> None:
+        """Release any temporary views or tables created for the comparison.
+
+        Examples
+        --------
+        >>> import duckdb
+        >>> from versus import compare, examples
+        >>> con = duckdb.connect()
+        >>> comparison = compare(
+        ...     examples.example_cars_a(con),
+        ...     examples.example_cars_b(con),
+        ...     by=["car"],
+        ...     connection=con,
+        ... )
+        >>> comparison.close()
+        """
         if self._closed:
             return
         for view in reversed(self.connection.versus.views):
@@ -136,11 +168,77 @@ class Comparison:
         )
 
     def value_diffs(self, column: str) -> duckdb.DuckDBPyRelation:
+        """Return rows where a single column differs between the tables.
+
+        Parameters
+        ----------
+        column : str
+            Column name to compare.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with the differing values plus the `by` columns.
+
+        Examples
+        --------
+        >>> import duckdb
+        >>> from versus import compare, examples
+        >>> con = duckdb.connect()
+        >>> comparison = compare(
+        ...     examples.example_cars_a(con),
+        ...     examples.example_cars_b(con),
+        ...     by=["car"],
+        ...     connection=con,
+        ... )
+        >>> comparison.value_diffs("disp")
+        ┌────────┬────────┬────────────────┐
+        │ disp_a │ disp_b │      car       │
+        │ int32  │ int32  │    varchar     │
+        ├────────┼────────┼────────────────┤
+        │    109 │    108 │ Datsun 710     │
+        │    259 │    258 │ Hornet 4 Drive │
+        └────────┴────────┴────────────────┘
+        """
         return _value_diffs.value_diffs(self, column)
 
     def value_diffs_stacked(
         self, columns: Optional[Sequence[str]] = None
     ) -> duckdb.DuckDBPyRelation:
+        """Return a stacked view of value differences for multiple columns.
+
+        Parameters
+        ----------
+        columns : sequence of str, optional
+            Columns to compare. Defaults to all comparable columns.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with `column`, `val_<table_id>`, and `by` columns.
+
+        Examples
+        --------
+        >>> import duckdb
+        >>> from versus import compare, examples
+        >>> con = duckdb.connect()
+        >>> comparison = compare(
+        ...     examples.example_cars_a(con),
+        ...     examples.example_cars_b(con),
+        ...     by=["car"],
+        ...     connection=con,
+        ... )
+        >>> comparison.value_diffs_stacked(["mpg", "disp"])
+        ┌─────────┬───────────────┬───────────────┬────────────────┐
+        │ column  │     val_a     │     val_b     │      car       │
+        │ varchar │ decimal(11,1) │ decimal(11,1) │    varchar     │
+        ├─────────┼───────────────┼───────────────┼────────────────┤
+        │ mpg     │          24.4 │          26.4 │ Merc 240D      │
+        │ mpg     │          14.3 │          16.3 │ Duster 360     │
+        │ disp    │         109.0 │         108.0 │ Datsun 710     │
+        │ disp    │         259.0 │         258.0 │ Hornet 4 Drive │
+        └─────────┴───────────────┴───────────────┴────────────────┘
+        """
         return _value_diffs.value_diffs_stacked(self, columns)
 
     def slice_diffs(
@@ -148,12 +246,105 @@ class Comparison:
         table: str,
         columns: Optional[Sequence[str]] = None,
     ) -> duckdb.DuckDBPyRelation:
+        """Return rows from one table that differ in the selected columns.
+
+        Parameters
+        ----------
+        table : str
+            Table identifier to return (one of `table_id`).
+        columns : sequence of str, optional
+            Columns to check for differences. Defaults to all comparable columns.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with the full schema of the requested table.
+
+        Examples
+        --------
+        >>> import duckdb
+        >>> from versus import compare, examples
+        >>> con = duckdb.connect()
+        >>> comparison = compare(
+        ...     examples.example_cars_a(con),
+        ...     examples.example_cars_b(con),
+        ...     by=["car"],
+        ...     connection=con,
+        ... )
+        >>> comparison.slice_diffs("a", ["mpg"])
+        ┌────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┬───────┐
+        │    car     │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │  am   │
+        │  varchar   │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │ int32 │
+        ├────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┼───────┤
+        │ Duster 360 │         14.3 │     8 │   360 │   245 │         3.21 │         3.57 │     0 │     0 │
+        │ Merc 240D  │         24.4 │     4 │   147 │    62 │         3.69 │         3.19 │     1 │     0 │
+        └────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┴───────┘
+        """
         return _slices.slice_diffs(self, table, columns)
 
     def slice_unmatched(self, table: str) -> duckdb.DuckDBPyRelation:
+        """Return rows from one table whose keys are missing in the other.
+
+        Parameters
+        ----------
+        table : str
+            Table identifier to return (one of `table_id`).
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with unmatched rows from the requested table.
+
+        Examples
+        --------
+        >>> import duckdb
+        >>> from versus import compare, examples
+        >>> con = duckdb.connect()
+        >>> comparison = compare(
+        ...     examples.example_cars_a(con),
+        ...     examples.example_cars_b(con),
+        ...     by=["car"],
+        ...     connection=con,
+        ... )
+        >>> comparison.slice_unmatched("a")
+        ┌───────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┬───────┐
+        │    car    │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │  am   │
+        │  varchar  │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │ int32 │
+        ├───────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┼───────┤
+        │ Mazda RX4 │         21.0 │     6 │   160 │   110 │         3.90 │         2.62 │     0 │     1 │
+        └───────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┴───────┘
+        """
         return _slices.slice_unmatched(self, table)
 
     def slice_unmatched_both(self) -> duckdb.DuckDBPyRelation:
+        """Return unmatched rows from both tables.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with `table_name` plus key and common columns.
+
+        Examples
+        --------
+        >>> import duckdb
+        >>> from versus import compare, examples
+        >>> con = duckdb.connect()
+        >>> comparison = compare(
+        ...     examples.example_cars_a(con),
+        ...     examples.example_cars_b(con),
+        ...     by=["car"],
+        ...     connection=con,
+        ... )
+        >>> comparison.slice_unmatched_both()
+        ┌────────────┬────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
+        │ table_name │    car     │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │
+        │  varchar   │  varchar   │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
+        ├────────────┼────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤
+        │ a          │ Mazda RX4  │         21.0 │     6 │   160 │   110 │         3.90 │         2.62 │     0 │
+        │ b          │ Merc 280C  │         17.8 │     6 │   168 │   123 │         3.92 │         3.44 │     1 │
+        │ b          │ Merc 450SE │         16.4 │     8 │   276 │   180 │         3.07 │         4.07 │     0 │
+        └────────────┴────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
+        """
         return _slices.slice_unmatched_both(self)
 
     def weave_diffs_wide(
@@ -161,16 +352,113 @@ class Comparison:
         columns: Optional[Sequence[str]] = None,
         suffix: Optional[Tuple[str, str]] = None,
     ) -> duckdb.DuckDBPyRelation:
+        """Return a wide view of differing rows with split columns.
+
+        Parameters
+        ----------
+        columns : sequence of str, optional
+            Columns to compare. Defaults to all comparable columns.
+        suffix : tuple[str, str], optional
+            Suffixes appended to differing columns from table A and B.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with key columns and common columns, where differing
+            columns are split into `<name><suffix>`.
+
+        Examples
+        --------
+        >>> import duckdb
+        >>> from versus import compare, examples
+        >>> con = duckdb.connect()
+        >>> comparison = compare(
+        ...     examples.example_cars_a(con),
+        ...     examples.example_cars_b(con),
+        ...     by=["car"],
+        ...     connection=con,
+        ... )
+        >>> comparison.weave_diffs_wide(["disp"])
+        ┌────────────────┬──────────────┬───────┬────────┬────────┬───────┬──────────────┬──────────────┬───────┐
+        │      car       │     mpg      │  cyl  │ disp_a │ disp_b │  hp   │     drat     │      wt      │  vs   │
+        │    varchar     │ decimal(3,1) │ int32 │ int32  │ int32  │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
+        ├────────────────┼──────────────┼───────┼────────┼────────┼───────┼──────────────┼──────────────┼───────┤
+        │ Datsun 710     │         22.8 │  NULL │    109 │    108 │    93 │         3.85 │         2.32 │     1 │
+        │ Hornet 4 Drive │         21.4 │     6 │    259 │    258 │   110 │         3.08 │         3.22 │     1 │
+        └────────────────┴──────────────┴───────┴────────┴────────┴───────┴──────────────┴──────────────┴───────┘
+        """
         return _weave.weave_diffs_wide(self, columns, suffix)
 
     def weave_diffs_long(
         self,
         columns: Optional[Sequence[str]] = None,
     ) -> duckdb.DuckDBPyRelation:
+        """Return a long view of differing rows stacked by table.
+
+        Parameters
+        ----------
+        columns : sequence of str, optional
+            Columns to compare. Defaults to all comparable columns.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with `table_name` plus key and common columns.
+
+        Examples
+        --------
+        >>> import duckdb
+        >>> from versus import compare, examples
+        >>> con = duckdb.connect()
+        >>> comparison = compare(
+        ...     examples.example_cars_a(con),
+        ...     examples.example_cars_b(con),
+        ...     by=["car"],
+        ...     connection=con,
+        ... )
+        >>> comparison.weave_diffs_long(["disp"])
+        ┌────────────┬────────────────┬──────────────┬───────┬───────┬───────┬──────────────┬──────────────┬───────┐
+        │ table_name │      car       │     mpg      │  cyl  │ disp  │  hp   │     drat     │      wt      │  vs   │
+        │  varchar   │    varchar     │ decimal(3,1) │ int32 │ int32 │ int32 │ decimal(3,2) │ decimal(3,2) │ int32 │
+        ├────────────┼────────────────┼──────────────┼───────┼───────┼───────┼──────────────┼──────────────┼───────┤
+        │ a          │ Datsun 710     │         22.8 │  NULL │   109 │    93 │         3.85 │         2.32 │     1 │
+        │ b          │ Datsun 710     │         22.8 │  NULL │   108 │    93 │         3.85 │         2.32 │     1 │
+        │ a          │ Hornet 4 Drive │         21.4 │     6 │   259 │   110 │         3.08 │         3.22 │     1 │
+        │ b          │ Hornet 4 Drive │         21.4 │     6 │   258 │   110 │         3.08 │         3.22 │     1 │
+        └────────────┴────────────────┴──────────────┴───────┴───────┴───────┴──────────────┴──────────────┴───────┘
+        """
         return _weave.weave_diffs_long(self, columns)
 
     def summary(self) -> duckdb.DuckDBPyRelation:
-        """Summarize which difference categories are present."""
+        """Summarize which difference categories are present.
+
+        Returns
+        -------
+        duckdb.DuckDBPyRelation
+            Relation with `difference` and `found` columns.
+
+        Examples
+        --------
+        >>> import duckdb
+        >>> from versus import compare, examples
+        >>> con = duckdb.connect()
+        >>> comparison = compare(
+        ...     examples.example_cars_a(con),
+        ...     examples.example_cars_b(con),
+        ...     by=["car"],
+        ...     connection=con,
+        ... )
+        >>> comparison.summary()
+        ┌────────────────┬─────────┐
+        │   difference   │  found  │
+        │    varchar     │ boolean │
+        ├────────────────┼─────────┤
+        │ value_diffs    │ true    │
+        │ unmatched_cols │ true    │
+        │ unmatched_rows │ true    │
+        │ type_diffs     │ false   │
+        └────────────────┴─────────┘
+        """
         value_diffs = not h.relation_is_empty(
             self.intersection.filter(f"{h.ident('n_diffs')} > 0")
         )
@@ -199,8 +487,8 @@ class Comparison:
 
 
 def compare(
-    table_a: Any,
-    table_b: Any,
+    table_a: Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"],
+    table_b: Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"],
     *,
     by: Sequence[str],
     allow_both_na: bool = True,
@@ -209,6 +497,54 @@ def compare(
     connection: Optional[duckdb.DuckDBPyConnection] = None,
     materialize: Literal["all", "summary", "none"] = "all",
 ) -> Comparison:
+    """Compare two DuckDB relations by key columns.
+
+    Parameters
+    ----------
+    table_a, table_b : DuckDBPyRelation, pandas.DataFrame, or polars.DataFrame
+        DuckDB relations or pandas/polars DataFrames to compare. For SQL queries,
+        create a relation with `connection.sql(...)` first.
+    by : sequence of str
+        Column names that uniquely identify rows.
+    allow_both_na : bool, default True
+        Whether to treat NULL/NA values as equal when both sides are missing.
+    coerce : bool, default True
+        If True, allow DuckDB to coerce compatible types. If False, require
+        exact type matches for shared columns.
+    table_id : tuple[str, str], default ("a", "b")
+        Labels used in outputs for the two tables.
+    connection : duckdb.DuckDBPyConnection, optional
+        DuckDB connection used to register the inputs and run queries.
+    materialize : {"all", "summary", "none"}, default "all"
+        Controls which helper tables are materialized upfront.
+
+    Returns
+    -------
+    Comparison
+        Comparison object with summary relations and diff helpers.
+
+    Examples
+    --------
+    >>> import duckdb
+    >>> from versus import compare, examples
+    >>> con = duckdb.connect()
+    >>> comparison = compare(
+    ...     examples.example_cars_a(con),
+    ...     examples.example_cars_b(con),
+    ...     by=["car"],
+    ...     connection=con,
+    ... )
+    >>> comparison.summary()
+    ┌────────────────┬─────────┐
+    │   difference   │  found  │
+    │    varchar     │ boolean │
+    ├────────────────┼─────────┤
+    │ value_diffs    │ true    │
+    │ unmatched_cols │ true    │
+    │ unmatched_rows │ true    │
+    │ type_diffs     │ false   │
+    └────────────────┴─────────┘
+    """
     materialize_summary, materialize_keys = h.resolve_materialize(materialize)
 
     conn = h.resolve_connection(connection)

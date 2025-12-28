@@ -98,6 +98,19 @@ def test_inputs_property_exposes_relations():
     comp.close()
 
 
+def test_compare_accepts_pandas_polars_frames():
+    pandas = pytest.importorskip("pandas")
+    polars = pytest.importorskip("polars")
+    con = duckdb.connect()
+    df_a = pandas.DataFrame({"id": [1, 2], "value": [10, 20]})
+    df_b = polars.DataFrame({"id": [1, 2], "value": [10, 22]})
+    comp = compare(df_a, df_b, by=["id"], connection=con)
+    value_row = rel_dicts(comp.intersection.filter("\"column\" = 'value'"))[0]
+    assert value_row["n_diffs"] == 1
+    comp.close()
+    con.close()
+
+
 def test_value_diffs_and_slice():
     con, rel_a, rel_b = build_connection()
     comp = compare(rel_a, rel_b, by=["id"], connection=con)
@@ -284,6 +297,16 @@ def test_compare_errors_when_by_column_missing():
     rel_b = con.sql("SELECT 1 AS other_id, 10 AS value")
     with pytest.raises(ComparisonError):
         compare(rel_a, rel_b, by=["id"], connection=con)
+
+
+def test_compare_errors_on_string_inputs():
+    con = duckdb.connect()
+    rel = con.sql("SELECT 1 AS id")
+    with pytest.raises(ComparisonError, match=r"connection\.sql"):
+        compare(cast(Any, "SELECT 1 AS id"), rel, by=["id"], connection=con)
+    with pytest.raises(ComparisonError, match=r"connection\.sql"):
+        compare(rel, cast(Any, "SELECT 1 AS id"), by=["id"], connection=con)
+    con.close()
 
 
 def test_compare_errors_on_relations_from_non_default_connection():
