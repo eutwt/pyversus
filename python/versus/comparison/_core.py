@@ -64,9 +64,6 @@ class Comparison:
         self.allow_both_na = allow_both_na
         self._materialize_mode = materialize_mode
         self._diff_lookup = diff_lookup
-        if self._diff_lookup is not None:
-            for column in common_columns:
-                self._diff_lookup.setdefault(column, 0)
         self._unmatched_lookup: Optional[Dict[str, int]] = None
         summary_materialized = materialize_mode in {"all", "summary"}
         self.tables = h.SummaryRelation(
@@ -108,10 +105,7 @@ class Comparison:
 
     def _store_diff_lookup(self, relation: duckdb.DuckDBPyRelation) -> None:
         if self._diff_lookup is None:
-            diff_lookup = h.diff_lookup_from_intersection(relation)
-            for column in self.common_columns:
-                diff_lookup.setdefault(column, 0)
-            self._diff_lookup = diff_lookup
+            self._diff_lookup = h.diff_lookup_from_intersection(relation)
 
     def _store_unmatched_lookup(self, relation: duckdb.DuckDBPyRelation) -> None:
         if self._unmatched_lookup is None:
