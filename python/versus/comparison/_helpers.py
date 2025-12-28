@@ -23,6 +23,9 @@ import duckdb
 from ._exceptions import ComparisonError
 
 if TYPE_CHECKING:  # pragma: no cover
+    import pandas
+    import polars
+
     from ._core import Comparison
 
 
