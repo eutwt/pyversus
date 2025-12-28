@@ -323,33 +323,59 @@ def build_table_handle(
     connection_supplied: bool,
 ) -> _TableHandle:
     name = f"__versus_{label}_{uuid.uuid4().hex}"
-    display = "relation"
     if isinstance(source, duckdb.DuckDBPyRelation):
-        validate_columns(source.columns, label)
-        source_sql = source.sql_query()
-        display = getattr(source, "alias", "relation")
-        assert_relation_connection(conn, source, label, connection_supplied)
-        try:
-            columns, types = describe_source(conn, source_sql, is_identifier=False)
-        except duckdb.Error as exc:
-            raise_relation_connection_error(label, connection_supplied, exc)
-        row_count = resolve_row_count(conn, source, source_sql, is_identifier=False)
-        relation = conn.sql(source_sql)
-        return _TableHandle(
+        return _build_table_handle_from_relation(
+            conn,
+            source,
+            label,
             name=name,
-            display=display,
-            relation=relation,
-            columns=columns,
-            types=types,
-            source_sql=source_sql,
-            source_is_identifier=False,
-            row_count=row_count,
+            connection_supplied=connection_supplied,
         )
     if isinstance(source, str):
         raise ComparisonError(
             "String inputs are not supported. Pass a DuckDB relation or pandas/polars "
             "DataFrame."
         )
+    return _build_table_handle_from_frame(conn, source, label, name=name)
+
+
+def _build_table_handle_from_relation(
+    conn: VersusConn,
+    source: duckdb.DuckDBPyRelation,
+    label: str,
+    *,
+    name: str,
+    connection_supplied: bool,
+) -> _TableHandle:
+    validate_columns(source.columns, label)
+    source_sql = source.sql_query()
+    display = getattr(source, "alias", "relation")
+    assert_relation_connection(conn, source, label, connection_supplied)
+    try:
+        columns, types = describe_source(conn, source_sql, is_identifier=False)
+    except duckdb.Error as exc:
+        raise_relation_connection_error(label, connection_supplied, exc)
+    row_count = resolve_row_count(conn, source, source_sql, is_identifier=False)
+    relation = conn.sql(source_sql)
+    return _TableHandle(
+        name=name,
+        display=display,
+        relation=relation,
+        columns=columns,
+        types=types,
+        source_sql=source_sql,
+        source_is_identifier=False,
+        row_count=row_count,
+    )
+
+
+def _build_table_handle_from_frame(
+    conn: VersusConn,
+    source: _Input,
+    label: str,
+    *,
+    name: str,
+) -> _TableHandle:
     source_columns = getattr(source, "columns", None)
     if source_columns is not None:
         validate_columns(list(source_columns), label)
