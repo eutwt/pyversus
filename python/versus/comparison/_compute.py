@@ -225,23 +225,21 @@ def compute_diff_table(
         return h.build_rows_relation(conn, [], schema, materialize=True)
     join_sql = h.join_clause(handles, table_id, by_columns)
     select_by = h.select_cols(by_columns, alias="a")
-    diff_flags = ",\n      ".join(
-        f"{h.diff_predicate(column, allow_both_na, 'a', 'b')} AS {h.ident(column)}"
+    diff_expressions = [
+        (column, h.diff_predicate(column, allow_both_na, "a", "b"))
         for column in value_columns
+    ]
+    diff_flags = ",\n      ".join(
+        f"{expression} AS {h.ident(column)}"
+        for column, expression in diff_expressions
     )
-    predicate = " OR ".join(f"diffs.{h.ident(column)}" for column in value_columns)
+    predicate = " OR ".join(expression for _, expression in diff_expressions)
     sql = f"""
-    WITH diffs AS (
-      SELECT
-        {select_by},
-        {diff_flags}
-      FROM
-        {join_sql}
-    )
     SELECT
-      *
+      {select_by},
+      {diff_flags}
     FROM
-      diffs
+      {join_sql}
     WHERE
       {predicate}
     """
