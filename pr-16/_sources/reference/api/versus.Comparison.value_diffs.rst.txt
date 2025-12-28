@@ -1,0 +1,6 @@
+﻿versus.Comparison.value\_diffs
+==============================
+
+.. currentmodule:: versus
+
+.. automethod:: Comparison.value_diffs
