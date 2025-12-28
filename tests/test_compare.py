@@ -309,6 +309,16 @@ def test_compare_errors_on_string_inputs():
     con.close()
 
 
+def test_compare_errors_on_duplicate_column_names():
+    pandas = pytest.importorskip("pandas")
+    df_a = pandas.DataFrame([[1, 2]], columns=["id", "id"])
+    df_b = pandas.DataFrame([[1, 2]], columns=["id", "value"])
+    con = duckdb.connect()
+    with pytest.raises(ComparisonError, match=r"duplicate column names"):
+        compare(df_a, df_b, by=["id"], connection=con)
+    con.close()
+
+
 def test_compare_errors_on_relations_from_non_default_connection():
     default_conn = duckdb.connect()
     other_conn = duckdb.connect()

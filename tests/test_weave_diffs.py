@@ -46,8 +46,11 @@ def test_weave_diffs_wide_rejects_invalid_suffix(comparison_for_weave):
         comparison_for_weave.weave_diffs_wide(["value"], suffix=("dup", "dup"))
     with pytest.raises(ComparisonError):
         comparison_for_weave.weave_diffs_wide(["value"], suffix="oops")
-    with pytest.raises(ComparisonError):
-        comparison_for_weave.weave_diffs_wide(["value"], suffix=("", "_new"))
+
+
+def test_weave_diffs_wide_accepts_empty_suffix(comparison_for_weave):
+    out = comparison_for_weave.weave_diffs_wide(["value"], suffix=("", "_new"))
+    assert {"value", "value_new"}.issubset(set(out.columns))
 
 
 def test_weave_diffs_long_empty_when_no_differences():

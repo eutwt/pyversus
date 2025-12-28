@@ -516,11 +516,7 @@ def compare(
             conn, table_b, clean_ids[1], connection_supplied=connection_supplied
         ),
     }
-    h.validate_columns_exist(by_columns, handles, clean_ids)
-    if not coerce:
-        h.validate_type_compatibility(handles, clean_ids)
-    for identifier in clean_ids:
-        h.assert_unique_by(conn, handles[identifier], by_columns, identifier)
+    h.validate_tables(conn, handles, clean_ids, by_columns, coerce=coerce)
 
     tables_frame = c.build_tables_frame(conn, handles, clean_ids, materialize_summary)
     by_frame = c.build_by_frame(
