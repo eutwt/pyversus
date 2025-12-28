@@ -28,6 +28,13 @@ if TYPE_CHECKING:  # pragma: no cover
 
     from ._core import Comparison
 
+try:
+    from typing import TypeAlias
+except ImportError:  # pragma: no cover - Python < 3.10
+    from typing_extensions import TypeAlias
+
+_Input: TypeAlias = Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"]
+
 
 # --------------- Data structures
 @dataclass
@@ -308,7 +315,7 @@ def assert_column_allowed(comparison: "Comparison", column: str, func: str) -> N
 # --------------- Input registration and metadata
 def build_table_handle(
     conn: VersusConn,
-    source: Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"],
+    source: _Input,
     label: str,
     *,
     connection_supplied: bool,
@@ -387,7 +394,7 @@ def source_ref_for_sql(source_sql: str, is_identifier: bool) -> str:
 
 def resolve_row_count(
     conn: VersusConn,
-    source: Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"],
+    source: _Input,
     source_sql: str,
     *,
     is_identifier: bool,
@@ -401,9 +408,7 @@ def resolve_row_count(
     return row[0]
 
 
-def row_count_from_frame(
-    source: Union[duckdb.DuckDBPyRelation, "pandas.DataFrame", "polars.DataFrame"],
-) -> Optional[int]:
+def row_count_from_frame(source: _Input) -> Optional[int]:
     module = type(source).__module__
     if module.startswith("pandas"):
         return int(cast("pandas.DataFrame", source).shape[0])
