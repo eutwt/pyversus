@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyversus"
-version = "0.1.1"
+version = "0.1.2"
 description = "Compare two relations quickly using DuckDB"
 readme = "README.md"
 authors = [{name = "versus authors"}]
