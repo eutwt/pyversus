@@ -155,13 +155,12 @@ def raise_relation_connection_error(
         hint = (
             f"`{arg_name}` appears to be bound to a different DuckDB "
             "connection than the one passed to `compare()`. Pass the same "
-            "connection that created the relations via `connection=...`."
+            "connection that created the relations via `con=...`."
         )
     else:
         hint = (
             f"`{arg_name}` appears to be bound to a non-default DuckDB "
-            "connection. Pass that connection to `compare()` via "
-            "`connection=...`."
+            "connection. Pass that connection to `compare()` via `con=...`."
         )
     raise ComparisonError(hint) from exc
 

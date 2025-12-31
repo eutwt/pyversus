@@ -27,7 +27,7 @@ def comparison_for_slice():
             "AS t(id, value, other, note)"
         ),
         by=["id"],
-        connection=con,
+        con=con,
     )
     yield comp
     comp.close()

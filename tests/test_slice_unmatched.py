@@ -15,7 +15,7 @@ def comparison_with_unmatched():
         con.sql("SELECT * FROM (VALUES (1, 10), (2, 20), (3, 30)) AS t(id, value)"),
         con.sql("SELECT * FROM (VALUES (2, 20), (3, 30), (4, 40)) AS t(id, value)"),
         by=["id"],
-        connection=con,
+        con=con,
     )
     yield comp
     comp.close()
@@ -45,7 +45,7 @@ def test_slice_unmatched_respects_custom_table_id():
         con.sql("SELECT * FROM (VALUES (2, 20), (3, 30), (4, 40)) AS t(id, value)"),
         by=["id"],
         table_id=("left", "right"),
-        connection=con,
+        con=con,
     )
     left = comp.slice_unmatched("left")
     assert rel_values(left, "id") == [1]

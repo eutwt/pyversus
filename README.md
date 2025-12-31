@@ -221,8 +221,8 @@ comparison.summary()
 ## Usage
 
 - Call `compare()` with DuckDB relations or pandas/polars DataFrames. If
-  your relations live on a custom DuckDB connection, pass it via
-  `connection=` so the comparison queries use the same database.
+  your relations live on a custom DuckDB connection, pass it via `con=`
+  so the comparison queries use the same database.
 - The `by` columns must uniquely identify rows in each table. When they
   do not, `compare()` raises `ComparisonError` and tells you which key
   values repeat.

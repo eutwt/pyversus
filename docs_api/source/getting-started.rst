@@ -17,8 +17,8 @@ Inputs
 
 `compare()` accepts DuckDB relations (tables or views) or pandas/polars
 DataFrames. If you provide relations created on a non-default connection,
-pass that connection into `compare()` so helper queries run in the same
-session.
+pass that connection into `compare()` via `con=` so helper queries run in
+the same session.
 
 .. code-block:: pycon
 

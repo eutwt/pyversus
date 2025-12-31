@@ -27,7 +27,7 @@ def compare(
     allow_both_na: bool = True,
     coerce: bool = True,
     table_id: Tuple[str, str] = ("a", "b"),
-    connection: Optional[duckdb.DuckDBPyConnection] = None,
+    con: Optional[duckdb.DuckDBPyConnection] = None,
     materialize: Literal["all", "summary", "none"] = "all",
 ) -> Comparison:
     """Compare two DuckDB relations by key columns.
@@ -45,7 +45,7 @@ def compare(
         exact type matches for shared columns.
     table_id : tuple[str, str], default ("a", "b")
         Labels used in outputs for the two tables.
-    connection : duckdb.DuckDBPyConnection, optional
+    con : duckdb.DuckDBPyConnection, optional
         DuckDB connection used to register the inputs and run queries.
     materialize : {"all", "summary", "none"}, default "all"
         Controls which helper tables are materialized upfront.
@@ -76,16 +76,16 @@ def compare(
     """
     materialize_summary, materialize_keys = v.resolve_materialize(materialize)
 
-    conn = v.resolve_connection(connection)
+    conn = v.resolve_connection(con)
     clean_ids = v.validate_table_id(table_id)
     by_columns = v.normalize_column_list(by, "by", allow_empty=False)
-    connection_supplied = connection is not None
+    con_supplied = con is not None
     handles = {
         clean_ids[0]: i.build_table_handle(
-            conn, table_a, clean_ids[0], connection_supplied=connection_supplied
+            conn, table_a, clean_ids[0], connection_supplied=con_supplied
         ),
         clean_ids[1]: i.build_table_handle(
-            conn, table_b, clean_ids[1], connection_supplied=connection_supplied
+            conn, table_b, clean_ids[1], connection_supplied=con_supplied
         ),
     }
     v.validate_tables(conn, handles, clean_ids, by_columns, coerce=coerce)
