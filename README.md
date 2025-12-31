@@ -89,10 +89,11 @@ comparison
 
 A comparison includes:
 
-- `comparison.intersection`: columns in both tables and rows with
+- `comparison.intersection`: columns in both tables with counts of
   differing values
 - `comparison.unmatched_cols`: columns in only one table
-- `comparison.unmatched_rows`: rows in only one table
+- `comparison.unmatched_rows`: rows in only one table with counts per
+  table
 
 Use `value_diffs()` to see the values that are different.
 
