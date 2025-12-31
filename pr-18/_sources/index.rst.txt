@@ -20,9 +20,9 @@ Use `compare()` to create a comparison of two tables.
 
 A comparison contains:
 
-- `comparison.intersection`: columns in both tables and rows with differing values
+- `comparison.intersection`: columns in both tables with counts of differing values
 - `comparison.unmatched_cols`: columns in only one table
-- `comparison.unmatched_rows`: rows in only one table
+- `comparison.unmatched_rows`: rows in only one table with counts per table
 
 .. code-block:: pycon
 
