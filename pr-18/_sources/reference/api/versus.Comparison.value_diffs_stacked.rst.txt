@@ -1,6 +1,0 @@
-﻿versus.Comparison.value\_diffs\_stacked
-=======================================
-
-.. currentmodule:: versus
-
-.. automethod:: Comparison.value_diffs_stacked
