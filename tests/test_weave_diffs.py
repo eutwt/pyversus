@@ -19,7 +19,7 @@ def comparison_for_weave():
         con.sql("SELECT * FROM (VALUES (1, 10, 1), (2, 20, 1)) AS t(id, value, wind)"),
         con.sql("SELECT * FROM (VALUES (1, 10, 2), (2, 25, 1)) AS t(id, value, wind)"),
         by=["id"],
-        connection=con,
+        con=con,
     )
     yield comp
     comp.close()
@@ -59,7 +59,7 @@ def test_weave_diffs_long_empty_when_no_differences():
         con.sql("SELECT * FROM (VALUES (1, 10)) AS t(id, value)"),
         con.sql("SELECT * FROM (VALUES (1, 10)) AS t(id, value)"),
         by=["id"],
-        connection=con,
+        con=con,
     )
     out = comp.weave_diffs_long(["value"])
     assert rel_height(out) == 0
@@ -73,7 +73,7 @@ def test_weave_diffs_long_interleaves_rows():
         con.sql("SELECT * FROM (VALUES (1, 10), (2, 20)) AS t(id, value)"),
         con.sql("SELECT * FROM (VALUES (1, 11), (2, 25)) AS t(id, value)"),
         by=["id"],
-        connection=con,
+        con=con,
     )
     out = comp.weave_diffs_long(["value"])
     assert rel_values(out, "table_name") == ["a", "b", "a", "b"]
@@ -89,7 +89,7 @@ def test_weave_diffs_respects_custom_table_ids():
         con.sql("SELECT * FROM (VALUES (1, 15), (2, 20)) AS t(id, value)"),
         by=["id"],
         table_id=("original", "updated"),
-        connection=con,
+        con=con,
     )
     wide = comp.weave_diffs_wide(["value"])
     assert {"value_original", "value_updated"}.issubset(set(wide.columns))

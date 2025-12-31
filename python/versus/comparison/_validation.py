@@ -34,7 +34,7 @@ def resolve_connection(
         default_conn = duckdb.default_connection
         conn_candidate = default_conn() if callable(default_conn) else default_conn
     if not isinstance(conn_candidate, duckdb.DuckDBPyConnection):
-        raise ComparisonError("`connection` must be a DuckDB connection.")
+        raise ComparisonError("`con` must be a DuckDB connection.")
     return VersusConn(conn_candidate)
 
 

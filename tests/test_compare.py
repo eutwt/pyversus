@@ -63,7 +63,7 @@ def comparison_from_sql(sql_a: str, sql_b: str, *, by, **kwargs):
     con = duckdb.connect()
     rel_a = con.sql(sql_a)
     rel_b = con.sql(sql_b)
-    return compare(rel_a, rel_b, by=by, connection=con, **kwargs)
+    return compare(rel_a, rel_b, by=by, con=con, **kwargs)
 
 
 def identical_comparison():
@@ -82,7 +82,7 @@ def identical_comparison():
 
 def test_compare_summary():
     con, rel_a, rel_b = build_connection()
-    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    comp = compare(rel_a, rel_b, by=["id"], con=con)
     assert rel_values(comp.tables, "nrow") == [3, 3]
     value_row = rel_dicts(comp.intersection.filter("\"column\" = 'value'"))[0]
     assert value_row["n_diffs"] == 1
@@ -90,7 +90,7 @@ def test_compare_summary():
 
 def test_inputs_property_exposes_relations():
     con, rel_a, rel_b = build_connection()
-    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    comp = compare(rel_a, rel_b, by=["id"], con=con)
     inputs = comp.inputs
     assert isinstance(inputs, dict)
     assert "a" in inputs and "b" in inputs
@@ -104,7 +104,7 @@ def test_compare_accepts_pandas_polars_frames():
     con = duckdb.connect()
     df_a = pandas.DataFrame({"id": [1, 2], "value": [10, 20]})
     df_b = polars.DataFrame({"id": [1, 2], "value": [10, 22]})
-    comp = compare(df_a, df_b, by=["id"], connection=con)
+    comp = compare(df_a, df_b, by=["id"], con=con)
     value_row = rel_dicts(comp.intersection.filter("\"column\" = 'value'"))[0]
     assert value_row["n_diffs"] == 1
     comp.close()
@@ -113,7 +113,7 @@ def test_compare_accepts_pandas_polars_frames():
 
 def test_value_diffs_and_slice():
     con, rel_a, rel_b = build_connection()
-    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    comp = compare(rel_a, rel_b, by=["id"], con=con)
     diffs = comp.value_diffs("value")
     assert rel_first(diffs, "id") == 2
     rows = comp.slice_diffs("a", ["value"])
@@ -122,14 +122,14 @@ def test_value_diffs_and_slice():
 
 def test_weave_wide():
     con, rel_a, rel_b = build_connection()
-    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    comp = compare(rel_a, rel_b, by=["id"], con=con)
     wide = comp.weave_diffs_wide(["value"])
     assert "value_a" in wide.columns and "value_b" in wide.columns
 
 
 def test_slice_unmatched():
     con, rel_a, rel_b = build_connection()
-    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    comp = compare(rel_a, rel_b, by=["id"], con=con)
     unmatched = comp.slice_unmatched("a")
     assert rel_first(unmatched, "id") == 1
     comp.close()
@@ -141,7 +141,7 @@ def test_compare_accepts_dataframes(module_name):
     df_a = module.DataFrame({"id": [1, 2, 3], "value": [10, 20, 30]})
     df_b = module.DataFrame({"id": [2, 3, 4], "value": [22, 30, 40]})
     con = duckdb.connect()
-    comp = compare(df_a, df_b, by=["id"], connection=con)
+    comp = compare(df_a, df_b, by=["id"], con=con)
     diffs = comp.value_diffs("value")
     assert rel_first(diffs, "id") == 2
     comp.close()
@@ -151,7 +151,7 @@ def test_compare_accepts_dataframes(module_name):
 @pytest.mark.parametrize("materialize", ["all", "summary", "none"])
 def test_materialize_modes_helpers(materialize):
     con, rel_a, rel_b = build_connection()
-    comp = compare(rel_a, rel_b, by=["id"], connection=con, materialize=materialize)
+    comp = compare(rel_a, rel_b, by=["id"], con=con, materialize=materialize)
     assert rel_values(comp.tables, "nrow") == [3, 3]
     diffs_row = rel_dicts(comp.intersection.filter("\"column\" = 'value'"))[0]
     assert diffs_row["n_diffs"] == 1
@@ -183,7 +183,7 @@ def test_materialize_modes_helpers(materialize):
 )
 def test_materialize_modes_state(materialize, summary_materialized, has_diff_table):
     con, rel_a, rel_b = build_connection()
-    comp = compare(rel_a, rel_b, by=["id"], connection=con, materialize=materialize)
+    comp = compare(rel_a, rel_b, by=["id"], con=con, materialize=materialize)
     assert comp.intersection.materialized is summary_materialized
     assert comp.unmatched_rows.materialized is summary_materialized
     assert (comp.diff_table is not None) is has_diff_table
@@ -223,7 +223,7 @@ def test_summary_reports_difference_categories():
           ) AS t(id, value, note)
         """
     )
-    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    comp = compare(rel_a, rel_b, by=["id"], con=con)
     summary = comp.summary()
     assert summary.fetchall() == [
         ("value_diffs", True),
@@ -240,7 +240,7 @@ def test_summary_repr_shows_full_difference_labels():
         examples.example_cars_a(con),
         examples.example_cars_b(con),
         by=["car"],
-        connection=con,
+        con=con,
     )
     rendered = str(comp.summary())
     assert "unmatched_cols" in rendered
@@ -275,7 +275,7 @@ def test_duplicate_by_raises():
         """
     )
     with pytest.raises(ComparisonError):
-        compare(rel_dup, rel_other, by=["id"], connection=con)
+        compare(rel_dup, rel_other, by=["id"], con=con)
 
 
 def test_examples_available():
@@ -284,7 +284,7 @@ def test_examples_available():
         examples.example_cars_a(con),
         examples.example_cars_b(con),
         by=["car"],
-        connection=con,
+        con=con,
     )
     assert rel_dicts(comp.intersection.filter("\"column\" = 'mpg'"))[0]["n_diffs"] == 2
     comp.close()
@@ -296,16 +296,16 @@ def test_compare_errors_when_by_column_missing():
     rel_a = con.sql("SELECT 1 AS id, 10 AS value")
     rel_b = con.sql("SELECT 1 AS other_id, 10 AS value")
     with pytest.raises(ComparisonError):
-        compare(rel_a, rel_b, by=["id"], connection=con)
+        compare(rel_a, rel_b, by=["id"], con=con)
 
 
 def test_compare_errors_on_string_inputs():
     con = duckdb.connect()
     rel = con.sql("SELECT 1 AS id")
     with pytest.raises(ComparisonError, match=r"String inputs are not supported"):
-        compare(cast(Any, "SELECT 1 AS id"), rel, by=["id"], connection=con)
+        compare(cast(Any, "SELECT 1 AS id"), rel, by=["id"], con=con)
     with pytest.raises(ComparisonError, match=r"String inputs are not supported"):
-        compare(rel, cast(Any, "SELECT 1 AS id"), by=["id"], connection=con)
+        compare(rel, cast(Any, "SELECT 1 AS id"), by=["id"], con=con)
     con.close()
 
 
@@ -315,7 +315,7 @@ def test_compare_errors_on_duplicate_column_names():
     df_b = pandas.DataFrame([[1, 2]], columns=["id", "value"])
     con = duckdb.connect()
     with pytest.raises(ComparisonError, match=r"duplicate column names"):
-        compare(df_a, df_b, by=["id"], connection=con)
+        compare(df_a, df_b, by=["id"], con=con)
     con.close()
 
 
@@ -339,27 +339,27 @@ def test_compare_errors_when_table_id_invalid_length():
     con, rel_a, rel_b = build_connection()
     with pytest.raises(ComparisonError):
         bad_table_id = cast(Any, ["x"])
-        compare(rel_a, rel_b, by=["id"], table_id=bad_table_id, connection=con)
+        compare(rel_a, rel_b, by=["id"], table_id=bad_table_id, con=con)
 
 
 def test_compare_errors_when_table_id_duplicates():
     con, rel_a, rel_b = build_connection()
     with pytest.raises(ComparisonError):
-        compare(rel_a, rel_b, by=["id"], table_id=("dup", "dup"), connection=con)
+        compare(rel_a, rel_b, by=["id"], table_id=("dup", "dup"), con=con)
 
 
 def test_compare_errors_when_table_id_blank():
     con, rel_a, rel_b = build_connection()
     with pytest.raises(ComparisonError):
-        compare(rel_a, rel_b, by=["id"], table_id=(" ", "b"), connection=con)
+        compare(rel_a, rel_b, by=["id"], table_id=(" ", "b"), con=con)
 
 
 def test_compare_errors_when_materialize_invalid():
     con, rel_a, rel_b = build_connection()
     with pytest.raises(ComparisonError):
-        compare(rel_a, rel_b, by=["id"], connection=con, materialize=cast(Any, "nope"))
+        compare(rel_a, rel_b, by=["id"], con=con, materialize=cast(Any, "nope"))
     with pytest.raises(ComparisonError):
-        compare(rel_a, rel_b, by=["id"], connection=con, materialize=cast(Any, True))
+        compare(rel_a, rel_b, by=["id"], con=con, materialize=cast(Any, True))
     con.close()
 
 
@@ -552,7 +552,7 @@ def test_comparison_repr_snapshot():
     con.execute(
         "CREATE OR REPLACE TABLE bar AS SELECT * FROM (VALUES (2, 22, 'y'), (3, 30, 'z')) AS t(id, value, extra)"
     )
-    comp = compare(con.table("foo"), con.table("bar"), by=["id"], connection=con)
+    comp = compare(con.table("foo"), con.table("bar"), by=["id"], con=con)
     text = repr(comp)
     assert "Comparison(tables=" in text
     assert "by=" in text

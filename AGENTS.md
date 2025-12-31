@@ -23,9 +23,9 @@ future contributors can work without hunting through old context.
 ## Key concepts
 
 - `compare()` accepts DuckDB relations or pandas/polars DataFrames. The
-  optional `connection` parameter must be provided when the relations were
-  created on non-default connections so subsequent helper queries run in the
-  correct database.
+  optional `con` parameter must be provided when the relations were created
+  on non-default connections so subsequent helper queries run in the correct
+  database.
 - The `Comparison` object stores:
   - table metadata (`tables`, `by`, `unmatched_cols`, `intersection`)
   - internal handles to the temp views plus a mapping of column name to

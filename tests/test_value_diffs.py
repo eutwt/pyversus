@@ -41,7 +41,7 @@ def comparison_with_diffs():
           ) AS t(id, value, wind, note)
         """
     )
-    comp = compare(rel_a, rel_b, by=["id"], connection=con)
+    comp = compare(rel_a, rel_b, by=["id"], con=con)
     yield comp
     comp.close()
     con.close()
@@ -70,7 +70,7 @@ def test_value_diffs_stacked_errors_when_no_value_columns():
         con.sql("SELECT * FROM (VALUES (1, 'x')) AS t(id, tag)"),
         con.sql("SELECT * FROM (VALUES (1, 'x')) AS t(id, tag)"),
         by=["id", "tag"],
-        connection=con,
+        con=con,
     )
     with pytest.raises(ComparisonError):
         comp.value_diffs_stacked()
@@ -100,7 +100,7 @@ def test_value_diffs_stacked_handles_incompatible_types():
             "AS t(id, alpha, beta)"
         ),
         by=["id"],
-        connection=con,
+        con=con,
     )
     out = comp.value_diffs_stacked(["alpha", "beta"])
     assert set(rel_values(out, "column")) == {"alpha", "beta"}
@@ -115,7 +115,7 @@ def test_value_diffs_respects_custom_table_ids():
         con.sql("SELECT * FROM (VALUES (1, 15), (2, 20)) AS t(id, value)"),
         by=["id"],
         table_id=("original", "updated"),
-        connection=con,
+        con=con,
     )
     out = comp.value_diffs("value")
     assert {"value_original", "value_updated"}.issubset(set(out.columns))
