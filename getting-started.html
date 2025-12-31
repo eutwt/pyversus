@@ -398,8 +398,8 @@
 <h2>Inputs<a class="headerlink" href="#inputs" title="Link to this heading">#</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">compare()</span></code> accepts DuckDB relations (tables or views) or pandas/polars
 DataFrames. If you provide relations created on a non-default connection,
-pass that connection into <code class="code docutils literal notranslate"><span class="pre">compare()</span></code> so helper queries run in the same
-session.</p>
+pass that connection into <code class="code docutils literal notranslate"><span class="pre">compare()</span></code> via <code class="code docutils literal notranslate"><span class="pre">con=</span></code> so helper queries run in
+the same session.</p>
 <div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">duckdb</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">versus</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">rel_a</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">&quot;SELECT 1 AS id, 10 AS value&quot;</span><span class="p">)</span>
