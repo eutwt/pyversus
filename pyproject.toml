@@ -17,8 +17,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/eutwt/pyversus"
+Homepage = "https://eutwt.github.io/pyversus/"
 Documentation = "https://eutwt.github.io/pyversus/"
+Repository = "https://github.com/eutwt/pyversus"
 
 [project.optional-dependencies]
 docs = [
