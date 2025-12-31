@@ -14,8 +14,33 @@ defaults:
     shell: bash
 
 jobs:
+  build-wheel:
+    name: Build wheel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build wheel
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+          python -m build --wheel
+
+      - name: Upload wheel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyversus-wheel
+          path: dist/*.whl
+
   tests:
     name: Python ${{ matrix.python-version }} on ${{ matrix.os }}
+    needs: build-wheel
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -47,7 +72,27 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Download wheel artifact
+        if: matrix.python-version == '3.7'
+        uses: actions/download-artifact@v4
+        with:
+          name: pyversus-wheel
+          path: dist
+
+      - name: Install dependencies (wheel)
+        if: matrix.python-version == '3.7'
+        run: |
+          python -m pip install --upgrade pip
+          if [ -n "${DUCKDB_PIN}" ]; then
+            python -m pip install "${DUCKDB_PIN}"
+          fi
+          python -m pip install dist/*.whl
+          python -m pip install pytest
+        env:
+          DUCKDB_PIN: ${{ matrix.duckdb-version }}
+
+      - name: Install dependencies (editable)
+        if: matrix.python-version != '3.7'
         run: |
           python -m pip install --upgrade pip
           if [ -n "${DUCKDB_PIN}" ]; then

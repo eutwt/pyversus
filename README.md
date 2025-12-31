@@ -13,11 +13,10 @@ for displaying the differences.
 
 ## Installation
 
-Clone the repo (or add it as a submodule) and install it into your
-environment using:
+Install from PyPI (wheels are available for Python 3.7+):
 
 ``` bash
-pip install -e .
+pip install pyversus
 ```
 
 That command installs DuckDB, the only runtime dependency.

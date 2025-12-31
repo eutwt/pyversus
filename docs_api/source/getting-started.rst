@@ -4,11 +4,11 @@ Getting started
 Installation
 ------------
 
-Clone the repository and install it into your environment:
+Install from PyPI (wheels are available for Python 3.7+):
 
 .. code-block:: bash
 
-   pip install -e .
+   pip install pyversus
 
 The only runtime dependency is DuckDB.
 
