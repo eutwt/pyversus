@@ -365,9 +365,9 @@ pandas/polars DataFrames without materializing them in Python.</p>
 <p>Use <code class="code docutils literal notranslate"><span class="pre">compare()</span></code> to create a comparison of two tables.</p>
 <p>A comparison contains:</p>
 <ul class="simple">
-<li><p><code class="code docutils literal notranslate"><span class="pre">comparison.intersection</span></code>: columns in both tables and rows with differing values</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">comparison.intersection</span></code>: columns in both tables with counts of differing values</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">comparison.unmatched_cols</span></code>: columns in only one table</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">comparison.unmatched_rows</span></code>: rows in only one table</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">comparison.unmatched_rows</span></code>: rows in only one table with counts per table</p></li>
 </ul>
 <div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span> <span class="o">=</span> <span class="n">compare</span><span class="p">(</span><span class="n">example_a</span><span class="p">,</span> <span class="n">example_b</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;car&quot;</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span>
