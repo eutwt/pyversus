@@ -3,10 +3,10 @@ Benchmark
 
 These benchmarks focus on the core `versus.compare()` workflow. The data comes
 from the `nycflights13::weather` fixtures used in `scripts/benchmark_r.R`. Each
-size is a fresh sample that keeps 95% of rows on each side and introduces 5%
-value differences in `temp` through `wind_dir`. Larger sizes are created by
-resampling the 2M parquet fixtures so the distribution stays aligned with the
-original benchmark.
+size is a fresh sample that keeps 95% of rows on each side. In 4 of the 15
+columns (`temp`, `dewp`, `humid`, `wind_dir`), 5% of values differ between the
+two inputs. Larger sizes are created by resampling the 2M parquet fixtures so
+the distribution stays aligned with the original benchmark.
 
 Row sizes: 250k, 1M, 2M, 5M, 10M, 20M.
 
@@ -20,8 +20,8 @@ Hover a point to see the exact value.
 .. raw:: html
 
    <div class="benchmark-charts">
-     <div class="benchmark-chart" data-benchmark-chart="time" data-title="Benchmark time by input size" data-y-label="Median time (s)"></div>
-     <div class="benchmark-chart" data-benchmark-chart="memory" data-title="Benchmark memory by input size" data-y-label="Peak memory (MB)"></div>
+    <div class="benchmark-chart" data-benchmark-chart="time" data-title="Benchmark time by input size" data-y-label="Median time"></div>
+    <div class="benchmark-chart" data-benchmark-chart="memory" data-title="Benchmark memory by input size" data-y-label="Peak memory"></div>
    </div>
    <script>
    window.PYVERSUS_BENCHMARK_DATA = {

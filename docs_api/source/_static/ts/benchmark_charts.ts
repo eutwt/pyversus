@@ -1,11 +1,54 @@
-/* Generated from _static/ts/benchmark_charts.ts. */
+/* Interactive canvas charts for the benchmark page. */
+interface Window {
+  PYVERSUS_BENCHMARK_DATA?: BenchmarkData;
+  __pyversusBenchmarkThemeListeners?: boolean;
+}
+
+type ChartKind = "time" | "memory";
+
+type BenchmarkSeries = {
+  id: string;
+  label: string;
+  time: number[];
+  memory: number[];
+  color?: string;
+};
+
+type BenchmarkData = {
+  rows: number[];
+  series: BenchmarkSeries[];
+};
+
+type ChartSeries = {
+  id: string;
+  label: string;
+  values: number[];
+  fallbackColor: string;
+};
+
+type ThemeName = "light" | "dark";
+
+type ThemePalette = {
+  axis: string;
+  grid: string;
+  label: string;
+  tooltipBg: string;
+  tooltipText: string;
+  seriesColors: Record<string, string>;
+};
+
+type ChartInstance = {
+  scheduleRender: () => void;
+  setPalette: (palette: ThemePalette) => void;
+};
+
 (() => {
   const data = window.PYVERSUS_BENCHMARK_DATA;
   if (!data || !Array.isArray(data.rows) || !Array.isArray(data.series)) {
     return;
   }
 
-  const themePalettes = {
+  const themePalettes: Record<ThemeName, ThemePalette> = {
     light: {
       axis: "#1f2937",
       grid: "rgba(31, 41, 55, 0.1)",
@@ -30,7 +73,7 @@
     },
   };
 
-  const resolveTheme = () => {
+  const resolveTheme = (): ThemeName => {
     const root = document.documentElement;
     const mode = root.getAttribute("data-mode");
     if (mode === "light" || mode === "dark") {
@@ -44,16 +87,16 @@
     return prefersDark ? "dark" : "light";
   };
 
-  const chartInstances = [];
+  const chartInstances: ChartInstance[] = [];
 
-  const applyTheme = (theme) => {
+  const applyTheme = (theme: ThemeName): void => {
     const palette = themePalettes[theme];
     chartInstances.forEach((chart) => chart.setPalette(palette));
     chartInstances.forEach((chart) => chart.scheduleRender());
   };
 
   let themeQueued = false;
-  const queueThemeRefresh = () => {
+  const queueThemeRefresh = (): void => {
     if (themeQueued) {
       return;
     }
@@ -64,7 +107,7 @@
     });
   };
 
-  const formatRowsShort = (value) => {
+  const formatRowsShort = (value: number | string): string => {
     const numericValue =
       typeof value === "number" ? value : Number.parseFloat(value.replace(/,/g, ""));
     if (!Number.isFinite(numericValue)) {
@@ -81,7 +124,7 @@
     return `${numericValue}`;
   };
 
-  const formatTick = (value, step) => {
+  const formatTick = (value: number, step: number): string => {
     const decimals = step < 1 ? Math.ceil(Math.abs(Math.log10(step))) : 0;
     return value.toLocaleString(undefined, {
       maximumFractionDigits: decimals,
@@ -89,21 +132,21 @@
     });
   };
 
-  const formatTimeTick = (value, step) => {
+  const formatTimeTick = (value: number, step: number): string => {
     if (value === 0) {
       return "0";
     }
     return `${formatTick(value, step)}s`;
   };
 
-  const formatTimeTooltip = (value) => {
+  const formatTimeTooltip = (value: number): string => {
     if (value >= 1) {
       return `${value.toFixed(1)}s`;
     }
     return `${value.toFixed(3)}s`;
   };
 
-  const formatMemoryTick = (value, step) => {
+  const formatMemoryTick = (value: number, step: number): string => {
     if (value === 0) {
       return "0";
     }
@@ -123,7 +166,7 @@
     })}MB`;
   };
 
-  const formatMemoryTooltip = (value) => {
+  const formatMemoryTooltip = (value: number): string => {
     if (value >= 1000) {
       const gbValue = value / 1000;
       return `${gbValue.toFixed(1)}GB`;
@@ -131,7 +174,7 @@
     return `${value.toFixed(1)}MB`;
   };
 
-  const niceTicks = (maxVal, target = 6) => {
+  const niceTicks = (maxVal: number, target = 6): { ticks: number[]; max: number; step: number } => {
     if (maxVal <= 0) {
       return { ticks: [0, 1], max: 1, step: 1 };
     }
@@ -149,15 +192,15 @@
       step = 10 * magnitude;
     }
     const max = Math.ceil(maxVal / step) * step;
-    const ticks = [];
+    const ticks: number[] = [];
     for (let val = 0; val <= max + step * 0.5; val += step) {
       ticks.push(val);
     }
     return { ticks, max, step };
   };
 
-  const buildChart = (container) => {
-    const kind = container.dataset.benchmarkChart;
+  const buildChart = (container: HTMLElement): ChartInstance | null => {
+    const kind = container.dataset.benchmarkChart as ChartKind | undefined;
     if (kind !== "time" && kind !== "memory") {
       return null;
     }
@@ -202,14 +245,14 @@
     container.append(header, body, legend);
 
     const rows = data.rows;
-    const baseSeries = data.series.map((item) => ({
+    const baseSeries: ChartSeries[] = data.series.map((item) => ({
       id: item.id,
       label: item.label,
       values: kind === "time" ? item.time : item.memory,
       fallbackColor: item.color ?? "#3b82f6",
     }));
 
-    const legendSwatches = [];
+    const legendSwatches: Array<{ swatch: HTMLSpanElement; id: string; fallback: string }> = [];
     baseSeries.forEach((item) => {
       const legendItem = document.createElement("div");
       legendItem.className = "chart-legend-item";
@@ -222,19 +265,35 @@
       legendSwatches.push({ swatch, id: item.id, fallback: item.fallbackColor });
     });
 
-    let activePoint = null;
-    let points = [];
+    let activePoint: {
+      seriesIndex: number;
+      index: number;
+      x: number;
+      y: number;
+      series: ChartSeries & { color: string };
+      row: number;
+      value: number;
+    } | null = null;
+    let points: Array<{
+      seriesIndex: number;
+      index: number;
+      x: number;
+      y: number;
+      series: ChartSeries & { color: string };
+      row: number;
+      value: number;
+    }> = [];
 
     let currentPalette = themePalettes[resolveTheme()];
 
-    const updateLegendColors = (palette) => {
+    const updateLegendColors = (palette: ThemePalette): void => {
       legendSwatches.forEach((entry) => {
         const color = palette.seriesColors[entry.id] ?? entry.fallback;
         entry.swatch.style.background = color;
       });
     };
 
-    const applyPalette = (palette) => {
+    const applyPalette = (palette: ThemePalette): void => {
       currentPalette = palette;
       container.style.setProperty("--benchmark-axis", palette.axis);
       container.style.setProperty("--benchmark-grid", palette.grid);
@@ -248,13 +307,13 @@
       updateLegendColors(palette);
     };
 
-    const resolveSeriesColors = () =>
+    const resolveSeriesColors = (): Array<ChartSeries & { color: string }> =>
       baseSeries.map((item) => ({
         ...item,
         color: currentPalette.seriesColors[item.id] ?? item.fallbackColor,
       }));
 
-    const render = () => {
+    const render = (): void => {
       const width = body.clientWidth;
       if (!width) {
         return;
@@ -300,7 +359,7 @@
       });
 
       const series = resolveSeriesColors();
-      const allValues = [];
+      const allValues: number[] = [];
       series.forEach((item) => {
         item.values.forEach((value) => allValues.push(value));
       });
@@ -308,7 +367,7 @@
       const maxVal = Math.max(...allValues) * 1.06;
       const { ticks, max, step } = niceTicks(maxVal);
 
-      const yScale = (value) => plot.bottom - (value / max) * plotHeight;
+      const yScale = (value: number): number => plot.bottom - (value / max) * plotHeight;
 
       ctx.lineWidth = 1;
       ctx.strokeStyle = gridColor;
@@ -410,7 +469,7 @@
       });
     };
 
-    const showTooltip = (point) => {
+    const showTooltip = (point: (typeof points)[number] | null): void => {
       if (!point) {
         tooltip.classList.remove("is-visible");
         return;
@@ -441,11 +500,11 @@
       tooltip.style.top = `${top}px`;
     };
 
-    const pickPoint = (event) => {
+    const pickPoint = (event: MouseEvent): void => {
       const rect = canvas.getBoundingClientRect();
       const x = event.clientX - rect.left;
       const y = event.clientY - rect.top;
-      let closest = null;
+      let closest: (typeof points)[number] | null = null;
       let minDist = Infinity;
       points.forEach((point) => {
         const dx = point.x - x;
@@ -487,7 +546,7 @@
     resizeObserver.observe(container);
 
     let rafId = 0;
-    const scheduleRender = () => {
+    const scheduleRender = (): void => {
       if (rafId) {
         return;
       }
@@ -506,14 +565,14 @@
     };
   };
 
-  document.querySelectorAll(".benchmark-chart[data-benchmark-chart]").forEach((container) => {
+  document.querySelectorAll<HTMLElement>(".benchmark-chart[data-benchmark-chart]").forEach((container) => {
     const chart = buildChart(container);
     if (chart) {
       chartInstances.push(chart);
     }
   });
 
-  const setupThemeListeners = () => {
+  const setupThemeListeners = (): void => {
     if (window.__pyversusBenchmarkThemeListeners) {
       return;
     }
