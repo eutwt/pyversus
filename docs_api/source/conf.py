@@ -35,6 +35,7 @@ html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
 html_show_sourcelink = False
 html_theme_options = {
+    "header_links_before_dropdown": 3,
     "icon_links": [
         {
             "name": "GitHub",

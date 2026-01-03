@@ -204,3 +204,4 @@ Use `summary()` to see what kind of differences were found.
    reference/comparison
    reference/errors
    reference/examples
+   benchmark
