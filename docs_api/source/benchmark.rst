@@ -1,12 +1,12 @@
 Benchmark
 =========
 
-These benchmarks focus on the core `versus.compare()` workflow. The data comes
-from the `nycflights13::weather` fixtures used in `scripts/benchmark_r.R`. Each
-size is a fresh sample that keeps 95% of rows on each side. In 4 of the 15
-columns (`temp`, `dewp`, `humid`, `wind_dir`), 5% of values differ between the
-two inputs. Larger sizes are created by resampling the 2M parquet fixtures so
-the distribution stays aligned with the original benchmark.
+These benchmarks show time spent and memory used by `versus.compare()`. The data
+comes from the Python `nycflights13` package (the `weather` table). Each size is
+sampled with replacement from the original table and keeps 95% of rows on each
+side. In 4 of the 15 columns (`temp`, `dewp`, `humid`, `wind_dir`), 5% of values
+differ between the two inputs. For the parquet scan case, the sampled tables are
+written to parquet before running `compare()`.
 
 Row sizes: 250k, 1M, 2M, 5M, 10M, 20M.
 
