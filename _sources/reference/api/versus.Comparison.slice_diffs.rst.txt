@@ -1,5 +1,5 @@
-﻿versus.Comparison.slice\_diffs
-==============================
+﻿Comparison.slice_diffs
+======================
 
 .. currentmodule:: versus
 

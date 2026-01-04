@@ -1,5 +1,5 @@
-﻿versus.Comparison.value\_diffs\_stacked
-=======================================
+﻿Comparison.value_diffs_stacked
+==============================
 
 .. currentmodule:: versus
 

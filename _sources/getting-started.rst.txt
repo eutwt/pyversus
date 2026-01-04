@@ -1,5 +1,5 @@
-Getting started
-===============
+Install & basics
+================
 
 Installation
 ------------

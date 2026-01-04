@@ -1,5 +1,5 @@
-﻿versus.Comparison.close
-=======================
+﻿Comparison.close
+================
 
 .. currentmodule:: versus
 

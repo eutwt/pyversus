@@ -1,5 +1,5 @@
-﻿versus.Comparison.value\_diffs
-==============================
+﻿Comparison.value_diffs
+======================
 
 .. currentmodule:: versus
 
