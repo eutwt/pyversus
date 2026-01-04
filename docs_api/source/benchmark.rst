@@ -10,6 +10,8 @@ written to parquet before running `compare()`.
 
 Row sizes: 250k, 1M, 2M, 5M, 10M, 20M.
 
+Benchmarks were run on a 2020 13-inch MacBook Pro (2.3 GHz quad-core Intel Core i7, 32 GB RAM).
+
 Methods:
 
 - `py_in_memory`: `versus.compare()` on pandas DataFrames.

@@ -3,8 +3,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from markupsafe import Markup
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "python"))
 
 project = "pyversus"
@@ -37,6 +35,15 @@ html_css_files = ["css/custom.css"]
 html_show_sourcelink = False
 html_theme_options = {
     "navbar_center": [],
+    "header_links_before_dropdown": 3,
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/eutwt/pyversus",
+            "icon": "fa-brands fa-github",
+        }
+    ],
 }
 html_sidebars = {
     "**": ["sidebar-nav-pyversus.html"],
@@ -45,25 +52,3 @@ html_sidebars = {
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
 }
-
-
-def _shorten_nav_labels(html: str) -> str:
-    try:
-        from bs4 import BeautifulSoup
-    except ImportError:
-        return html
-
-    soup = BeautifulSoup(str(html), "html.parser")
-    for link in soup.select("a.reference"):
-        for text_node in link.find_all(string=True, recursive=True):
-            if "versus." in text_node:
-                text_node.replace_with(text_node.replace("versus.", ""))
-    return Markup(str(soup))
-
-
-def _add_nav_shortener(app, pagename, templatename, context, doctree):
-    context["shorten_nav_labels"] = _shorten_nav_labels
-
-
-def setup(app):
-    app.connect("html-page-context", _add_nav_shortener)
