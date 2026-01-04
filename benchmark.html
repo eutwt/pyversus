@@ -321,8 +321,8 @@ written to parquet before running <code class="code docutils literal notranslate
 <p>Benchmarks were run on a 2020 13-inch MacBook Pro (2.3 GHz quad-core Intel Core i7, 32 GB RAM).</p>
 <p>Methods:</p>
 <ul class="simple">
-<li><p>Pandas DataFrames: <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on pandas DataFrames.</p></li>
-<li><p>DuckDB parquet scan: <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on DuckDB relations scanning parquet.</p></li>
+<li><p>Pandas DataFrames: <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on pandas DataFrames held in memory.</p></li>
+<li><p>DuckDB parquet scan: <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on DuckDB relations backed by parquet files.</p></li>
 </ul>
 <p>Hover a point to see the exact value.</p>
 <div class="benchmark-charts">

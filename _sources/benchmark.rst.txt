@@ -14,8 +14,8 @@ Benchmarks were run on a 2020 13-inch MacBook Pro (2.3 GHz quad-core Intel Core 
 
 Methods:
 
-- Pandas DataFrames: `versus.compare()` on pandas DataFrames.
-- DuckDB parquet scan: `versus.compare()` on DuckDB relations scanning parquet.
+- Pandas DataFrames: `versus.compare()` on pandas DataFrames held in memory.
+- DuckDB parquet scan: `versus.compare()` on DuckDB relations backed by parquet files.
 
 Hover a point to see the exact value.
 
