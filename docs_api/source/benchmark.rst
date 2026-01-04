@@ -14,8 +14,8 @@ Benchmarks were run on a 2020 13-inch MacBook Pro (2.3 GHz quad-core Intel Core 
 
 Methods:
 
-- `py_in_memory`: `versus.compare()` on pandas DataFrames.
-- `py_parquet_scan`: `versus.compare()` on DuckDB relations scanning parquet.
+- Pandas DataFrames: `versus.compare()` on pandas DataFrames.
+- DuckDB parquet scan: `versus.compare()` on DuckDB relations scanning parquet.
 
 Hover a point to see the exact value.
 
@@ -30,8 +30,8 @@ Hover a point to see the exact value.
      rows: [250000, 1000000, 2000000, 5000000, 10000000, 20000000],
      series: [
        {
-         id: "py_in_memory",
-         label: "versus (in-memory)",
+         id: "py_pandas_dataframe",
+         label: "versus (pandas dataframe)",
          time: [0.2018, 0.5649, 1.0123, 2.2891, 4.5795, 13.1619],
          memory: [130.5, 494.8, 820.8, 1928.8, 3729.9, 7428.8]
        },
