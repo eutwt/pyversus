@@ -32,7 +32,7 @@
 
     <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=5aa8cbf0" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3e3eecda" />
   
   <!-- So that users can add custom icons -->
   <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
@@ -321,8 +321,8 @@ written to parquet before running <code class="code docutils literal notranslate
 <p>Benchmarks were run on a 2020 13-inch MacBook Pro (2.3 GHz quad-core Intel Core i7, 32 GB RAM).</p>
 <p>Methods:</p>
 <ul class="simple">
-<li><p><code class="code docutils literal notranslate"><span class="pre">py_in_memory</span></code>: <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on pandas DataFrames.</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">py_parquet_scan</span></code>: <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on DuckDB relations scanning parquet.</p></li>
+<li><p>Pandas DataFrames: <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on pandas DataFrames.</p></li>
+<li><p>DuckDB parquet scan: <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on DuckDB relations scanning parquet.</p></li>
 </ul>
 <p>Hover a point to see the exact value.</p>
 <div class="benchmark-charts">
@@ -334,8 +334,8 @@ window.PYVERSUS_BENCHMARK_DATA = {
   rows: [250000, 1000000, 2000000, 5000000, 10000000, 20000000],
   series: [
     {
-      id: "py_in_memory",
-      label: "versus (in-memory)",
+      id: "py_pandas_dataframe",
+      label: "versus (pandas dataframe)",
       time: [0.2018, 0.5649, 1.0123, 2.2891, 4.5795, 13.1619],
       memory: [130.5, 494.8, 820.8, 1928.8, 3729.9, 7428.8]
     },

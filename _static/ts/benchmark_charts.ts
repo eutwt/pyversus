@@ -56,7 +56,7 @@ type ChartInstance = {
       tooltipBg: "rgba(15, 23, 42, 0.94)",
       tooltipText: "#f8fafc",
       seriesColors: {
-        py_in_memory: "#2f3e9e",
+        py_pandas_dataframe: "#2f3e9e",
         py_parquet_scan: "#d98200",
       },
     },
@@ -67,7 +67,7 @@ type ChartInstance = {
       tooltipBg: "rgba(15, 23, 42, 0.94)",
       tooltipText: "#f8fafc",
       seriesColors: {
-        py_in_memory: "#7c8dff",
+        py_pandas_dataframe: "#7c8dff",
         py_parquet_scan: "#ffc44d",
       },
     },
