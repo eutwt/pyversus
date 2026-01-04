@@ -1,5 +1,5 @@
-﻿versus.Comparison.slice\_unmatched
-==================================
+﻿Comparison.slice_unmatched
+==========================
 
 .. currentmodule:: versus
 

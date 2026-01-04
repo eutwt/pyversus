@@ -1,5 +1,5 @@
-﻿versus.Comparison.weave\_diffs\_wide
-====================================
+﻿Comparison.weave_diffs_wide
+===========================
 
 .. currentmodule:: versus
 
