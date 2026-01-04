@@ -311,8 +311,9 @@
                   
   <section id="benchmark">
 <h1>Benchmark<a class="headerlink" href="#benchmark" title="Link to this heading">#</a></h1>
-<p>These benchmarks show time spent and memory used by <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code>. The data
-comes from the Python <code class="code docutils literal notranslate"><span class="pre">nycflights13</span></code> package (the <code class="code docutils literal notranslate"><span class="pre">weather</span></code> table). Each size is
+<p>These benchmarks show time spent and memory used by <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> with the
+default <code class="code docutils literal notranslate"><span class="pre">materialize=&quot;all&quot;</span></code> setting. The data comes from the Python
+<code class="code docutils literal notranslate"><span class="pre">nycflights13</span></code> package (the <code class="code docutils literal notranslate"><span class="pre">weather</span></code> table). Each size is
 sampled with replacement from the original table and keeps 95% of rows on each
 side. In 4 of the 15 columns (<code class="code docutils literal notranslate"><span class="pre">temp</span></code>, <code class="code docutils literal notranslate"><span class="pre">dewp</span></code>, <code class="code docutils literal notranslate"><span class="pre">humid</span></code>, <code class="code docutils literal notranslate"><span class="pre">wind_dir</span></code>), 5% of values
 differ between the two inputs. For the parquet scan case, the sampled tables are
