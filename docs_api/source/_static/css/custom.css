@@ -22,6 +22,18 @@ div.bd-sidebar-primary {
   );
 }
 
+.bd-header .bd-navbar-elements,
+.sidebar-header-items .bd-navbar-elements {
+  display: none;
+}
+
+.bd-header .navbar-header-items {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
 pre {
   box-shadow: 0 0.2rem 0.5rem var(--pst-color-shadow),
     0 0 0.0625rem var(--pst-color-shadow) !important;

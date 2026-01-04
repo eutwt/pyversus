@@ -1,5 +1,5 @@
-Quick start
-===========
+Overview
+========
 
 DuckDB-powered tools for comparing two relations (tables or views) or
 pandas/polars DataFrames without materializing them in Python.
@@ -199,9 +199,7 @@ Use `summary()` to see what kind of differences were found.
 .. toctree::
    :maxdepth: 2
 
+   self
    getting-started
-   reference/compare
-   reference/comparison
-   reference/errors
-   reference/examples
+   reference/index
    benchmark
