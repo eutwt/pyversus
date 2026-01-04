@@ -1,6 +1,0 @@
-﻿Comparison.summary
-==================
-
-.. currentmodule:: versus
-
-.. automethod:: Comparison.summary
