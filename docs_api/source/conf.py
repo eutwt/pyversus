@@ -3,7 +3,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "python"))
 
 project = "pyversus"
@@ -35,13 +34,19 @@ html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
 html_show_sourcelink = False
 html_theme_options = {
+    "navbar_center": [],
+    "header_links_before_dropdown": 3,
+    "navbar_end": ["theme-switcher", "navbar-icon-links"],
     "icon_links": [
         {
             "name": "GitHub",
             "url": "https://github.com/eutwt/pyversus",
             "icon": "fa-brands fa-github",
         }
-    ]
+    ],
+}
+html_sidebars = {
+    "**": ["sidebar-nav-pyversus.html"],
 }
 
 intersphinx_mapping = {

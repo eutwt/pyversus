@@ -22,7 +22,125 @@ div.bd-sidebar-primary {
   );
 }
 
+.bd-header .navbar-header-items__end {
+  margin-left: auto;
+}
+
 pre {
   box-shadow: 0 0.2rem 0.5rem var(--pst-color-shadow),
     0 0 0.0625rem var(--pst-color-shadow) !important;
+}
+
+.benchmark-charts {
+  display: grid;
+  gap: 2rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.benchmark-chart {
+  --benchmark-axis: #1f2937;
+  --benchmark-grid: rgba(31, 41, 55, 0.1);
+  --benchmark-label: #1f2937;
+  --benchmark-series-py_in_memory: #2f3e9e;
+  --benchmark-series-py_parquet_scan: #d98200;
+  --benchmark-tooltip-bg: rgba(15, 23, 42, 0.94);
+  --benchmark-tooltip-text: #f8fafc;
+  position: relative;
+}
+
+html[data-theme="dark"] .benchmark-chart {
+  --benchmark-axis: #f8fafc;
+  --benchmark-grid: rgba(248, 250, 252, 0.18);
+  --benchmark-label: #f1f5f9;
+  --benchmark-series-py_in_memory: #7c8dff;
+  --benchmark-series-py_parquet_scan: #ffc44d;
+  --benchmark-tooltip-bg: rgba(15, 23, 42, 0.94);
+  --benchmark-tooltip-text: #f8fafc;
+}
+
+.benchmark-chart .chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.benchmark-chart .chart-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.benchmark-chart .chart-subtitle {
+  color: var(--benchmark-label);
+  font-size: 0.9rem;
+}
+
+.benchmark-chart .chart-body {
+  position: relative;
+}
+
+.benchmark-chart .chart-canvas {
+  display: block;
+  height: 360px;
+  width: 100%;
+}
+
+.benchmark-chart .chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  color: var(--benchmark-label);
+  font-size: 0.85rem;
+}
+
+.benchmark-chart .chart-legend-item {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.benchmark-chart .chart-legend-swatch {
+  border-radius: 999px;
+  height: 6px;
+  width: 18px;
+}
+
+.benchmark-chart .chart-tooltip {
+  background: var(--benchmark-tooltip-bg);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.28);
+  color: var(--benchmark-tooltip-text);
+  font-size: 0.8rem;
+  left: 0;
+  opacity: 0;
+  padding: 0.45rem 0.6rem;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transform: translate(-50%, -100%);
+  transition: opacity 0.12s ease;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.benchmark-chart .chart-tooltip.is-visible {
+  opacity: 1;
+}
+
+.benchmark-chart .tooltip-title {
+  font-weight: 600;
+  margin-bottom: 0.15rem;
+}
+
+@media (max-width: 700px) {
+  .benchmark-chart .chart-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .benchmark-chart .chart-canvas {
+    height: 300px;
+  }
 }
