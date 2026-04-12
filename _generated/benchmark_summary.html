@@ -32,7 +32,7 @@
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=3e3eecda" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=24de2d95" />
   
   <!-- So that users can add custom icons -->
   <script defer src="../_static/scripts/fontawesome.js?digest=7f76b32a3354e82990f2"></script>
@@ -324,10 +324,14 @@
 <p>Synthetic benchmark sizes: 250k, 1M, 2M, 5M, 10M, 20M.</p>
 <p>Each point is the median of 3 fresh-process runs with 30 seconds of cooldown between runs. Only the <code class="code docutils literal notranslate"><span class="pre">compare()</span></code> call is timed; input generation happens before timing starts.</p>
 <p>Benchmarks were run on MacBook Air with Apple M5 and 32 GB.</p>
+<p>This combined view keeps the stored DuckDB-backed and PySpark-backed benchmark runs that pyversus2 now unifies behind the same <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> entry point.</p>
+<p>The stored PySpark runs used <code class="code docutils literal notranslate"><span class="pre">local[*]</span></code>, parallelism 10, 10 GB driver memory.</p>
 <p>Methods:</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on pandas DataFrames already held in memory.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on DuckDB relations backed by parquet files.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on PySpark DataFrames cached before timing starts.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> on PySpark DataFrames read from parquet without caching.</p></li>
 </ul>
 <p>Hover a point to see the exact value.</p>
 

@@ -43,6 +43,8 @@ pre {
   --benchmark-label: #1f2937;
   --benchmark-series-py_pandas_dataframe: #2f3e9e;
   --benchmark-series-py_parquet_scan: #d98200;
+  --benchmark-series-py_pyspark_dataframe: #168c6c;
+  --benchmark-series-py_pyspark_parquet_scan: #c75146;
   --benchmark-tooltip-bg: rgba(15, 23, 42, 0.94);
   --benchmark-tooltip-text: #f8fafc;
   position: relative;
@@ -54,6 +56,8 @@ html[data-theme="dark"] .benchmark-chart {
   --benchmark-label: #f1f5f9;
   --benchmark-series-py_pandas_dataframe: #7c8dff;
   --benchmark-series-py_parquet_scan: #ffc44d;
+  --benchmark-series-py_pyspark_dataframe: #4ed1aa;
+  --benchmark-series-py_pyspark_parquet_scan: #ff8a80;
   --benchmark-tooltip-bg: rgba(15, 23, 42, 0.94);
   --benchmark-tooltip-text: #f8fafc;
 }

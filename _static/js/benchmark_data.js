@@ -47,6 +47,46 @@ window.PYVERSUS_BENCHMARK_DATA = {
         2054.5,
         3767.2
       ]
+    },
+    {
+      "id": "py_pyspark_dataframe",
+      "label": "versus (pyspark cached dataframe)",
+      "time": [
+        7.0906,
+        11.0228,
+        14.73,
+        24.4264,
+        37.9726,
+        64.411
+      ],
+      "memory": [
+        2034.4,
+        2850.9,
+        3559.8,
+        5814.7,
+        9697.8,
+        10525.7
+      ]
+    },
+    {
+      "id": "py_pyspark_parquet_scan",
+      "label": "versus (pyspark parquet scan)",
+      "time": [
+        9.6252,
+        14.4082,
+        18.6702,
+        30.7104,
+        39.2619,
+        66.8004
+      ],
+      "memory": [
+        1985.2,
+        2536.2,
+        2922.2,
+        6971.6,
+        9947.5,
+        10725.4
+      ]
     }
   ]
 };
