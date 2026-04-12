@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Overview &#8212; pyversus  documentation</title>
+    <title>Overview &#8212; pyversus2  documentation</title>
   
   
   
@@ -118,7 +118,7 @@
   
   
   
-    <p class="title logo__title">pyversus  documentation</p>
+    <p class="title logo__title">pyversus2  documentation</p>
   
 </a></div>
     
@@ -159,7 +159,7 @@
           
           
           
-          <a href="https://github.com/eutwt/pyversus" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/eutwt/pyversus2" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
 </ul></div>
@@ -179,6 +179,10 @@
     </div>
   
 
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
   
 </div>
 
@@ -223,7 +227,7 @@
           
           
           
-          <a href="https://github.com/eutwt/pyversus" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/eutwt/pyversus2" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
 </ul></div>
@@ -242,7 +246,18 @@
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Install &amp; basics</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="reference/index.html">Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="reference/compare.html">compare</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference/comparison.html">Comparison</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="reference/comparison.html">Comparison</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.value_diffs.html">Comparison.value_diffs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.value_diffs_stacked.html">Comparison.value_diffs_stacked</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.weave_diffs_wide.html">Comparison.weave_diffs_wide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.weave_diffs_long.html">Comparison.weave_diffs_long</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.slice_diffs.html">Comparison.slice_diffs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.slice_unmatched.html">Comparison.slice_unmatched</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.slice_unmatched_both.html">Comparison.slice_unmatched_both</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.summary.html">Comparison.summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.close.html">Comparison.close</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="reference/errors.html">Errors</a></li>
 <li class="toctree-l2"><a class="reference internal" href="reference/examples.html">Examples</a></li>
 </ul>
@@ -283,16 +298,18 @@
                   
   <section id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h1>
-<p>Tools for comparing tabular data with DuckDB and optional PySpark support.</p>
-<p><code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> accepts DuckDB relations, pandas DataFrames, polars
-DataFrames, and PySpark DataFrames. DuckDB remains the default backend,
-and Spark is selected automatically when Spark inputs are involved.</p>
+<p>DuckDB- and Spark-backed tools for comparing two relations (tables or
+views), pandas/polars DataFrames, or PySpark DataFrames without
+materializing the full inputs in Python.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> stays the single public entry point. DuckDB remains
+the default backend, and Spark is selected automatically when Spark
+inputs are involved.</p>
 <div class="admonition-alpha-status admonition">
 <p class="admonition-title">Alpha status</p>
 <p>This package is still evolving and may change between releases.</p>
 </div>
-<p>The DuckDB examples below are used throughout the docs to demonstrate the
-core comparison workflow.</p>
+<p>The DuckDB examples below are used as the main walkthrough, just like in
+<code class="code docutils literal notranslate"><span class="pre">pyversus</span></code>.</p>
 <div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">versus</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span><span class="p">,</span> <span class="n">examples</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">example_a</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_a</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">example_b</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_b</span><span class="p">()</span>
@@ -462,12 +479,71 @@ core comparison workflow.</p>
 <span class="go">└────────────────┴─────────┘</span>
 </pre></div>
 </div>
+<section id="spark-backed-comparisons">
+<h2>Spark-backed comparisons<a class="headerlink" href="#spark-backed-comparisons" title="Link to this heading">#</a></h2>
+<p>When you pass PySpark inputs, the API stays the same and the backend
+switches automatically. Helper methods return Spark DataFrames, so use
+<code class="code docutils literal notranslate"><span class="pre">.show()</span></code> to inspect them.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">spark</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">resolve_spark</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">spark_comparison</span> <span class="o">=</span> <span class="n">compare</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_a_spark</span><span class="p">(</span><span class="n">spark</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_b_spark</span><span class="p">(</span><span class="n">spark</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;car&quot;</span><span class="p">],</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">spark_comparison</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">+--------------+-----+</span>
+<span class="go">|    difference|found|</span>
+<span class="go">+--------------+-----+</span>
+<span class="go">|   value_diffs| true|</span>
+<span class="go">|unmatched_cols| true|</span>
+<span class="go">|unmatched_rows| true|</span>
+<span class="go">|    type_diffs|false|</span>
+<span class="go">+--------------+-----+</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">spark_comparison</span><span class="o">.</span><span class="n">value_diffs</span><span class="p">(</span><span class="s2">&quot;disp&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">+------+------+--------------+</span>
+<span class="go">|disp_a|disp_b|           car|</span>
+<span class="go">+------+------+--------------+</span>
+<span class="go">|   109|   108|    Datsun 710|</span>
+<span class="go">|   259|   258|Hornet 4 Drive|</span>
+<span class="go">+------+------+--------------+</span>
+</pre></div>
+</div>
+</section>
+<section id="mixed-inputs">
+<h2>Mixed inputs<a class="headerlink" href="#mixed-inputs" title="Link to this heading">#</a></h2>
+<p>If either input is a Spark DataFrame, <code class="code docutils literal notranslate"><span class="pre">compare()</span></code> dispatches to Spark
+and converts the other supported inputs as needed.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">spark_frame</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="p">[(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">)],</span>
+<span class="gp">... </span>    <span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">],</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pandas_frame</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]})</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mixed</span> <span class="o">=</span> <span class="n">compare</span><span class="p">(</span><span class="n">pandas_frame</span><span class="p">,</span> <span class="n">spark_frame</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mixed</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">+--------------+-----+</span>
+<span class="go">|    difference|found|</span>
+<span class="go">+--------------+-----+</span>
+<span class="go">|   value_diffs| true|</span>
+<span class="go">|unmatched_cols|false|</span>
+<span class="go">|unmatched_rows| true|</span>
+<span class="go">|    type_diffs|false|</span>
+<span class="go">+--------------+-----+</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mixed</span><span class="o">.</span><span class="n">value_diffs</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">+-------+-------+---+</span>
+<span class="go">|value_a|value_b| id|</span>
+<span class="go">+-------+-------+---+</span>
+<span class="go">|     20|     22|  2|</span>
+<span class="go">+-------+-------+---+</span>
+</pre></div>
+</div>
 <div class="toctree-wrapper compound">
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">Install &amp; basics</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="getting-started.html#installation">Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting-started.html#inputs">Inputs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting-started.html#spark-inputs">Spark inputs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="getting-started.html#materialization-modes">Materialization modes</a></li>
 </ul>
 </li>
@@ -481,6 +557,7 @@ core comparison workflow.</p>
 <li class="toctree-l1"><a class="reference internal" href="benchmark.html">Benchmark</a></li>
 </ul>
 </div>
+</section>
 </section>
 
 
@@ -508,6 +585,25 @@ core comparison workflow.</p>
             </div>
             
             
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#spark-backed-comparisons">Spark-backed comparisons</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mixed-inputs">Mixed inputs</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
           </div>

@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Install &amp; basics &#8212; pyversus  documentation</title>
+    <title>Install &amp; basics &#8212; pyversus2  documentation</title>
   
   
   
@@ -119,7 +119,7 @@
   
   
   
-    <p class="title logo__title">pyversus  documentation</p>
+    <p class="title logo__title">pyversus2  documentation</p>
   
 </a></div>
     
@@ -160,7 +160,7 @@
           
           
           
-          <a href="https://github.com/eutwt/pyversus" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/eutwt/pyversus2" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
 </ul></div>
@@ -226,7 +226,7 @@
           
           
           
-          <a href="https://github.com/eutwt/pyversus" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+          <a href="https://github.com/eutwt/pyversus2" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
             <span class="sr-only">GitHub</span></a>
         </li>
 </ul></div>
@@ -245,7 +245,18 @@
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Install &amp; basics</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="reference/index.html">Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="reference/compare.html">compare</a></li>
-<li class="toctree-l2"><a class="reference internal" href="reference/comparison.html">Comparison</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="reference/comparison.html">Comparison</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.value_diffs.html">Comparison.value_diffs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.value_diffs_stacked.html">Comparison.value_diffs_stacked</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.weave_diffs_wide.html">Comparison.weave_diffs_wide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.weave_diffs_long.html">Comparison.weave_diffs_long</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.slice_diffs.html">Comparison.slice_diffs</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.slice_unmatched.html">Comparison.slice_unmatched</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.slice_unmatched_both.html">Comparison.slice_unmatched_both</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.summary.html">Comparison.summary</a></li>
+<li class="toctree-l3"><a class="reference internal" href="reference/api/versus.Comparison.close.html">Comparison.close</a></li>
+</ul>
+</details></li>
 <li class="toctree-l2"><a class="reference internal" href="reference/errors.html">Errors</a></li>
 <li class="toctree-l2"><a class="reference internal" href="reference/examples.html">Examples</a></li>
 </ul>
@@ -312,7 +323,7 @@
 <h1>Install &amp; basics<a class="headerlink" href="#install-basics" title="Link to this heading">#</a></h1>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h2>
-<p>Install the package into your environment:</p>
+<p>Install the package from the repository:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
 </pre></div>
 </div>
@@ -320,18 +331,21 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[spark]&quot;</span>
 </pre></div>
 </div>
-<p>The base install supports DuckDB-backed comparisons. PySpark-backed
-comparisons also require a Java runtime.</p>
+<p>The base install keeps DuckDB as the only required runtime dependency.
+If pandas or polars are already available in your environment,
+<code class="code docutils literal notranslate"><span class="pre">compare()</span></code> accepts those inputs too. Spark-backed comparisons also need
+PySpark plus a Java runtime.</p>
 </section>
 <section id="inputs">
 <h2>Inputs<a class="headerlink" href="#inputs" title="Link to this heading">#</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">compare()</span></code> accepts DuckDB relations (tables or views), pandas
 DataFrames, polars DataFrames, and PySpark DataFrames. If you provide
-relations created on a non-default connection, pass that connection into
-<code class="code docutils literal notranslate"><span class="pre">compare()</span></code> via <code class="code docutils literal notranslate"><span class="pre">con=</span></code> so helper queries run in the same session.</p>
+relations created on a non-default DuckDB connection, pass that
+connection into <code class="code docutils literal notranslate"><span class="pre">compare()</span></code> via <code class="code docutils literal notranslate"><span class="pre">con=</span></code> so helper queries run in the same
+session.</p>
 <p>If either input is a PySpark DataFrame, or if you pass <code class="code docutils literal notranslate"><span class="pre">spark=</span></code>, the
-comparison runs on Spark and returns Spark-backed outputs, while keeping
-the same <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> entry point.</p>
+comparison runs on Spark and returns Spark-backed outputs while keeping
+the same public <code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> entry point.</p>
 <div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">duckdb</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">versus</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">rel_a</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">&quot;SELECT 1 AS id, 10 AS value&quot;</span><span class="p">)</span>
@@ -350,30 +364,59 @@ the same <code class="code docutils literal notranslate"><span class="pre">versu
 </pre></div>
 </div>
 </section>
+<section id="spark-inputs">
+<h2>Spark inputs<a class="headerlink" href="#spark-inputs" title="Link to this heading">#</a></h2>
+<p>When Spark is selected, the same comparison helpers return Spark
+DataFrames.</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">versus</span><span class="w"> </span><span class="kn">import</span> <span class="n">examples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">spark</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">resolve_spark</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">left</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">20</span><span class="p">)],</span> <span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">right</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">createDataFrame</span><span class="p">([(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">22</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">30</span><span class="p">)],</span> <span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span> <span class="o">=</span> <span class="n">compare</span><span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">summary</span><span class="p">()</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">+--------------+-----+</span>
+<span class="go">|    difference|found|</span>
+<span class="go">+--------------+-----+</span>
+<span class="go">|   value_diffs| true|</span>
+<span class="go">|unmatched_cols|false|</span>
+<span class="go">|unmatched_rows| true|</span>
+<span class="go">|    type_diffs|false|</span>
+<span class="go">+--------------+-----+</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">comparison</span><span class="o">.</span><span class="n">value_diffs</span><span class="p">(</span><span class="s2">&quot;value&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="go">+-------+-------+---+</span>
+<span class="go">|value_a|value_b| id|</span>
+<span class="go">+-------+-------+---+</span>
+<span class="go">|     20|     22|  2|</span>
+<span class="go">+-------+-------+---+</span>
+</pre></div>
+</div>
+</section>
 <section id="materialization-modes">
 <h2>Materialization modes<a class="headerlink" href="#materialization-modes" title="Link to this heading">#</a></h2>
-<p>When you call <code class="code docutils literal notranslate"><span class="pre">compare()</span></code>, Pyversus defines summary tables for the
+<p>When you call <code class="code docutils literal notranslate"><span class="pre">compare()</span></code>, <code class="code docutils literal notranslate"><span class="pre">pyversus2</span></code> defines summary tables for the
 printed output (<code class="code docutils literal notranslate"><span class="pre">tables</span></code>, <code class="code docutils literal notranslate"><span class="pre">by</span></code>, <code class="code docutils literal notranslate"><span class="pre">intersection</span></code>, <code class="code docutils literal notranslate"><span class="pre">unmatched_cols</span></code>,
-<code class="code docutils literal notranslate"><span class="pre">unmatched_rows</span></code>). These are relation-like wrappers that materialize
-themselves on print. The input tables are never materialized by Pyversus
-in any mode; they stay as DuckDB relations and are queried lazily.</p>
-<p>In full materialization, Pyversus also builds a diff table: a single
-relation with the <code class="code docutils literal notranslate"><span class="pre">by</span></code> keys plus one boolean flag per value column
-indicating a difference. The table only includes rows with at least one
-difference. Those precomputed flags let row-level helpers fetch the
-differing rows quickly via joins. Other modes skip the diff table and detect
-differences inline.</p>
+<code class="code docutils literal notranslate"><span class="pre">unmatched_rows</span></code>).</p>
+<p>For DuckDB-backed comparisons, these are relation-like wrappers over
+DuckDB relations. For Spark-backed comparisons, they are Spark DataFrame
+wrappers that cache themselves on first materialization. The input
+tables are never materialized by <code class="code docutils literal notranslate"><span class="pre">pyversus2</span></code> in Python in any mode.</p>
+<p>In full materialization, <code class="code docutils literal notranslate"><span class="pre">pyversus2</span></code> also builds a diff table: a single
+backend-native relation/DataFrame with the <code class="code docutils literal notranslate"><span class="pre">by</span></code> keys plus one boolean
+flag per value column indicating a difference. The table only includes
+rows with at least one difference. Those precomputed flags let row-level
+helpers fetch the differing rows quickly. Other modes skip the diff
+table and detect differences inline.</p>
 <ul class="simple">
-<li><p><code class="code docutils literal notranslate"><span class="pre">materialize=&quot;all&quot;</span></code>: store the summary tables and the diff table as
-temp tables. This is fastest if you will call row-level helpers
-multiple times.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">materialize=&quot;all&quot;</span></code>: store the summary tables and the diff table up
+front. This is fastest if you will call row-level helpers multiple
+times.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">materialize=&quot;summary&quot;</span></code>: store only the summary tables. Row-level
-helpers run inline predicates and return lazy relations.</p></li>
+helpers run inline predicates and return lazy backend-native objects.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">materialize=&quot;none&quot;</span></code>: do not store anything up front. Printing the
-comparison materializes the summary tables.</p></li>
+comparison materializes the summary tables on demand.</p></li>
 </ul>
-<p>Row-level helper outputs are always returned as DuckDB relations and are
-never materialized automatically; materialize them explicitly if needed.</p>
+<p>Row-level helper outputs are always returned as backend-native objects:
+DuckDB relations for DuckDB runs and Spark DataFrames for Spark runs.</p>
 </section>
 </section>
 
@@ -426,6 +469,7 @@ never materialized automatically; materialize them explicitly if needed.</p>
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#installation">Installation</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inputs">Inputs</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#spark-inputs">Spark inputs</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#materialization-modes">Materialization modes</a></li>
 </ul>
   </nav></div>

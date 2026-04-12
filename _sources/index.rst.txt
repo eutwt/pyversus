@@ -1,18 +1,20 @@
 Overview
 ========
 
-Tools for comparing tabular data with DuckDB and optional PySpark support.
+DuckDB- and Spark-backed tools for comparing two relations (tables or
+views), pandas/polars DataFrames, or PySpark DataFrames without
+materializing the full inputs in Python.
 
-`versus.compare()` accepts DuckDB relations, pandas DataFrames, polars
-DataFrames, and PySpark DataFrames. DuckDB remains the default backend,
-and Spark is selected automatically when Spark inputs are involved.
+`versus.compare()` stays the single public entry point. DuckDB remains
+the default backend, and Spark is selected automatically when Spark
+inputs are involved.
 
 .. admonition:: Alpha status
 
    This package is still evolving and may change between releases.
 
-The DuckDB examples below are used throughout the docs to demonstrate the
-core comparison workflow.
+The DuckDB examples below are used as the main walkthrough, just like in
+`pyversus`.
 
 .. code-block:: pycon
 
@@ -199,6 +201,69 @@ Use `summary()` to see what kind of differences were found.
    │ unmatched_rows │ true    │
    │ type_diffs     │ false   │
    └────────────────┴─────────┘
+
+Spark-backed comparisons
+------------------------
+
+When you pass PySpark inputs, the API stays the same and the backend
+switches automatically. Helper methods return Spark DataFrames, so use
+`.show()` to inspect them.
+
+.. code-block:: pycon
+
+   >>> spark = examples.resolve_spark()
+   >>> spark_comparison = compare(
+   ...     examples.example_cars_a_spark(spark),
+   ...     examples.example_cars_b_spark(spark),
+   ...     by=["car"],
+   ... )
+   >>> spark_comparison.summary().show()
+   +--------------+-----+
+   |    difference|found|
+   +--------------+-----+
+   |   value_diffs| true|
+   |unmatched_cols| true|
+   |unmatched_rows| true|
+   |    type_diffs|false|
+   +--------------+-----+
+   >>> spark_comparison.value_diffs("disp").show()
+   +------+------+--------------+
+   |disp_a|disp_b|           car|
+   +------+------+--------------+
+   |   109|   108|    Datsun 710|
+   |   259|   258|Hornet 4 Drive|
+   +------+------+--------------+
+
+Mixed inputs
+------------
+
+If either input is a Spark DataFrame, `compare()` dispatches to Spark
+and converts the other supported inputs as needed.
+
+.. code-block:: pycon
+
+   >>> import pandas as pd
+   >>> spark_frame = spark.createDataFrame(
+   ...     [(1, 10), (2, 22), (3, 30)],
+   ...     ["id", "value"],
+   ... )
+   >>> pandas_frame = pd.DataFrame({"id": [1, 2], "value": [10, 20]})
+   >>> mixed = compare(pandas_frame, spark_frame, by=["id"])
+   >>> mixed.summary().show()
+   +--------------+-----+
+   |    difference|found|
+   +--------------+-----+
+   |   value_diffs| true|
+   |unmatched_cols|false|
+   |unmatched_rows| true|
+   |    type_diffs|false|
+   +--------------+-----+
+   >>> mixed.value_diffs("value").show()
+   +-------+-------+---+
+   |value_a|value_b| id|
+   +-------+-------+---+
+   |     20|     22|  2|
+   +-------+-------+---+
 
 .. toctree::
    :maxdepth: 2
