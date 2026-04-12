@@ -569,13 +569,6 @@ type ChartInstance = {
     };
   };
 
-  document.querySelectorAll<HTMLElement>(".benchmark-chart[data-benchmark-chart]").forEach((container) => {
-    const chart = buildChart(container);
-    if (chart) {
-      chartInstances.push(chart);
-    }
-  });
-
   const setupThemeListeners = (): void => {
     if (window.__pyversusBenchmarkThemeListeners) {
       return;
@@ -605,6 +598,21 @@ type ChartInstance = {
     }
   };
 
-  setupThemeListeners();
-  queueThemeRefresh();
+  const initializeCharts = (): void => {
+    document.querySelectorAll<HTMLElement>(".benchmark-chart[data-benchmark-chart]").forEach((container) => {
+      const chart = buildChart(container);
+      if (chart) {
+        chartInstances.push(chart);
+      }
+    });
+
+    setupThemeListeners();
+    queueThemeRefresh();
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeCharts, { once: true });
+  } else {
+    initializeCharts();
+  }
 })();
