@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Install &amp; basics &#8212; pyversus2  documentation</title>
+    <title>Install &amp; basics &#8212; pyversus  documentation</title>
   
   
   
@@ -116,7 +116,7 @@
   
   
   
-    <p class="title logo__title">pyversus2  documentation</p>
+    <p class="title logo__title">pyversus  documentation</p>
   
 </a></div>
     
@@ -320,12 +320,12 @@
 <h1>Install &amp; basics<a class="headerlink" href="#install-basics" title="Link to this heading">#</a></h1>
 <section id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Link to this heading">#</a></h2>
-<p>Install the package from the repository:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+<p>Install the base package:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>pyversus
 </pre></div>
 </div>
 <p>Install PySpark input support when needed:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[spark]&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;pyversus[spark]&quot;</span>
 </pre></div>
 </div>
 <p>The base install keeps DuckDB as the only required runtime dependency.
@@ -390,14 +390,14 @@ DataFrames.</p>
 </section>
 <section id="materialization-modes">
 <h2>Materialization modes<a class="headerlink" href="#materialization-modes" title="Link to this heading">#</a></h2>
-<p>When you call <code class="code docutils literal notranslate"><span class="pre">compare()</span></code>, <code class="code docutils literal notranslate"><span class="pre">pyversus2</span></code> defines summary tables for the
+<p>When you call <code class="code docutils literal notranslate"><span class="pre">compare()</span></code>, pyversus defines summary tables for the
 printed output (<code class="code docutils literal notranslate"><span class="pre">tables</span></code>, <code class="code docutils literal notranslate"><span class="pre">by</span></code>, <code class="code docutils literal notranslate"><span class="pre">intersection</span></code>, <code class="code docutils literal notranslate"><span class="pre">unmatched_cols</span></code>,
 <code class="code docutils literal notranslate"><span class="pre">unmatched_rows</span></code>).</p>
 <p>For DuckDB-backed comparisons, these are relation-like wrappers over
 DuckDB relations. For Spark-backed comparisons, they are Spark DataFrame
 wrappers that cache themselves on first materialization. The input
-tables are never materialized by <code class="code docutils literal notranslate"><span class="pre">pyversus2</span></code> in Python in any mode.</p>
-<p>In full materialization, <code class="code docutils literal notranslate"><span class="pre">pyversus2</span></code> also builds a diff table: a single
+tables are never materialized by pyversus in Python in any mode.</p>
+<p>In full materialization, pyversus also builds a diff table: a single
 backend-native relation/DataFrame with the <code class="code docutils literal notranslate"><span class="pre">by</span></code> keys plus one boolean
 flag per value column indicating a difference. The table only includes
 rows with at least one difference. Those precomputed flags let row-level

@@ -8,7 +8,7 @@ Each point is the median of 3 fresh-process runs with 30 seconds of cooldown bet
 
 Benchmarks were run on MacBook Air with Apple M5 and 32 GB.
 
-This combined view keeps the stored DuckDB-backed and PySpark-backed benchmark runs that pyversus2 now unifies behind the same `versus.compare()` entry point.
+This combined view keeps the stored DuckDB-backed and PySpark-backed benchmark runs behind the same `versus.compare()` entry point.
 
 The stored PySpark runs used `local[*]`, parallelism 10, 10 GB driver memory.
 

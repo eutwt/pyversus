@@ -1,7 +1,6 @@
-# pyversus2
+# pyversus
 
-`pyversus2` (imported as `versus`) keeps the `pyversus` API while adding
-optional PySpark DataFrame support. Use it to compare DuckDB relations
+`pyversus` (imported as `versus`) compares DuckDB relations
 (tables or views), pandas/polars DataFrames, or PySpark DataFrames
 without materializing the full inputs in Python. The same `compare()`
 function gives a `Comparison` object that shows where the tables
@@ -14,16 +13,16 @@ the default backend; if either input is a PySpark DataFrame or you pass
 
 ## Installation
 
-Install the base package from this repository:
+Install the base package:
 
 ```bash
-pip install -e .
+pip install pyversus
 ```
 
 Install PySpark input support when needed:
 
 ```bash
-pip install -e ".[spark]"
+pip install "pyversus[spark]"
 ```
 
 The base install keeps DuckDB as the only required runtime dependency.
@@ -34,8 +33,7 @@ comparisons. Spark-backed comparisons also require a Java runtime.
 
 ## Quick start
 
-Here is the same interactive DuckDB session that `pyversus` exposes,
-using the unified `versus.compare()` entry point:
+Here is a typical interactive DuckDB session using `versus.compare()`:
 
 ```python
 from versus import compare, examples
@@ -335,16 +333,16 @@ mixed.value_diffs("value").show()
 
 ### Materialization
 
-When you call `compare()`, `pyversus2` defines summary tables for the
+When you call `compare()`, pyversus defines summary tables for the
 printed output (`tables`, `by`, `intersection`, `unmatched_cols`,
 `unmatched_rows`).
 
 For DuckDB-backed comparisons, these are relation-like wrappers over
 DuckDB relations. For Spark-backed comparisons, they are Spark DataFrame
 wrappers that cache themselves on first materialization. The input
-tables are never materialized by `pyversus2` in Python in any mode.
+tables are never materialized by pyversus in Python in any mode.
 
-In full materialization, `pyversus2` also builds a diff table: a single
+In full materialization, pyversus also builds a diff table: a single
 backend-native relation/DataFrame with the `by` keys plus one boolean
 flag per value column indicating a difference. The table only includes
 rows with at least one difference. Those precomputed flags let row-level

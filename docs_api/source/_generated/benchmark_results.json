@@ -1,7 +1,7 @@
 {
   "metadata": {
     "generated_at": "2026-04-12T21:31:52Z",
-    "repo": "pyversus2",
+    "repo": "pyversus",
     "git_head": "90faf11383699adee33067d1987794e853463818",
     "dataset": {
       "name": "nycflights13.weather",

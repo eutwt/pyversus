@@ -4,17 +4,17 @@ Install & basics
 Installation
 ------------
 
-Install the package from the repository:
+Install the base package:
 
 .. code-block:: bash
 
-   pip install -e .
+   pip install pyversus
 
 Install PySpark input support when needed:
 
 .. code-block:: bash
 
-   pip install -e ".[spark]"
+   pip install "pyversus[spark]"
 
 The base install keeps DuckDB as the only required runtime dependency.
 If pandas or polars are already available in your environment,
@@ -84,16 +84,16 @@ DataFrames.
 Materialization modes
 ---------------------
 
-When you call `compare()`, `pyversus2` defines summary tables for the
+When you call `compare()`, pyversus defines summary tables for the
 printed output (`tables`, `by`, `intersection`, `unmatched_cols`,
 `unmatched_rows`).
 
 For DuckDB-backed comparisons, these are relation-like wrappers over
 DuckDB relations. For Spark-backed comparisons, they are Spark DataFrame
 wrappers that cache themselves on first materialization. The input
-tables are never materialized by `pyversus2` in Python in any mode.
+tables are never materialized by pyversus in Python in any mode.
 
-In full materialization, `pyversus2` also builds a diff table: a single
+In full materialization, pyversus also builds a diff table: a single
 backend-native relation/DataFrame with the `by` keys plus one boolean
 flag per value column indicating a difference. The table only includes
 rows with at least one difference. Those precomputed flags let row-level

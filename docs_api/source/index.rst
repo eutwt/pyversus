@@ -13,8 +13,7 @@ inputs are involved.
 
    This package is still evolving and may change between releases.
 
-The DuckDB examples below are used as the main walkthrough, just like in
-`pyversus`.
+The DuckDB examples below are used as the main walkthrough.
 
 .. code-block:: pycon
 
