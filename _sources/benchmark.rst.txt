@@ -9,5 +9,3 @@ Benchmark
     <div class="benchmark-chart" data-benchmark-chart="time" data-title="Benchmark time by input size" data-y-label="Median time"></div>
     <div class="benchmark-chart" data-benchmark-chart="memory" data-title="Benchmark memory by input size" data-y-label="Peak memory"></div>
    </div>
-   <script src="_static/js/benchmark_data.js"></script>
-   <script src="_static/js/benchmark_charts.js" defer></script>
