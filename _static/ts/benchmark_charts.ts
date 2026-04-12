@@ -58,6 +58,8 @@ type ChartInstance = {
       seriesColors: {
         py_pandas_dataframe: "#2f3e9e",
         py_parquet_scan: "#d98200",
+        py_pyspark_dataframe: "#007d5c",
+        py_pyspark_parquet_scan: "#b83280",
       },
     },
     dark: {
@@ -69,6 +71,8 @@ type ChartInstance = {
       seriesColors: {
         py_pandas_dataframe: "#7c8dff",
         py_parquet_scan: "#ffc44d",
+        py_pyspark_dataframe: "#34d399",
+        py_pyspark_parquet_scan: "#f472b6",
       },
     },
   };
