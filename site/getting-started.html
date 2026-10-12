@@ -396,7 +396,7 @@ printed output (<code class="code docutils literal notranslate"><span class="pre
 <p>For DuckDB-backed comparisons, these are relation-like wrappers over
 DuckDB relations. For Spark-backed comparisons, they are Spark DataFrame
 wrappers that cache themselves on first materialization. The input
-tables are never materialized by pyversus in Python in any mode.</p>
+tables are never materialized by pyversus in any mode.</p>
 <p>In full materialization, pyversus also builds a diff table: a single
 backend-native relation/DataFrame with the <code class="code docutils literal notranslate"><span class="pre">by</span></code> keys plus one boolean
 flag per value column indicating a difference. The table only includes

@@ -91,7 +91,7 @@ printed output (`tables`, `by`, `intersection`, `unmatched_cols`,
 For DuckDB-backed comparisons, these are relation-like wrappers over
 DuckDB relations. For Spark-backed comparisons, they are Spark DataFrame
 wrappers that cache themselves on first materialization. The input
-tables are never materialized by pyversus in Python in any mode.
+tables are never materialized by pyversus in any mode.
 
 In full materialization, pyversus also builds a diff table: a single
 backend-native relation/DataFrame with the `by` keys plus one boolean
