@@ -11,13 +11,11 @@ execute:
   error: false
   eval: false
 ---
-`pyversus` (imported as `versus`) compares DuckDB relations
-(tables or views), pandas/polars DataFrames, or PySpark DataFrames
-without materializing the full inputs in Python. The same `compare()`
-function gives a `Comparison` object that shows where the tables
-disagree, with methods for displaying the differences. DuckDB remains
-the default backend; if either input is a PySpark DataFrame or you pass
-`spark=`, the comparison runs on Spark instead.
+`pyversus` (imported as `versus`) provides tools for comparing two relations
+(tables or views), pandas/polars DataFrames, or PySpark DataFrames without
+materializing the full inputs in Python. The `compare()` function gives a
+`Comparison` object that shows where the tables disagree, with methods for
+displaying the differences.
 
 > **Alpha status:** This package is in active development. Backward
 > compatibility is not guaranteed between releases yet.
@@ -44,7 +42,9 @@ comparisons. Spark-backed comparisons also require a Java runtime.
 
 ## Quick start
 
-Here is a typical interactive DuckDB session using `versus.compare()`:
+The two example tables below are DuckDB relations and come with the package.
+These examples are used to create a comparison object and demonstrate
+functionality.
 
 ```python
 from versus import compare, examples

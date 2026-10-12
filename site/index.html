@@ -295,17 +295,16 @@
                   
   <section id="overview">
 <h1>Overview<a class="headerlink" href="#overview" title="Link to this heading">#</a></h1>
-<p>DuckDB- and Spark-backed tools for comparing two relations (tables or
+<p>Tools for comparing two relations (tables or
 views), pandas/polars DataFrames, or PySpark DataFrames without
 materializing the full inputs in Python.</p>
-<p><code class="code docutils literal notranslate"><span class="pre">versus.compare()</span></code> stays the single public entry point. DuckDB remains
-the default backend, and Spark is selected automatically when Spark
-inputs are involved.</p>
 <div class="admonition-alpha-status admonition">
 <p class="admonition-title">Alpha status</p>
 <p>This package is still evolving and may change between releases.</p>
 </div>
-<p>The DuckDB examples below are used as the main walkthrough.</p>
+<p>The two example tables below are DuckDB relations and come with the package.
+These examples are used to create a comparison object and demonstrate
+functionality.</p>
 <div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">versus</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span><span class="p">,</span> <span class="n">examples</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">example_a</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_a</span><span class="p">()</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">example_b</span> <span class="o">=</span> <span class="n">examples</span><span class="o">.</span><span class="n">example_cars_b</span><span class="p">()</span>

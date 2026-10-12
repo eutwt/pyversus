@@ -1,19 +1,17 @@
 Overview
 ========
 
-DuckDB- and Spark-backed tools for comparing two relations (tables or
+Tools for comparing two relations (tables or
 views), pandas/polars DataFrames, or PySpark DataFrames without
 materializing the full inputs in Python.
-
-`versus.compare()` stays the single public entry point. DuckDB remains
-the default backend, and Spark is selected automatically when Spark
-inputs are involved.
 
 .. admonition:: Alpha status
 
    This package is still evolving and may change between releases.
 
-The DuckDB examples below are used as the main walkthrough.
+The two example tables below are DuckDB relations and come with the package.
+These examples are used to create a comparison object and demonstrate
+functionality.
 
 .. code-block:: pycon
 
